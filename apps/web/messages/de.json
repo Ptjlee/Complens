@@ -1,0 +1,160 @@
+{
+  "common": {
+    "save":        "Speichern",
+    "cancel":      "Abbrechen",
+    "close":       "Schließen",
+    "delete":      "Löschen",
+    "edit":        "Bearbeiten",
+    "loading":     "Laden…",
+    "error":       "Fehler",
+    "success":     "Erfolgreich",
+    "yes":         "Ja",
+    "no":          "Nein",
+    "search":      "Suchen…",
+    "download":    "Herunterladen",
+    "back":        "Zurück",
+    "view":        "Ansehen",
+    "all":         "Alle",
+    "none":        "Keine",
+    "status":      "Status",
+    "date":        "Datum",
+    "name":        "Name",
+    "employees":   "Mitarbeitende"
+  },
+  "nav": {
+    "dashboard":   "Dashboard",
+    "import":      "Import",
+    "datasets":    "Datensätze",
+    "analysis":    "Analyse",
+    "reports":     "Berichte",
+    "settings":    "Einstellungen"
+  },
+  "severity": {
+    "high":        "Kritisch",
+    "medium":      "Prüfen",
+    "low":         "Gering",
+    "ok":          "OK",
+    "overpaid":    "Übervergütung"
+  },
+  "gender": {
+    "male":        "Männer",
+    "female":      "Frauen",
+    "male_short":  "♂",
+    "female_short":"♀"
+  },
+  "analysis": {
+    "title":           "Entgeltanalyse",
+    "employeesTab":    "Mitarbeitende",
+    "overviewTab":     "Überblick",
+    "searchPlaceholder":"Suchen…",
+    "allDepts":        "Alle Abteilungen",
+    "allGrades":       "Alle Entgeltgruppen",
+    "allGenders":      "Alle Geschlechter",
+    "allSeverities":   "Alle Schweregrade",
+    "severityHigh":    "Kritisch (Unterverg. ≥25%)",
+    "severityMedium":  "Prüfen (Unterverg. 5–25%)",
+    "severityOverpaid":"Übervergütung",
+    "severityOk":      "OK",
+    "gapColumn":       "Lücke (Geschl.)",
+    "severityColumn":  "Schwere",
+    "gradeColumn":     "Gruppe",
+    "explanationColumn":"Begründung",
+    "noGenderPeers":   "kein Gegengeschlecht",
+    "inCohort":        "in Kohorte",
+    "fallbackCohort":  "Kohorte-Median (Fallback)"
+  },
+  "report": {
+    "title":                  "Entgeltbericht",
+    "executiveSummary":       "Executive Summary",
+    "methodology":            "Methodik",
+    "departments":            "Bereiche",
+    "grades":                 "Entgeltgruppen",
+    "quartiles":              "Quartilsanalyse",
+    "explanations":           "Begründungen",
+    "declaration":            "Rechtliche Erklärung",
+    "unadjustedGap":          "Unbereinigter Gender Pay Gap",
+    "adjustedGap":            "Strukturell bereinigt",
+    "explainedGap":           "Erklärt bereinigt",
+    "threshold5pct":          "5% Schwellenwert",
+    "exceeds5pct":            "überschritten",
+    "within5pct":             "unterschritten",
+    "downloadPdf":            "PDF herunterladen",
+    "viewReport":             "Bericht anzeigen",
+    "reportNotes":            "HR-Anmerkungen",
+    "analysisDate":           "Analyse-Datum",
+    "reportingYear":          "Berichtsjahr",
+    "art9Label":              "Art. 9",
+    "art10Label":             "Art. 10",
+    "variablePay":            "Variable Vergütung",
+    "variablePayByGender":    "Erhalten variable Vergüt.",
+    "anonymisedCases":        "Einzelfall-Übersicht (anonymisiert)",
+    "claimed":                "Beansprucht",
+    "residualGap":            "Restlücke",
+    "sanctions":              "Sanktionshinweis"
+  },
+  "import": {
+    "title":         "Datensatz importieren",
+    "uploadCsv":     "CSV hochladen",
+    "mapping":       "Spaltenzuordnung",
+    "preview":       "Vorschau",
+    "finish":        "Abschließen"
+  },
+  "dashboard": {
+    "kpi": {
+      "unadjustedMedian": "Unbereinigt (Median)",
+      "adjustedMedian": "Bereinigt · Median (EU Art. 9)",
+      "unadjustedMean": "Unbereinigt (Mittelwert)",
+      "adjustedMean": "Bereinigt (Mittelwert)",
+      "employees": "Mitarbeitende",
+      "departmentsExceeding": "Bereiche > 5 % Schwelle",
+      "medianGapWomenVsMen": "Medianlücke Frauen vs. Männer",
+      "wifAdjusted": "WIF-adjustiert",
+      "meanGap": "Mittelwertlücke",
+      "wifMean": "WIF-Mittelwert",
+      "currentDataBasis": "Aktuelle Datenbasis",
+      "jointAssessmentNeeded": "Gemeinsame Bewertung nötig"
+    },
+    "alert": {
+      "title": "5%-Schwelle überschritten — Handlung erforderlich",
+      "description": "Ihr bereinigter Gender Pay Gap von {gap}% überschreitet die Grenze gemäß EU-Richtlinie Art. 9. Eine gemeinsame Entgeltbewertung mit Arbeitnehmervertretern ist erforderlich."
+    },
+    "trend": {
+      "title": "Mehrjahrestrend",
+      "subtitle": "Bereinigter Gender Pay Gap über Berichtsjahre",
+      "notEnoughData": "Noch nicht genug Daten — mindestens 2 Berichtsjahre erforderlich.",
+      "adjusted": "Bereinigt",
+      "threshold5": "5%-Schwelle"
+    },
+    "trial": {
+      "activeTitle": "Ihre Pro-Testphase läuft",
+      "expiredTitle": "Ihre Testphase ist abgelaufen",
+      "activeDesc": "Nutzen Sie alle KI-Funktionen und Exporte noch für {days} Tage kostenfrei. Entscheiden Sie sich jetzt für einen Plan, um danach nahtlos weiterzuarbeiten.",
+      "expiredDesc": "Ihre Testphase ist beendet. Wählen Sie jetzt einen Plan, um weiterhin auf Analysen, Exporte und KI-Funktionen zuzugreifen.",
+      "choosePlan": "Plan auswählen",
+      "daysLeft": "Tage übrig"
+    },
+    "overview": {
+      "title": "Übersicht",
+      "analysisOf": "Analyse vom {date}",
+      "dataset": "Datensatz",
+      "lastAnalysis": "Letzte Analyse: {date}",
+      "wifFactors": "WIF-Faktoren",
+      "hoursCoverage": "Stundenabdeckung"
+    },
+    "onboarding": {
+      "title": "Willkommen bei CompLens!",
+      "desc": "Ihre Umgebung ist bereit. Lassen Sie uns die EU Pay Transparency Compliance gemeinsam in drei einfachen Schritten abschließen.",
+      "step1Title": "Daten importieren",
+      "step1Desc": "Laden Sie Ihre CSV/Excel hoch. Die KI übernimmt optional die Zuordnung.",
+      "step1Btn": "Starten",
+      "step1Done": "Erledigt",
+      "step2Title": "Erste Analyse ausführen",
+      "step2Desc": "Bestimmen Sie Ihre WIF-Faktoren und berechnen Sie den Pay Gap.",
+      "step2Btn": "Zur Analyse",
+      "step2Pending": "Ausstehend",
+      "step3Title": "Bericht herunterladen",
+      "step3Desc": "Generieren Sie druckfertige PDF- und PowerPoint-Berichte.",
+      "step3Locked": "Gesperrt"
+    }
+  }
+}

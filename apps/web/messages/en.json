@@ -1,0 +1,160 @@
+{
+  "common": {
+    "save":        "Save",
+    "cancel":      "Cancel",
+    "close":       "Close",
+    "delete":      "Delete",
+    "edit":        "Edit",
+    "loading":     "Loading…",
+    "error":       "Error",
+    "success":     "Success",
+    "yes":         "Yes",
+    "no":          "No",
+    "search":      "Search…",
+    "download":    "Download",
+    "back":        "Back",
+    "view":        "View",
+    "all":         "All",
+    "none":        "None",
+    "status":      "Status",
+    "date":        "Date",
+    "name":        "Name",
+    "employees":   "Employees"
+  },
+  "nav": {
+    "dashboard":   "Dashboard",
+    "import":      "Import",
+    "datasets":    "Datasets",
+    "analysis":    "Analysis",
+    "reports":     "Reports",
+    "settings":    "Settings"
+  },
+  "severity": {
+    "high":        "Critical",
+    "medium":      "Review",
+    "low":         "Minor",
+    "ok":          "OK",
+    "overpaid":    "Overpaid"
+  },
+  "gender": {
+    "male":        "Men",
+    "female":      "Women",
+    "male_short":  "♂",
+    "female_short":"♀"
+  },
+  "analysis": {
+    "title":           "Pay Analysis",
+    "employeesTab":    "Employees",
+    "overviewTab":     "Overview",
+    "searchPlaceholder":"Search…",
+    "allDepts":        "All Departments",
+    "allGrades":       "All Pay Grades",
+    "allGenders":      "All Genders",
+    "allSeverities":   "All Severity Levels",
+    "severityHigh":    "Critical (Underpaid ≥25%)",
+    "severityMedium":  "Review (Underpaid 5–25%)",
+    "severityOverpaid":"Overpaid",
+    "severityOk":      "OK",
+    "gapColumn":       "Gap (Gender)",
+    "severityColumn":  "Severity",
+    "gradeColumn":     "Grade",
+    "explanationColumn":"Justification",
+    "noGenderPeers":   "no opposite gender",
+    "inCohort":        "in cohort",
+    "fallbackCohort":  "Cohort median (fallback)"
+  },
+  "report": {
+    "title":                  "Pay Equity Report",
+    "executiveSummary":       "Executive Summary",
+    "methodology":            "Methodology",
+    "departments":            "Departments",
+    "grades":                 "Pay Grades",
+    "quartiles":              "Quartile Analysis",
+    "explanations":           "Justifications",
+    "declaration":            "Legal Declaration",
+    "unadjustedGap":          "Unadjusted Gender Pay Gap",
+    "adjustedGap":            "Structurally Adjusted",
+    "explainedGap":           "Explanation-Adjusted",
+    "threshold5pct":          "5% Threshold",
+    "exceeds5pct":            "exceeded",
+    "within5pct":             "within limit",
+    "downloadPdf":            "Download PDF",
+    "viewReport":             "View Report",
+    "reportNotes":            "HR Notes",
+    "analysisDate":           "Analysis Date",
+    "reportingYear":          "Reporting Year",
+    "art9Label":              "Art. 9",
+    "art10Label":             "Art. 10",
+    "variablePay":            "Variable Pay",
+    "variablePayByGender":    "Receive variable pay",
+    "anonymisedCases":        "Individual Case Overview (anonymised)",
+    "claimed":                "Claimed",
+    "residualGap":            "Residual Gap",
+    "sanctions":              "Sanctions Note"
+  },
+  "import": {
+    "title":         "Import Dataset",
+    "uploadCsv":     "Upload CSV",
+    "mapping":       "Column Mapping",
+    "preview":       "Preview",
+    "finish":        "Finish"
+  },
+  "dashboard": {
+    "kpi": {
+      "unadjustedMedian": "Unadjusted (Median)",
+      "adjustedMedian": "Adjusted · Median (EU Art. 9)",
+      "unadjustedMean": "Unadjusted (Mean)",
+      "adjustedMean": "Adjusted (Mean)",
+      "employees": "Employees",
+      "departmentsExceeding": "Depts > 5% Threshold",
+      "medianGapWomenVsMen": "Median gap women vs. men",
+      "wifAdjusted": "WIF-adjusted",
+      "meanGap": "Mean gap",
+      "wifMean": "WIF-mean",
+      "currentDataBasis": "Current data basis",
+      "jointAssessmentNeeded": "Joint assessment needed"
+    },
+    "alert": {
+      "title": "5% Threshold Exceeded — Action Required",
+      "description": "Your adjusted Gender Pay Gap of {gap}% exceeds the limit according to EU Directive Art. 9. A joint pay assessment with employee representatives is required."
+    },
+    "trend": {
+      "title": "Multi-year Trend",
+      "subtitle": "Adjusted Gender Pay Gap over reporting years",
+      "notEnoughData": "Not enough data yet — at least 2 reporting years required.",
+      "adjusted": "Adjusted",
+      "threshold5": "5% Threshold"
+    },
+    "trial": {
+      "activeTitle": "Your Pro trial is active",
+      "expiredTitle": "Your trial has expired",
+      "activeDesc": "Use all AI features and exports for {days} more days for free. Choose a plan now to continue working seamlessly afterwards.",
+      "expiredDesc": "Your trial phase has ended. Choose a plan now to continue accessing analyses, exports, and AI features.",
+      "choosePlan": "Choose Plan",
+      "daysLeft": "Days left"
+    },
+    "overview": {
+      "title": "Overview",
+      "analysisOf": "Analysis from {date}",
+      "dataset": "Dataset",
+      "lastAnalysis": "Last analysis: {date}",
+      "wifFactors": "WIF Factors",
+      "hoursCoverage": "Hours coverage"
+    },
+    "onboarding": {
+      "title": "Welcome to CompLens!",
+      "desc": "Your environment is ready. Let's complete the EU Pay Transparency compliance together in three simple steps.",
+      "step1Title": "Import Data",
+      "step1Desc": "Upload your CSV/Excel. The AI can optionally handle column mapping.",
+      "step1Btn": "Start",
+      "step1Done": "Done",
+      "step2Title": "Run First Analysis",
+      "step2Desc": "Determine your WIF factors and calculate the Pay Gap.",
+      "step2Btn": "To Analysis",
+      "step2Pending": "Pending",
+      "step3Title": "Download Report",
+      "step3Desc": "Generate print-ready PDF and PowerPoint reports.",
+      "step3Locked": "Locked"
+    }
+  }
+}
