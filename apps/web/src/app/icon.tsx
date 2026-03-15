@@ -15,18 +15,15 @@ export default function Icon() {
         strokeLinecap="round"
         strokeLinejoin="round"
       >
+        <rect width="32" height="32" rx="6" fill="#000000" />
         <path
-          d="M 21.5 7.5 A 10 10 0 1 0 21.5 20.5"
-          stroke="#1A3E66"
-          strokeWidth="4.5"
+          d="M 23.5 13.5 A 10 10 0 1 1 17.5 6.5"
+          stroke="#ffffff"
+          strokeWidth="3.5"
         />
-        <line
-          x1="21.5"
-          y1="20.5"
-          x2="28"
-          y2="27"
-          stroke="#C5A065"
-          strokeWidth="4.5"
+        <path
+          d="M 25 1.5 Q 25 6 29.5 6 Q 25 6 25 10.5 Q 25 6 20.5 6 Q 25 6 25 1.5 Z"
+          fill="#ffffff"
         />
       </svg>
     ),

@@ -11,17 +11,13 @@ export function Logo({ className = "", size = 24 }: { className?: string; size?:
       strokeLinejoin="round"
     >
       <path
-        d="M 21.5 7.5 A 10 10 0 1 0 21.5 20.5"
+        d="M 23.5 13.5 A 10 10 0 1 1 17.5 6.5"
         stroke="var(--color-pl-brand, #1A3E66)"
-        strokeWidth="4"
+        strokeWidth="3.5"
       />
-      <line
-        x1="21.5"
-        y1="20.5"
-        x2="28"
-        y2="27"
-        stroke="var(--color-pl-accent, #C5A065)"
-        strokeWidth="4"
+      <path
+        d="M 25 1.5 Q 25 6 29.5 6 Q 25 6 25 10.5 Q 25 6 20.5 6 Q 25 6 25 1.5 Z"
+        fill="var(--color-pl-brand, #1A3E66)"
       />
     </svg>
   );
