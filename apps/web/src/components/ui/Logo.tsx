@@ -7,28 +7,22 @@ export function Logo({ className = "", size = 24 }: { className?: string; size?:
       height={size}
       className={className}
       fill="none"
+      strokeLinecap="round"
+      strokeLinejoin="round"
     >
-      <circle cx="16" cy="16" r="14" fill="url(#gradient-lens)" />
       <path
-        d="M20 12A8 8 0 1 0 20 20"
-        stroke="#ffffff"
-        strokeWidth="3.5"
-        strokeLinecap="round"
+        d="M 21.5 7.5 A 10 10 0 1 0 21.5 20.5"
+        stroke="var(--color-pl-brand, #1A3E66)"
+        strokeWidth="4"
       />
-      <circle cx="20" cy="16" r="3" fill="#ffffff" />
-      <defs>
-        <radialGradient
-          id="gradient-lens"
-          cx="0"
-          cy="0"
-          r="1"
-          gradientUnits="userSpaceOnUse"
-          gradientTransform="translate(16 16) rotate(90) scale(14)"
-        >
-          <stop stopColor="var(--color-pl-brand-light, #60a5fa)" />
-          <stop offset="1" stopColor="var(--color-pl-accent, #6366f1)" />
-        </radialGradient>
-      </defs>
+      <line
+        x1="21.5"
+        y1="20.5"
+        x2="28"
+        y2="27"
+        stroke="var(--color-pl-accent, #C5A065)"
+        strokeWidth="4"
+      />
     </svg>
   );
 }
