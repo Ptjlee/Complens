@@ -50,7 +50,7 @@ export async function signup(formData: FormData) {
         password,
         options: {
             data: { company_name: companyName },
-            emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/confirm`,
+            emailRedirectTo: `${getURL()}auth/confirm`,
         },
     })
 
@@ -125,6 +125,18 @@ export async function signOut() {
     redirect('/login')
 }
 
+const getURL = () => {
+    let url =
+        process?.env?.NEXT_PUBLIC_SITE_URL ?? // Set this to your site URL in production env.
+        process?.env?.NEXT_PUBLIC_VERCEL_URL ?? // Automatically set by Vercel.
+        'http://localhost:3001'
+    // Make sure to include `https://` when not localhost.
+    url = url.includes('http') ? url : `https://${url}`
+    // Make sure to include a trailing `/`.
+    url = url.charAt(url.length - 1) === '/' ? url : `${url}/`
+    return url
+}
+
 export async function resendVerification(email: string) {
     if (!email || !email.includes('@')) {
         return { error: 'Ungültige E-Mail-Adresse.' }
@@ -135,7 +147,7 @@ export async function resendVerification(email: string) {
         type: 'signup',
         email,
         options: {
-            emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/confirm`,
+            emailRedirectTo: `${getURL()}auth/confirm`,
         },
     })
 
