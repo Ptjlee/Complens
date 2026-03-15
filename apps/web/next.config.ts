@@ -3,9 +3,8 @@ import createNextIntlPlugin from 'next-intl/plugin'
 
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts')
 
-const nextConfig = {
-  typescript: { ignoreBuildErrors: true },
-  eslint: { ignoreDuringBuilds: true },
-} as NextConfig;
+const nextConfig: NextConfig = {
+  // Config removed because flat eslint config covers this instead
+};
 
 export default withNextIntl(nextConfig);
