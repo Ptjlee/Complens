@@ -82,25 +82,7 @@ export default function Header({ user }: HeaderProps) {
             <div className="flex items-center gap-3">
                 <ThemeToggle />
                 
-                {/* Language switcher */}
-                <div className="flex items-center gap-1 px-2 py-1 rounded-lg"
-                    style={{ border: '1px solid var(--color-pl-border)', background: 'var(--color-pl-bg)' }}>
-                    <Globe size={11} style={{ color: 'var(--color-pl-text-tertiary)', marginRight: 2 }} />
-                    {(routing.locales as readonly string[]).map((loc, i) => (
-                        <button
-                            key={loc}
-                            onClick={() => switchLocale(loc)}
-                            className="text-xs font-semibold uppercase px-1.5 py-0.5 rounded transition-all"
-                            style={{
-                                color:      locale === loc ? 'var(--color-pl-brand)' : 'var(--color-pl-text-tertiary)',
-                                background: locale === loc ? 'rgba(59,130,246,0.12)' : 'transparent',
-                                borderRight: i < routing.locales.length - 1 ? '1px solid var(--color-pl-border)' : 'none',
-                            }}
-                        >
-                            {loc}
-                        </button>
-                    ))}
-                </div>
+
 
                 {/* AI Assistant trigger */}
                 <button

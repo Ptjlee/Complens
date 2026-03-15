@@ -15,14 +15,28 @@ export default function LandingClient() {
         return () => window.removeEventListener('scroll', handleScroll)
     }, [])
 
-    const handleContact = (e: React.FormEvent) => {
+    const handleContact = async (e: React.FormEvent) => {
         e.preventDefault()
         setContacting(true)
-        setTimeout(() => {
+
+        try {
+            const formData = new FormData(e.target as HTMLFormElement)
+            const payload = Object.fromEntries(formData.entries())
+            
+            await fetch('/api/contact', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+
             setContacting(false)
             setContactDone(true)
             setTimeout(() => setContactDone(false), 5000)
-        }, 1500)
+            ;(e.target as HTMLFormElement).reset()
+        } catch (error) {
+            console.error("Fehler beim Senden:", error)
+            setContacting(false)
+        }
     }
 
     return (
@@ -190,20 +204,20 @@ export default function LandingClient() {
                                 <div className="grid grid-cols-2 gap-5">
                                     <div className="space-y-1.5">
                                         <label className="text-xs font-semibold text-white/50 ml-1">Name</label>
-                                        <input required type="text" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors" placeholder="Max Mustermann" />
+                                        <input name="name" required type="text" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors" placeholder="Max Mustermann" />
                                     </div>
                                     <div className="space-y-1.5">
                                         <label className="text-xs font-semibold text-white/50 ml-1">Firma</label>
-                                        <input required type="text" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors" placeholder="Muster GmbH" />
+                                        <input name="company" type="text" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors" placeholder="Muster GmbH" />
                                     </div>
                                 </div>
                                 <div className="space-y-1.5">
                                     <label className="text-xs font-semibold text-white/50 ml-1">E-Mail Adresse</label>
-                                    <input required type="email" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors" placeholder="max@firma.de" />
+                                    <input name="email" required type="email" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors" placeholder="max@firma.de" />
                                 </div>
                                 <div className="space-y-1.5">
                                     <label className="text-xs font-semibold text-white/50 ml-1">Ihre Nachricht</label>
-                                    <textarea required rows={4} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors resize-none" placeholder="Wie können wir Ihnen weiterhelfen?" />
+                                    <textarea name="message" required rows={4} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors resize-none" placeholder="Wie können wir Ihnen weiterhelfen?" />
                                 </div>
                                 <button disabled={contacting} type="submit" className="w-full py-4 rounded-xl flex items-center justify-center gap-2 font-bold text-white transition-all hover:scale-[1.02] disabled:opacity-50"
                                     style={{ background: 'linear-gradient(135deg, var(--color-pl-brand), #6366f1)', boxShadow: '0 8px 20px rgba(99,102,241,0.25)' }}>
