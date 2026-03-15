@@ -110,6 +110,14 @@ function GenderDistCard({ byGrade, byDept }: { byGrade: GenderDistRow[]; byDept:
     )
 }
 
+const TBtn = ({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) => (
+    <button onClick={onClick} className="px-2.5 py-1 text-xs transition-colors" style={{
+        background: active ? 'var(--theme-pl-action-border)' : 'transparent',
+        color:      active ? 'var(--color-pl-brand-light)' : 'var(--color-pl-text-tertiary)',
+        fontWeight: active ? 600 : 400,
+    }}>{label}</button>
+)
+
 // ============================================================
 // Salary Comparison Bar Chart — pay tier + annual/hourly toggles
 // ============================================================
@@ -157,19 +165,11 @@ function SalaryComparisonCard({ results }: { results: AnalysisResult }) {
 
     const fmt = (v: number) =>
         unit === 'hourly'
-            ? v.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €/h'
-            : v.toLocaleString('de-DE', { maximumFractionDigits: 0 }) + ' €'
+            ? v.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €/h'
+            : v.toLocaleString('de-DE', { maximumFractionDigits: 0 }) + ' €'
 
     const LABEL_W = 64
     const BAR_H   = 14
-
-    const TBtn = ({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) => (
-        <button onClick={onClick} className="px-2.5 py-1 text-xs transition-colors" style={{
-            background: active ? 'var(--theme-pl-action-border)' : 'transparent',
-            color:      active ? 'var(--color-pl-brand-light)' : 'var(--color-pl-text-tertiary)',
-            fontWeight: active ? 600 : 400,
-        }}>{label}</button>
-    )
 
 
     return (
