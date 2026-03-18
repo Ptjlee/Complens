@@ -1,15 +1,25 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { login } from '../actions'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { Logo } from '@/components/ui/Logo'
+import { useSearchParams } from 'next/navigation'
 
-export default function LoginPage() {
+function LoginForm() {
+    const searchParams = useSearchParams()
+    const urlError = searchParams.get('error')
+
     const [showPassword, setShowPassword] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [loading, setLoading] = useState(false)
+
+    useEffect(() => {
+        if (urlError === 'auth_callback_failed') {
+            setError('Der Verifizierungslink ist ungültig oder abgelaufen. Möglicherweise wurde Ihre E-Mail bereits bestätigt. Bitte versuchen Sie, sich anzumelden.')
+        }
+    }, [urlError])
 
     async function handleSubmit(formData: FormData) {
         setLoading(true)
@@ -152,5 +162,13 @@ export default function LoginPage() {
                 Ihre Daten werden ausschließlich auf EU-Servern in Frankfurt gespeichert.
             </p>
         </div>
+    )
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={<div>Laden...</div>}>
+            <LoginForm />
+        </Suspense>
     )
 }
