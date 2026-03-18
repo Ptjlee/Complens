@@ -14,12 +14,6 @@ export default function ReadinessCheckPage() {
                         <Logo size={32} />
                         <span className="text-lg font-bold text-white tracking-tight">CompLens</span>
                     </Link>
-                    <Link 
-                        href="/apply" 
-                        className="text-sm font-medium text-white bg-[#5b61ff] hover:bg-[#4a50e6] px-4 py-2 rounded-lg transition-colors"
-                    >
-                        Prüfung starten
-                    </Link>
                 </div>
             </header>
 
@@ -62,7 +56,7 @@ export default function ReadinessCheckPage() {
                                 </div>
                                 <h3 className="text-xl font-bold text-white mb-3">Sofortige Berechnung</h3>
                                 <p className="text-[#a1a1aa] text-sm leading-relaxed">
-                                    Laden Sie einen Auszug Ihrer Daten hoch oder verbinden Sie SAP/Workday. Unsere KI harmonisiert Jobtitel und berechnet sofort Ihren aktuellen Gap.
+                                    Laden Sie einfach hoch, was Sie haben — ganz ohne Vorarbeit. CompLens erkennt und bereinigt unstrukturierte Daten automatisch, ordnet Jobtitel ein und liefert Ihnen das Ergebnis in unter 5 Minuten.
                                 </p>
                             </div>
                             
@@ -72,7 +66,7 @@ export default function ReadinessCheckPage() {
                                 </div>
                                 <h3 className="text-xl font-bold text-white mb-3">Risikoanalyse</h3>
                                 <p className="text-[#a1a1aa] text-sm leading-relaxed">
-                                    Finden Sie genau heraus, wie nah Sie der kritischen 5%-Grenze sind – aufgeschlüsselt in Festgehalt und variable Vergütung.
+                                    Identifizieren Sie Lohnlücken je Berufsgruppe – aufgeschlüsselt in Festgehalt und variable Vergütung. Gaps über 5% können Sie direkt mit richtlinienkonformen Begründungen dokumentieren und rechtssicher erklären.
                                 </p>
                             </div>
 
@@ -81,9 +75,9 @@ export default function ReadinessCheckPage() {
                                 <div className="w-12 h-12 bg-[#1e2336] rounded-xl flex items-center justify-center mb-6 relative z-10">
                                     <CheckCircle2 className="text-[#4ade80]" size={24} />
                                 </div>
-                                <h3 className="text-xl font-bold text-white mb-3 relative z-10">Vorstandsbericht</h3>
+                                <h3 className="text-xl font-bold text-white mb-3 relative z-10">EU-konformer Bericht</h3>
                                 <p className="text-[#a1a1aa] text-sm leading-relaxed relative z-10">
-                                    Erhalten Sie eine strukturierte Zusammenfassung für den Vostand, die zeigt, welcher Anpassungsbedarf vor der Meldung besteht.
+                                    Generieren Sie auf Knopfdruck einen einreichungsfertigen Bericht nach Artikel 9 der EU-Entgelttransparenzrichtlinie — vollständig in dem von Ihrer Behörde geforderten Format.
                                 </p>
                             </div>
                         </div>

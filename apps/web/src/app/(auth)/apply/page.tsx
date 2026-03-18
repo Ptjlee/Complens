@@ -1,0 +1,345 @@
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { ArrowRight, Building2, CheckCircle2, ChevronLeft, Loader2, Users } from 'lucide-react'
+import { Logo } from '@/components/ui/Logo'
+
+type Step = 1 | 2 | 3 | 4
+type FormData = {
+    firstName: string
+    lastName: string
+    email: string
+    companyName: string
+    companySize: string
+    hris: string
+    urgency: string
+}
+
+export default function ApplyPage() {
+    const router = useRouter()
+    const [step, setStep] = useState<Step>(1)
+    const [loading, setLoading] = useState(false)
+    const [formData, setFormData] = useState<FormData>({
+        firstName: '',
+        lastName: '',
+        email: '',
+        companyName: '',
+        companySize: '',
+        hris: '',
+        urgency: '',
+    })
+
+    const updateForm = (data: Partial<FormData>) => {
+        setFormData((prev) => ({ ...prev, ...data }))
+    }
+
+    const nextStep = () => setStep((prev) => Math.min(prev + 1, 4) as Step)
+    const prevStep = () => setStep((prev) => Math.max(prev - 1, 1) as Step)
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (step < 4) {
+            nextStep()
+            return
+        }
+
+        setLoading(true)
+        // Simulate minor delay
+        await new Promise((resolve) => setTimeout(resolve, 800))
+        setLoading(false)
+
+        // For now, redirect ALL leads directly to the 7-day trial signup
+        // We will activate the Enterprise Trap (/booking) once the VSL is fully completed.
+        router.push('/signup?source=readiness-check')
+    }
+
+    return (
+        <div>
+            {/* Mobile logo */}
+            <div className="flex items-center gap-2.5 mb-8 lg:hidden">
+                <Logo size={32} />
+                <span className="font-bold text-sm" style={{ color: 'var(--color-pl-text-primary)' }}>CompLens</span>
+            </div>
+
+            <div className="mb-8">
+                <div className="ai-badge inline-flex mb-3">7 Tage kostenlos</div>
+                <h1 className="text-2xl font-bold mb-1.5" style={{ color: 'var(--color-pl-text-primary)' }}>
+                    {step === 1 && 'Prüfen Sie Ihre EU-Readiness'}
+                    {step === 2 && 'Wie groß ist Ihr Team?'}
+                    {step === 3 && 'Ihre aktuelle HR-Infrastruktur'}
+                    {step === 4 && 'Wann müssen Sie reporten?'}
+                </h1>
+                <p className="text-sm" style={{ color: 'var(--color-pl-text-secondary)' }}>
+                    {step === 1 && 'Geben Sie Ihre Kontaktdaten ein, um den Audit zu starten.'}
+                    {step === 2 && 'Die Richtlinie betrifft Unternehmen je nach Größe zu anderen Stichtagen.'}
+                    {step === 3 && 'CompLens verbindet sich direkt mit Ihren bestehenden Systemen.'}
+                    {step === 4 && 'Helfen Sie uns, die Dringlichkeit für Ihr Unternehmen einzuschätzen.'}
+                </p>
+            </div>
+
+            {/* Progress Bar */}
+            <div className="flex gap-2 mb-8">
+                {[1, 2, 3, 4].map((i) => (
+                    <div
+                        key={i}
+                        className="h-1 flex-1 rounded-full transition-colors duration-300"
+                        style={{ background: step >= i ? 'var(--color-pl-brand)' : 'var(--color-pl-surface)' }}
+                    />
+                ))}
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Step 1: Contact */}
+                {step === 1 && (
+                    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--color-pl-text-secondary)' }}>Vorname</label>
+                                <input
+                                    required
+                                    type="text"
+                                    value={formData.firstName}
+                                    onChange={(e) => updateForm({ firstName: e.target.value })}
+                                    className="input-base"
+                                    placeholder="Max"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--color-pl-text-secondary)' }}>Nachname</label>
+                                <input
+                                    required
+                                    type="text"
+                                    value={formData.lastName}
+                                    onChange={(e) => updateForm({ lastName: e.target.value })}
+                                    className="input-base"
+                                    placeholder="Mustermann"
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--color-pl-text-secondary)' }}>Arbeits-E-Mail</label>
+                            <input
+                                required
+                                type="email"
+                                value={formData.email}
+                                onChange={(e) => updateForm({ email: e.target.value })}
+                                className="input-base"
+                                placeholder="max@unternehmen.de"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--color-pl-text-secondary)' }}>Unternehmen</label>
+                            <input
+                                required
+                                type="text"
+                                value={formData.companyName}
+                                onChange={(e) => updateForm({ companyName: e.target.value })}
+                                className="input-base"
+                                placeholder="Muster GmbH"
+                            />
+                        </div>
+                    </div>
+                )}
+
+                {/* Step 2: Company Size */}
+                {step === 2 && (
+                    <div className="space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        {[
+                            { value: '<100', label: 'Unter 100 Mitarbeiter', desc: 'Meldepflicht je nach EU-Land ggf. später' },
+                            { value: '100-149', label: '100 - 149 Mitarbeiter', desc: 'Meldepflicht ab 2031 (Daten von 2030)' },
+                            { value: '150-249', label: '150 - 249 Mitarbeiter', desc: 'Meldepflicht ab 2027 (Daten von 2026)' },
+                            { value: '250+', label: '250+ Mitarbeiter', desc: 'Meldepflicht ab 2027, jährliche Berichte' }
+                        ].map((option) => (
+                            <button
+                                key={option.value}
+                                type="button"
+                                onClick={() => {
+                                    updateForm({ companySize: option.value })
+                                    nextStep()
+                                }}
+                                className={`w-full text-left p-4 rounded-xl border flex items-center justify-between transition-all duration-200 ${
+                                    formData.companySize === option.value
+                                        ? 'border-transparent bg-[rgba(91,97,255,0.1)]'
+                                        : 'hover:border-[#383d54] hover:bg-[#111523]'
+                                }`}
+                                style={{ 
+                                    borderColor: formData.companySize === option.value ? 'var(--color-pl-brand)' : 'var(--color-pl-border)',
+                                    background: formData.companySize === option.value ? 'rgba(99,102,241,0.1)' : 'var(--color-pl-surface)' 
+                                }}
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div className="p-2 rounded-lg" style={{ background: 'var(--color-pl-background)', color: 'var(--color-pl-text-secondary)' }}>
+                                        {option.value === '<100' ? <Users size={20} /> : <Building2 size={20} />}
+                                    </div>
+                                    <div>
+                                        <div className="font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>{option.label}</div>
+                                        <div className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>{option.desc}</div>
+                                    </div>
+                                </div>
+                                {formData.companySize === option.value && (
+                                    <CheckCircle2 size={20} style={{ color: 'var(--color-pl-brand)' }} />
+                                )}
+                            </button>
+                        ))}
+                    </div>
+                )}
+
+                {/* Step 3: HRIS */}
+                {step === 3 && (
+                    <div className="space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        {[
+                            { value: 'sap', label: 'SAP SuccessFactors', desc: 'Nativer Excel-Import verfügbar' },
+                            { value: 'workday', label: 'Workday', desc: 'Nativer Excel-Import verfügbar' },
+                            { value: 'personio', label: 'Personio', desc: 'Standard CSV-Import' },
+                            { value: 'excel', label: 'Excel / Manuell', desc: 'Wir bereinigen unstrukturierte Daten' },
+                            { value: 'other', label: 'Andere Software', desc: 'Universeller Import möglich' }
+                        ].map((option) => (
+                            <button
+                                key={option.value}
+                                type="button"
+                                onClick={() => {
+                                    updateForm({ hris: option.value })
+                                    nextStep()
+                                }}
+                                className={`w-full text-left p-4 rounded-xl border flex items-center justify-between transition-all duration-200 ${
+                                    formData.hris === option.value
+                                        ? 'border-transparent bg-[rgba(91,97,255,0.1)]'
+                                        : 'hover:border-[#383d54] hover:bg-[#111523]'
+                                }`}
+                                style={{ 
+                                    borderColor: formData.hris === option.value ? 'var(--color-pl-brand)' : 'var(--color-pl-border)',
+                                    background: formData.hris === option.value ? 'rgba(99,102,241,0.1)' : 'var(--color-pl-surface)' 
+                                }}
+                            >
+                                <div>
+                                    <div className="font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>{option.label}</div>
+                                    <div className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>{option.desc}</div>
+                                </div>
+                                {formData.hris === option.value && (
+                                    <CheckCircle2 size={20} style={{ color: 'var(--color-pl-brand)' }} />
+                                )}
+                            </button>
+                        ))}
+                    </div>
+                )}
+
+                {/* Step 4: Urgency & Opt-In */}
+                {step === 4 && (
+                    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        {[
+                            { value: 'critical', label: 'Sofort / Kritisch', desc: 'Wir vermuten einen Gap > 5% und brauchen eine Lösung.' },
+                            { value: 'soon', label: 'In den nächsten 3-6 Monaten', desc: 'Wir wollen perfekt vorbereitet sein.' },
+                            { value: 'exploring', label: 'Information gathering', desc: 'Wir beginnen gerade erst mit der Recherche.' }
+                        ].map((option) => (
+                            <button
+                                key={option.value}
+                                type="button"
+                                onClick={() => updateForm({ urgency: option.value })}
+                                className={`w-full text-left p-4 rounded-xl border flex items-center justify-between transition-all duration-200 ${
+                                    formData.urgency === option.value
+                                        ? 'border-transparent bg-[rgba(91,97,255,0.1)]'
+                                        : 'hover:border-[#383d54] hover:bg-[#111523]'
+                                }`}
+                                style={{ 
+                                    borderColor: formData.urgency === option.value ? 'var(--color-pl-brand)' : 'var(--color-pl-border)',
+                                    background: formData.urgency === option.value ? 'rgba(99,102,241,0.1)' : 'var(--color-pl-surface)' 
+                                }}
+                            >
+                                <div>
+                                    <div className="font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>{option.label}</div>
+                                    <div className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>{option.desc}</div>
+                                </div>
+                                {formData.urgency === option.value && (
+                                    <CheckCircle2 size={20} style={{ color: 'var(--color-pl-brand)' }} />
+                                )}
+                            </button>
+                        ))}
+                        
+                        {/* Terms Opt-in */}
+                        <div className="pt-2">
+                            <label className="flex items-start gap-3 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    name="terms"
+                                    required
+                                    className="mt-0.5 w-4 h-4 rounded accent-blue-500 flex-shrink-0"
+                                />
+                                <span className="text-xs" style={{ color: 'var(--color-pl-text-secondary)' }}>
+                                    Ich akzeptiere die{' '}
+                                    <Link href="/agb" className="underline" style={{ color: 'var(--color-pl-brand-light)' }}>AGB</Link>
+                                    {' '}und die{' '}
+                                    <Link href="/datenschutz" className="underline" style={{ color: 'var(--color-pl-brand-light)' }}>Datenschutzerklärung</Link>.
+                                    Die Daten werden DSGVO-konform in der EU verarbeitet.
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                )}
+
+                {/* Navigation Buttons */}
+                <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 mt-8">
+                    {step > 1 ? (
+                        <button
+                            type="button"
+                            onClick={prevStep}
+                            className="flex items-center gap-2 text-sm font-medium transition-colors"
+                            style={{ color: 'var(--color-pl-text-secondary)' }}
+                        >
+                            <ChevronLeft size={16} /> Zurück
+                        </button>
+                    ) : (
+                        <div className="hidden sm:block"></div>
+                    )}
+
+                    <button
+                        type="submit"
+                        disabled={
+                            (step === 1 && (!formData.firstName || !formData.lastName || !formData.email || !formData.companyName)) ||
+                            (step === 2 && (!formData.companySize)) ||
+                            (step === 3 && (!formData.hris)) ||
+                            (step === 4 && (!formData.urgency)) ||
+                            loading
+                        }
+                        className="btn-primary w-full sm:w-auto mt-2 sm:mt-0"
+                        style={{ opacity: loading ? 0.7 : 1 }}
+                    >
+                        {loading ? (
+                            <><Loader2 size={15} className="animate-spin" /> Verarbeiten...</>
+                        ) : step === 4 ? (
+                            'Kostenlos starten — 7 Tage'
+                        ) : (
+                            <>Weiter <ArrowRight size={16} /></>
+                        )}
+                    </button>
+                </div>
+            </form>
+
+            {/* Trial details shown ONLY on final step, just like signup */}
+            {step === 4 && (
+                <div
+                    className="mt-6 p-3 rounded-lg"
+                    style={{
+                        background: 'rgba(59,130,246,0.06)',
+                        border: '1px solid rgba(59,130,246,0.15)',
+                    }}
+                >
+                    <ul className="space-y-1">
+                        {[
+                            'Keine Kreditkarte beim Start',
+                            'Voller Funktionsumfang inkl. automatisierte Datenzuordnung und Analyse',
+                            'Nach 7 Tagen: Upgrade oder automatische Beendigung',
+                        ].map((item) => (
+                            <li key={item} className="flex items-center gap-2 text-xs" style={{ color: 'var(--color-pl-text-secondary)' }}>
+                                <CheckCircle2 size={11} strokeWidth={3} style={{ color: 'var(--color-pl-brand-light)', flexShrink: 0 }} />
+                                {item}
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+        </div>
+    )
+}
+
