@@ -31,7 +31,7 @@ export default function ReadinessCheckPage() {
                     <div className="max-w-4xl mx-auto px-4 text-center relative z-10">
                         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.25)] text-red-500 text-sm font-medium mb-8">
                             <ShieldAlert size={16} />
-                            Stichtag: 7. Juni 2026
+                            Stichtag: Beweislastumkehr
                         </div>
                         
                         <h1 className="text-4xl md:text-6xl font-extrabold text-white tracking-tight mb-6 leading-tight">
@@ -83,7 +83,7 @@ export default function ReadinessCheckPage() {
                                 </div>
                                 <h3 className="text-xl font-bold text-white mb-3 relative z-10">Vorstandsbericht</h3>
                                 <p className="text-[#a1a1aa] text-sm leading-relaxed relative z-10">
-                                    Erhalten Sie eine strukturierte Zusammenfassung für den Vostand, die zeigt, welcher Anpassungsbedarf vor der Meldung 2026 besteht.
+                                    Erhalten Sie eine strukturierte Zusammenfassung für den Vostand, die zeigt, welcher Anpassungsbedarf vor der Meldung besteht.
                                 </p>
                             </div>
                         </div>

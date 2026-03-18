@@ -28,7 +28,7 @@ export default function BookingPage() {
                             Ihr 5% Risikocheck ist bereit.
                         </h1>
                         <p className="text-lg text-[#a1a1aa] leading-relaxed">
-                            Basierend auf Ihrer HR-Infrastruktur dauert die Lösung der Meldepflicht 2026 normalerweise <strong className="text-white">6 bis 9 Monate manuelle Arbeit</strong>. Sehen Sie sich dieses 3-minütige Briefing an, um zu sehen, wie wir das automatisieren.
+                            Basierend auf Ihrer HR-Infrastruktur dauert die Lösung der Meldepflicht normalerweise <strong className="text-white">6 bis 9 Monate manuelle Arbeit</strong>. Sehen Sie sich dieses 3-minütige Briefing an, um zu sehen, wie wir das automatisieren.
                         </p>
                     </div>
 
@@ -56,7 +56,7 @@ export default function BookingPage() {
                         <div className="bg-[#141829] p-5 rounded-2xl border border-[#1e2336]">
                             <CalendarDays size={28} className="text-[#5b61ff] mb-3" />
                             <h3 className="font-semibold text-white mb-2">Fristgerechte Sicherheit</h3>
-                            <p className="text-sm text-[#a1a1aa]">Stellen Sie sicher, dass Ihre Anpassungspläne deutlich vor dem kritischen Stichtag im Juni 2026 eingereicht werden.</p>
+                            <p className="text-sm text-[#a1a1aa]">Stellen Sie sicher, dass Ihre Anpassungspläne deutlich vor dem kritischen Stichtag eingereicht werden.</p>
                         </div>
                     </div>
                 </div>
