@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import { NextIntlClientProvider } from 'next-intl'
 import { getLocale, getMessages } from 'next-intl/server'
 import { ThemeProvider } from '@/components/ThemeProvider'
+import { GoogleAnalytics } from '@next/third-parties/google'
 import './globals.css'
 
 const inter = Inter({
@@ -38,6 +39,22 @@ export const metadata: Metadata = {
     locale: 'de_DE',
     alternateLocale: 'en_GB',
     siteName: 'CompLens',
+    title: 'CompLens — EU Pay Transparency Software',
+    description: 'Automatische Entgeltanalyse und Berichterstattung nach der EU-Richtlinie 2023/970.',
+    images: [
+      {
+        url: '/og-image.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'CompLens Dashboard Preview',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'CompLens — EU Pay Transparency Software',
+    description: 'Automatische Entgeltanalyse und Berichterstattung nach der EU-Richtlinie 2023/970.',
+    creator: '@complens',
   },
 }
 
@@ -48,6 +65,7 @@ export default async function RootLayout({
 }) {
   const locale = await getLocale()
   const messages = await getMessages()
+  const gaId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID
 
   return (
     <html lang={locale} className={inter.variable} suppressHydrationWarning>
@@ -58,6 +76,7 @@ export default async function RootLayout({
           </ThemeProvider>
         </NextIntlClientProvider>
       </body>
+      {gaId && <GoogleAnalytics gaId={gaId} />}
     </html>
   )
 }
