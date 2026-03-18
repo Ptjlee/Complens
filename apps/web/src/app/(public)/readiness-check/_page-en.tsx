@@ -18,7 +18,7 @@ export default function ReadinessCheckPage() {
                         href="/apply" 
                         className="text-sm font-medium text-white bg-[#5b61ff] hover:bg-[#4a50e6] px-4 py-2 rounded-lg transition-colors"
                     >
-                        Prüfung starten
+                        Start Audit
                     </Link>
                 </div>
             </header>
@@ -31,24 +31,24 @@ export default function ReadinessCheckPage() {
                     <div className="max-w-4xl mx-auto px-4 text-center relative z-10">
                         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.25)] text-red-500 text-sm font-medium mb-8">
                             <ShieldAlert size={16} />
-                            Stichtag: 7. Juni 2026
+                            Deadline: June 7, 2026
                         </div>
                         
                         <h1 className="text-4xl md:text-6xl font-extrabold text-white tracking-tight mb-6 leading-tight">
-                            Riskiert Ihr Gender Pay Gap eine <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-[#5b61ff]">gemeinsame Entgeltbewertung?</span>
+                            Is your Gender Pay Gap exposing you to a <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-[#5b61ff]">Joint Pay Assessment?</span>
                         </h1>
                         
                         <p className="text-lg md:text-xl text-[#a1a1aa] mb-10 max-w-2xl mx-auto leading-relaxed">
-                            Mit der neuen EU-Entgelttransparenzrichtlinie löst ein unbereinigter Gap von über 5% massive finanzielle Risiken aus und kehrt die Beweislast zum Arbeitgeber um.
+                            Under the new EU Pay Transparency Directive, an unadjusted gap over 5% triggers massive financial liability and shifts the burden of proof entirely onto the employer.
                         </p>
 
                         <Link 
                             href="/apply"
                             className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-[#5b61ff] to-[#7b81ff] text-white font-semibold text-lg px-8 py-4 rounded-xl shadow-[0_0_40px_rgba(91,97,255,0.4)] hover:scale-105 transition-transform duration-300"
                         >
-                            Kostenlosen Readiness Check starten <ArrowRight size={20} />
+                            Run the Free Readiness Check <ArrowRight size={20} />
                         </Link>
-                        <p className="mt-4 text-sm text-[#6e7185]">Sichere, sofortige Berechnung basierend auf Ihren anonymisierten Daten.</p>
+                        <p className="mt-4 text-sm text-[#6e7185]">Secure, instant calculation based on your anonymous data slice.</p>
                     </div>
                 </section>
 
@@ -60,9 +60,9 @@ export default function ReadinessCheckPage() {
                                 <div className="w-12 h-12 bg-[#1e2336] rounded-xl flex items-center justify-center mb-6">
                                     <BarChart3 className="text-[#5b61ff]" size={24} />
                                 </div>
-                                <h3 className="text-xl font-bold text-white mb-3">Sofortige Berechnung</h3>
+                                <h3 className="text-xl font-bold text-white mb-3">Instant Gap Calculation</h3>
                                 <p className="text-[#a1a1aa] text-sm leading-relaxed">
-                                    Laden Sie einen Auszug Ihrer Daten hoch oder verbinden Sie SAP/Workday. Unsere KI harmonisiert Jobtitel und berechnet sofort Ihren aktuellen Gap.
+                                    Upload a sample of your messy data or map standard SAP/Workday exports. Our AI instantly harmonizes job titles and calculates your baseline gap.
                                 </p>
                             </div>
                             
@@ -70,9 +70,9 @@ export default function ReadinessCheckPage() {
                                 <div className="w-12 h-12 bg-[#1e2336] rounded-xl flex items-center justify-center mb-6">
                                     <ShieldAlert className="text-red-500" size={24} />
                                 </div>
-                                <h3 className="text-xl font-bold text-white mb-3">Risikoanalyse</h3>
+                                <h3 className="text-xl font-bold text-white mb-3">Risk Assessment</h3>
                                 <p className="text-[#a1a1aa] text-sm leading-relaxed">
-                                    Finden Sie genau heraus, wie nah Sie der kritischen 5%-Grenze sind – aufgeschlüsselt in Festgehalt und variable Vergütung.
+                                    Find out exactly how close you are to the critical 5% threshold across both base salary and variable compensation tiers.
                                 </p>
                             </div>
 
@@ -81,17 +81,17 @@ export default function ReadinessCheckPage() {
                                 <div className="w-12 h-12 bg-[#1e2336] rounded-xl flex items-center justify-center mb-6 relative z-10">
                                     <CheckCircle2 className="text-[#4ade80]" size={24} />
                                 </div>
-                                <h3 className="text-xl font-bold text-white mb-3 relative z-10">Vorstandsbericht</h3>
+                                <h3 className="text-xl font-bold text-white mb-3 relative z-10">Board-Ready Report</h3>
                                 <p className="text-[#a1a1aa] text-sm leading-relaxed relative z-10">
-                                    Erhalten Sie eine strukturierte Zusammenfassung für den Vostand, die zeigt, welcher Anpassungsbedarf vor der Meldung 2026 besteht.
+                                    Get an actionable summary to present to your executive team, outlining exactly what remediation is required before the 2026 data capture period.
                                 </p>
                             </div>
                         </div>
 
                         <div className="mt-20 text-center">
-                            <p className="text-2xl font-semibold text-white mb-6">Entwickelt von HR-Experten für HR-Leader.</p>
+                            <p className="text-2xl font-semibold text-white mb-6">Built by HR Leaders, for HR Leaders.</p>
                             <Link href="/apply" className="inline-block text-[#5b61ff] font-medium hover:underline">
-                                Starten Sie jetzt Ihre Anfrage &rarr;
+                                Start your application now &rarr;
                             </Link>
                         </div>
                     </div>
