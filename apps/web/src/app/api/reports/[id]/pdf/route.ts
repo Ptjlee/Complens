@@ -41,7 +41,8 @@ export async function GET(
 
     if (!analysis) return new NextResponse('Not found', { status: 404 })
 
-    const { data: org } = await supabase.from('organisations').select('name').single()
+    const { data: org } = await supabase.from('organisations').select('name, plan').single()
+    const isSample = org?.plan === 'trial'
 
     const [explRes, plansRes] = await Promise.all([
         supabase
@@ -96,10 +97,12 @@ export async function GET(
         sections,
         signatories,
         explanationAdjustedGap,
+        isSample,
     })
 
     const pdfBuffer = await renderToBuffer(doc as React.ReactElement<import('@react-pdf/renderer').DocumentProps>)
-    const filename  = `CompLens_Entgeltbericht_${reportYear}_${orgName.replace(/\s+/g, '_')}.pdf`
+    const prefix    = isSample ? 'MUSTER_' : ''
+    const filename  = `${prefix}CompLens_Entgeltbericht_${reportYear}_${orgName.replace(/\s+/g, '_')}.pdf`
 
     return new NextResponse(new Uint8Array(pdfBuffer), {
         status: 200,

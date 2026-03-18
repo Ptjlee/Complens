@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 
 import BackButton from '@/components/BackButton'
+import { Logo } from '@/components/ui/Logo'
 
 export const metadata: Metadata = {
     title: 'Datenschutzerklärung — CompLens',
@@ -16,11 +17,8 @@ export default function DatenschutzPage() {
                 <div className="mb-10">
                     <BackButton />
                     <div className="flex items-center gap-3 mb-6">
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center font-black text-white text-sm"
-                            style={{ background: 'linear-gradient(135deg, #3b82f6, #6366f1)' }}>
-                            PL
-                        </div>
-                        <span className="font-bold" style={{ color: 'var(--color-pl-text-primary)' }}>CompLens</span>
+                        <Logo size={32} />
+                        <span className="font-bold text-xl" style={{ color: 'var(--color-pl-text-primary)' }}>CompLens</span>
                     </div>
                     <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--color-pl-text-primary)' }}>
                         Datenschutzerklärung
@@ -38,7 +36,7 @@ export default function DatenschutzPage() {
                             <p><strong style={{ color: 'var(--color-pl-text-primary)' }}>DexterBee GmbH</strong></p>
                             <p>Industriestr. 13</p>
                             <p>63755 Alzenau, Deutschland</p>
-                            <p className="mt-1">E-Mail: datenschutz@complens.de</p>
+                            <p className="mt-1">E-Mail: hallo@complens.de</p>
                         </div>
                     </Section>
 
@@ -80,7 +78,7 @@ export default function DatenschutzPage() {
                     <Section title="4. Auftragsverarbeitung (AVV)">
                         <p>CompLens verarbeitet personenbezogene Daten Ihrer Mitarbeitenden ausschließlich
                         im Auftrag Ihres Unternehmens. Ein Auftragsverarbeitungsvertrag (AVV) gemäß
-                        Art. 28 DSGVO wird auf Anfrage unter datenschutz@complens.de bereitgestellt.
+                        Art. 28 DSGVO wird auf Anfrage unter hallo@complens.de bereitgestellt.
                         Ohne gültigen AVV darf CompLens keine Mitarbeiterdaten verarbeiten.</p>
                     </Section>
 
@@ -111,10 +109,11 @@ export default function DatenschutzPage() {
                     </Section>
 
                     <div className="mt-10 pt-6 border-t text-xs" style={{ borderColor: 'var(--color-pl-border)', color: 'var(--color-pl-text-tertiary)' }}>
-                        <p>Bei Fragen zum Datenschutz wenden Sie sich an: datenschutz@complens.de</p>
-                        <div className="flex gap-4 mt-4">
-                            <Link href="/agb" style={{ color: 'var(--color-pl-brand-light)' }}>AGB</Link>
+                        <p>Bei Fragen zum Datenschutz wenden Sie sich an: hallo@complens.de</p>
+                        <div className="flex gap-4">
                             <Link href="/impressum" style={{ color: 'var(--color-pl-brand-light)' }}>Impressum</Link>
+                            <Link href="/agb" style={{ color: 'var(--color-pl-brand-light)' }}>AGB</Link>
+                            <Link href="/compliance" style={{ color: 'var(--color-pl-brand-light)' }}>AI & Compliance</Link>
                         </div>
                     </div>
                 </div>

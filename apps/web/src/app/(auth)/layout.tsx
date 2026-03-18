@@ -50,10 +50,18 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                     </ul>
                 </div>
 
-                {/* Footer trust line */}
-                <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                    © 2026 DexterBee GmbH · <a href="/impressum" style={{textDecoration:'underline'}}>Impressum</a> · <a href="/datenschutz" style={{textDecoration:'underline'}}>Datenschutz</a>
-                </p>
+                <div className="mt-8 text-xs text-center border-t pt-4 flex flex-col gap-2" style={{ color: 'var(--color-pl-text-tertiary)', borderColor: 'var(--color-pl-border)' }}>
+                    <div>© 2026 DexterBee GmbH</div>
+                    <div className="flex justify-center flex-wrap gap-x-3 gap-y-1">
+                        <a href="/impressum" className="hover:underline">Impressum</a>
+                        <span>·</span>
+                        <a href="/datenschutz" className="hover:underline">Datenschutz</a>
+                        <span>·</span>
+                        <a href="/agb" className="hover:underline">AGB</a>
+                        <span>·</span>
+                        <a href="/compliance" className="hover:underline">AI & Compliance</a>
+                    </div>
+                </div>
             </div>
 
             {/* Right — auth form */}

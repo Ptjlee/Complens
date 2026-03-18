@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 
 import BackButton from '@/components/BackButton'
+import { Logo } from '@/components/ui/Logo'
 
 export const metadata: Metadata = {
     title: 'Impressum — CompLens',
@@ -15,11 +16,8 @@ export default function ImpressumPage() {
                 <div className="mb-10">
                     <BackButton />
                     <div className="flex items-center gap-3 mb-6">
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center font-black text-white text-sm"
-                            style={{ background: 'linear-gradient(135deg, #3b82f6, #6366f1)' }}>
-                            PL
-                        </div>
-                        <span className="font-bold" style={{ color: 'var(--color-pl-text-primary)' }}>CompLens</span>
+                        <Logo size={32} />
+                        <span className="font-bold text-xl" style={{ color: 'var(--color-pl-text-primary)' }}>CompLens</span>
                     </div>
                     <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--color-pl-text-primary)' }}>
                         Impressum
@@ -43,7 +41,7 @@ export default function ImpressumPage() {
 
                     <div>
                         <h2 className="font-bold mb-3" style={{ color: 'var(--color-pl-text-primary)' }}>Kontakt</h2>
-                        <p>E-Mail: info@complens.de</p>
+                        <p>E-Mail: hallo@complens.de</p>
                         <p>Web: https://complens.de</p>
                     </div>
 

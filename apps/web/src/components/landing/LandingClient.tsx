@@ -235,10 +235,10 @@ export default function LandingClient() {
                 </div>
             </section>
 
-            {/* Footer */}
-            <footer className="py-8 border-t border-white/5 bg-black/20 text-center relative z-10">
-                <div className="flex items-center justify-center gap-6 mb-4">
+            <footer className="py-8 border-t border-white/5 bg-black/20 text-center relative z-10 px-4">
+                <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 mb-4">
                     <a href="/impressum" className="text-xs text-white/40 hover:text-white transition-colors">Impressum</a>
+                    <a href="/compliance" className="text-xs text-white/40 hover:text-white transition-colors">AI & Compliance</a>
                     <a href="/datenschutz" className="text-xs text-white/40 hover:text-white transition-colors">Datenschutz</a>
                     <a href="/agb" className="text-xs text-white/40 hover:text-white transition-colors">AGB</a>
                 </div>

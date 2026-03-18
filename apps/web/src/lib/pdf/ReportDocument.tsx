@@ -189,13 +189,19 @@ const s = StyleSheet.create({
 })
 
 // ── Inner page wrapper ────────────────────────────────────────
-function InnerPage({ orgName, reportYear, children }: {
+function InnerPage({ orgName, reportYear, isSample, children }: {
     orgName: string
     reportYear: number
+    isSample?: boolean
     children: React.ReactNode
 }) {
     return (
         <Page size="A4" style={s.page}>
+            {isSample && (
+                <View style={{ position: 'absolute', top: 300, left: 70, zIndex: 9999 }}>
+                    <Text style={{ fontSize: 130, color: 'rgba(239, 68, 68, 0.1)', fontFamily: 'Helvetica-Bold', transform: 'rotate(-45deg)' }}>MUSTER</Text>
+                </View>
+            )}
             <View style={s.pageHeader}>
                 <Text style={s.pageHeaderLogo}>CompLens</Text>
                 <Text style={s.pageHeaderRight}>{orgName} · Entgeltbericht {reportYear}</Text>
@@ -255,6 +261,7 @@ export type ReportDocumentProps = {
     signatories?:            [string, string, string]
     explanationAdjustedGap?: number | null   // Tier 3, computed by caller
     remediationPlans?:       RemPlan[]
+    isSample?:               boolean
     explanations: Array<{
         id:                  string
         employee_id:         string
@@ -269,7 +276,7 @@ export type ReportDocumentProps = {
 
 export function ReportDocument({
     result, orgName, reportName, createdAt, reportNotes, explanations,
-    sections, signatories, explanationAdjustedGap, remediationPlans = [],
+    sections, signatories, explanationAdjustedGap, remediationPlans = [], isSample,
 }: ReportDocumentProps) {
     // Helper: is a section enabled? (null/undefined = all enabled)
     const show = (key: string) => !sections || sections.has(key)
@@ -315,6 +322,11 @@ export function ReportDocument({
         >
             {/* ── COVER PAGE ─────────────────────────────────── */}
             <Page size="A4" style={s.page}>
+                {isSample && (
+                    <View style={{ position: 'absolute', top: 300, left: 70, zIndex: 9999 }}>
+                        <Text style={{ fontSize: 130, color: 'rgba(239, 68, 68, 0.12)', fontFamily: 'Helvetica-Bold', transform: 'rotate(-45deg)' }}>MUSTER</Text>
+                    </View>
+                )}
                 <View style={s.cover}>
                     {/* Logo */}
                     <View>
@@ -347,7 +359,7 @@ export function ReportDocument({
 
             {/* ── EXECUTIVE SUMMARY ──────────────────────────── */}
             {show('executiveSummary') && (
-            <InnerPage orgName={orgName} reportYear={year}>
+            <InnerPage orgName={orgName} reportYear={year} isSample={isSample}>
                 <Text style={s.sectionTitle}>Executive Summary</Text>
                 <Text style={s.sectionSubtitle}>
                     Gesamtergebnis der Entgeltanalyse nach EU-Richtlinie 2023/970 Art. 9
@@ -507,7 +519,7 @@ export function ReportDocument({
 
             {/* ── HR NOTES — own page so it never strands ─────────────── */}
             {show('executiveSummary') && !!reportNotes && (
-            <InnerPage orgName={orgName} reportYear={year}>
+            <InnerPage orgName={orgName} reportYear={year} isSample={isSample}>
                 <Text style={s.sectionTitle}>HR-Anmerkungen</Text>
                 <View style={s.divider} />
                 <View style={{
@@ -521,7 +533,7 @@ export function ReportDocument({
 
             {/* ── DEPARTMENT BREAKDOWN ───────────────────────── */}
             {show('departments') && (
-            <InnerPage orgName={orgName} reportYear={year}>
+            <InnerPage orgName={orgName} reportYear={year} isSample={isSample}>
                 <Text style={s.sectionTitle}>Entgeltlücken nach Bereich</Text>
                 <Text style={s.sectionSubtitle}>
                     Bereinigte Entgeltlücke (Median) je Bereich · Bereiche mit &lt; 5 MA anonymisiert
@@ -565,7 +577,7 @@ export function ReportDocument({
 
             {/* ── GRADE & QUARTILE ───────────────────────────── */}
             {(show('grades') || show('quartiles')) && (
-            <InnerPage orgName={orgName} reportYear={year}>
+            <InnerPage orgName={orgName} reportYear={year} isSample={isSample}>
                 {/* Grade breakdown */}
                 {show('grades') && result.by_grade.length > 0 && (
                     <>
@@ -629,7 +641,7 @@ export function ReportDocument({
 
             {/* ── EXPLANATIONS ───────────────────────────────── */}
             {show('explanations') && explanations.length > 0 && (
-                <InnerPage orgName={orgName} reportYear={year}>
+                <InnerPage orgName={orgName} reportYear={year} isSample={isSample}>
                     <Text style={s.sectionTitle}>Begründungen nach EU Art. 10</Text>
                     <Text style={s.sectionSubtitle}>
                         Dokumentierte individuelle Entgeltabweichungen mit objektiven Rechtfertigungsgründen
@@ -723,7 +735,7 @@ export function ReportDocument({
 
             {/* ── REMEDIATION PLAN SUMMARY — Art. 11 ────────── */}
             {show('remediation') && remediationPlans.length > 0 && (
-            <InnerPage orgName={orgName} reportYear={year}>
+            <InnerPage orgName={orgName} reportYear={year} isSample={isSample}>
                 <Text style={s.sectionTitle}>Maßnahmenplan — Art. 11</Text>
                 <Text style={s.sectionSubtitle}>
                     Dokumentierte Maßnahmen zur Beseitigung von Entgeltlücken gem. EU-RL 2023/970 Art. 11

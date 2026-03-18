@@ -54,8 +54,15 @@ function hrFmt(val: number | null): string {
 
 // ── Slide builder utilities ───────────────────────────────────────────────────
 
-function addBackground(slide: PptxGenJS.Slide) {
+function addBackground(slide: PptxGenJS.Slide, isSample = false) {
     slide.addShape('rect', { x: 0, y: 0, w: W, h: H, fill: { color: C.bg } })
+    if (isSample) {
+        slide.addText('MUSTER', {
+            x: 0, y: 0, w: W, h: H,
+            fontSize: 140, bold: true, color: 'ef4444', transparency: 90,
+            align: 'center', valign: 'middle', rotate: 315, fontFace: 'Calibri'
+        })
+    }
 }
 
 function addHeader(slide: PptxGenJS.Slide, title: string, subtitle?: string) {
@@ -117,11 +124,19 @@ function kpiBox(
 
 // ── Slide 0 — Cover Page ────────────────────────────────────────────────────
 
-function addCoverSlide(pptx: PptxGenJS, r: AnalysisResult, orgName: string, analysisName: string, date: string, total: number) {
+function addCoverSlide(pptx: PptxGenJS, r: AnalysisResult, orgName: string, analysisName: string, date: string, total: number, isSample = false) {
     const slide = pptx.addSlide()
 
     // Full-bleed dark navy background
     slide.addShape('rect', { x: 0, y: 0, w: W, h: H, fill: { color: C.bg } })
+
+    if (isSample) {
+        slide.addText('MUSTER', {
+            x: 0, y: 0, w: W, h: H,
+            fontSize: 140, bold: true, color: 'ef4444', transparency: 90,
+            align: 'center', valign: 'middle', rotate: 315, fontFace: 'Calibri'
+        })
+    }
 
     // Left accent bar
     slide.addShape('rect', { x: 0, y: 0, w: 0.06, h: H, fill: { color: C.brand } })
@@ -206,9 +221,9 @@ function addCoverSlide(pptx: PptxGenJS, r: AnalysisResult, orgName: string, anal
 
 // ── Slide 1 — Executive Summary ──────────────────────────────────────────────
 
-function addSlide1(pptx: PptxGenJS, r: AnalysisResult, orgName: string, date: string, total: number, reportNotes?: string | null, explanationAdjustedGap?: number | null) {
+function addSlide1(pptx: PptxGenJS, r: AnalysisResult, orgName: string, date: string, total: number, reportNotes?: string | null, explanationAdjustedGap?: number | null, isSample = false) {
     const slide = pptx.addSlide()
-    addBackground(slide)
+    addBackground(slide, isSample)
     addHeader(slide, 'Executive Summary', `${orgName} · Berichtsjahr ${r.reporting_year} · Erstellt: ${date}`)
 
     const o = r.overall
@@ -312,9 +327,9 @@ function addSlide1(pptx: PptxGenJS, r: AnalysisResult, orgName: string, date: st
 
 // ── Slide 2 — Gap Overview ────────────────────────────────────────────────────
 
-function addSlide2(pptx: PptxGenJS, r: AnalysisResult, total: number, explanationAdjustedGap: number | null) {
+function addSlide2(pptx: PptxGenJS, r: AnalysisResult, total: number, explanationAdjustedGap: number | null, isSample = false) {
     const slide = pptx.addSlide()
-    addBackground(slide)
+    addBackground(slide, isSample)
     addHeader(slide, 'Entgeltlücke — Übersicht', 'Unbereinigt und bereinigt · Median & Mittelwert · nach Begründungen')
 
     const o = r.overall
@@ -361,9 +376,9 @@ function addSlide2(pptx: PptxGenJS, r: AnalysisResult, total: number, explanatio
 
 // ── Slide 3 — Department Drilldown ────────────────────────────────────────────
 
-function addSlide3(pptx: PptxGenJS, r: AnalysisResult, total: number, explClaimedMap: Map<string, number> = new Map()) {
+function addSlide3(pptx: PptxGenJS, r: AnalysisResult, total: number, explClaimedMap: Map<string, number> = new Map(), isSample = false) {
     const slide = pptx.addSlide()
-    addBackground(slide)
+    addBackground(slide, isSample)
     addHeader(slide, 'Bereiche — Entgeltlücken', 'Bereinigte Entgeltlücke je Abteilung · Bereiche < 5 MA anonymisiert')
 
     const depts = r.by_department.slice(0, 8)   // max 8 rows for readability
@@ -441,9 +456,9 @@ function addSlide3(pptx: PptxGenJS, r: AnalysisResult, total: number, explClaime
 
 // ── Slide 4 — Quartile Distribution ──────────────────────────────────────────
 
-function addSlide4(pptx: PptxGenJS, r: AnalysisResult, total: number) {
+function addSlide4(pptx: PptxGenJS, r: AnalysisResult, total: number, isSample = false) {
     const slide = pptx.addSlide()
-    addBackground(slide)
+    addBackground(slide, isSample)
     addHeader(slide, 'Quartilsverteilung', 'Geschlechterverteilung in den vier Vergütungsquartilen (EU Art. 9)')
 
     const qs = [
@@ -497,9 +512,9 @@ function addSlide4(pptx: PptxGenJS, r: AnalysisResult, total: number) {
 
 // ── Slide 4b — Pay Gap per Grade/Level ───────────────────────────────────────
 
-function addGradeSlide(pptx: PptxGenJS, r: AnalysisResult, total: number, explClaimedMap: Map<string, number> = new Map()) {
+function addGradeSlide(pptx: PptxGenJS, r: AnalysisResult, total: number, explClaimedMap: Map<string, number> = new Map(), isSample = false) {
     const slide = pptx.addSlide()
-    addBackground(slide)
+    addBackground(slide, isSample)
     addHeader(slide, 'Entgeltgruppen — Verteilung & Entgeltlücke',
         'Geschlechterverteilung und bereinigte Entgeltlücke je Entgeltgruppe (EU Art. 9)')
 
@@ -625,9 +640,9 @@ function addGradeSlide(pptx: PptxGenJS, r: AnalysisResult, total: number, explCl
 
 // ── Slide 5 — Salary Comparison ───────────────────────────────────────────────
 
-function addSlide5(pptx: PptxGenJS, r: AnalysisResult, total: number) {
+function addSlide5(pptx: PptxGenJS, r: AnalysisResult, total: number, isSample = false) {
     const slide = pptx.addSlide()
-    addBackground(slide)
+    addBackground(slide, isSample)
     addHeader(slide, 'Gehaltsvergleich — Männer vs. Frauen', 'Median & Mittelwert · Gesamtvergütung (EU Art. 3)')
 
     const o   = r.overall
@@ -670,9 +685,9 @@ function addSlide5(pptx: PptxGenJS, r: AnalysisResult, total: number) {
 
 // ── Slide 6 — Remediation Priorities ─────────────────────────────────────────
 
-function addSlide6(pptx: PptxGenJS, r: AnalysisResult, total: number, explainedIds: Set<string>) {
+function addSlide6(pptx: PptxGenJS, r: AnalysisResult, total: number, explainedIds: Set<string>, isSample = false) {
     const slide = pptx.addSlide()
-    addBackground(slide)
+    addBackground(slide, isSample)
 
     // Split by severity correctly
     const underpaid  = r.individual_flags.filter(f => f.severity === 'high' || f.severity === 'medium' || f.severity === 'low')
@@ -757,9 +772,9 @@ function addSlide6(pptx: PptxGenJS, r: AnalysisResult, total: number, explainedI
 
 // ── Slide 7 — Methodology Appendix ───────────────────────────────────────────
 
-function addSlide7(pptx: PptxGenJS, r: AnalysisResult, orgName: string, date: string, total: number) {
+function addSlide7(pptx: PptxGenJS, r: AnalysisResult, orgName: string, date: string, total: number, isSample = false) {
     const slide = pptx.addSlide()
-    addBackground(slide)
+    addBackground(slide, isSample)
     addHeader(slide, 'Methodik & Rechtsgrundlage', `Erstellt: ${date} · ${orgName}`)
 
     const lines = [
@@ -818,9 +833,9 @@ const HORIZON_LABELS_PPT: Record<string, string> = {
     '2-3y': '2 – 3 Jahre',
 }
 
-function addMaßnahmenSlide(pptx: PptxGenJS, plans: PptRemPlan[], total: number) {
+function addMaßnahmenSlide(pptx: PptxGenJS, plans: PptRemPlan[], total: number, isSample = false) {
     const slide = pptx.addSlide()
-    addBackground(slide)
+    addBackground(slide, isSample)
     addHeader(slide,
         'Maßnahmenplan — Art. 11',
         `${plans.length} Pläne mit ${plans.flatMap(p => p.plan_steps ?? []).length} Schritten dokumentiert`,
@@ -922,6 +937,7 @@ export interface PptOptions {
     explanationAdjustedGap?: number | null
     explainedEmployeeIds?:   Set<string>
     explClaimedMap?:         Map<string, number>   // employee_id → total claimed reduction %
+    isSample?:               boolean
 }
 
 export async function generateReportPptx(
@@ -938,17 +954,18 @@ export async function generateReportPptx(
     const date  = new Date(opts.analysisDate).toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' })
     const hasMaßnahmen = (opts.plans ?? []).length > 0
     const total = hasMaßnahmen ? 10 : 9   // cover + 8 content slides (+ optional Maßnahmen slide)
+    const isSample = !!opts.isSample
 
-    addCoverSlide(pptx, results, opts.orgName, opts.analysisName, date, total)
-    addSlide1(pptx, results, opts.orgName, date, total, opts.reportNotes, opts.explanationAdjustedGap)
-    addSlide2(pptx, results, total, opts.explanationAdjustedGap ?? null)
-    addGradeSlide(pptx, results, total, opts.explClaimedMap ?? new Map())
-    addSlide3(pptx, results, total, opts.explClaimedMap ?? new Map())
-    addSlide4(pptx, results, total)
-    addSlide5(pptx, results, total)
-    addSlide6(pptx, results, total, opts.explainedEmployeeIds ?? new Set())
-    if (hasMaßnahmen) addMaßnahmenSlide(pptx, opts.plans!, total)
-    addSlide7(pptx, results, opts.orgName, date, total)
+    addCoverSlide(pptx, results, opts.orgName, opts.analysisName, date, total, isSample as any)
+    addSlide1(pptx, results, opts.orgName, date, total, opts.reportNotes, opts.explanationAdjustedGap, isSample)
+    addSlide2(pptx, results, total, opts.explanationAdjustedGap ?? null, isSample)
+    addGradeSlide(pptx, results, total, opts.explClaimedMap ?? new Map(), isSample)
+    addSlide3(pptx, results, total, opts.explClaimedMap ?? new Map(), isSample)
+    addSlide4(pptx, results, total, isSample)
+    addSlide5(pptx, results, total, isSample)
+    addSlide6(pptx, results, total, opts.explainedEmployeeIds ?? new Set(), isSample)
+    if (hasMaßnahmen) addMaßnahmenSlide(pptx, opts.plans!, total, isSample)
+    addSlide7(pptx, results, opts.orgName, date, total, isSample)
 
     // pptxgenjs write() returns Buffer in Node; cast as Uint8Array for NextResponse compatibility
     const nodeBuf = await pptx.write({ outputType: 'nodebuffer' }) as unknown as Buffer

@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 
 import BackButton from '@/components/BackButton'
+import { Logo } from '@/components/ui/Logo'
 
 export const metadata: Metadata = {
     title: 'Allgemeine Geschäftsbedingungen — CompLens',
@@ -16,11 +17,8 @@ export default function AgbPage() {
                 <div className="mb-10">
                     <BackButton />
                     <div className="flex items-center gap-3 mb-6">
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center font-black text-white text-sm"
-                            style={{ background: 'linear-gradient(135deg, #3b82f6, #6366f1)' }}>
-                            PL
-                        </div>
-                        <span className="font-bold" style={{ color: 'var(--color-pl-text-primary)' }}>CompLens</span>
+                        <Logo size={32} />
+                        <span className="font-bold text-xl" style={{ color: 'var(--color-pl-text-primary)' }}>CompLens</span>
                     </div>
                     <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--color-pl-text-primary)' }}>
                         Allgemeine Geschäftsbedingungen
@@ -93,7 +91,7 @@ export default function AgbPage() {
                         <p>Der Vertrag wird für eine Laufzeit von einem (1) Jahr geschlossen und verlängert sich
                         automatisch um ein weiteres Jahr, sofern er nicht rechtzeitig gekündigt wird.</p>
                         <p className="mt-2">Die Kündigung ist mit einer Frist von drei (3) Monaten zum Ende des
-                        jeweiligen Vertragsjahres schriftlich (per E-Mail an support@complens.de) zu erklären.
+                        jeweiligen Vertragsjahres schriftlich (per E-Mail an hallo@complens.de) zu erklären.
                         Bei nicht rechtzeitiger Kündigung verlängert sich der Vertrag automatisch um
                         ein weiteres Jahr zum dann gültigen Listenpreis.</p>
                         <p className="mt-2">Bei Kündigung werden alle Daten des Kunden nach Ablauf der
@@ -108,10 +106,11 @@ export default function AgbPage() {
 
                     <div className="mt-10 pt-6 border-t text-xs" style={{ borderColor: 'var(--color-pl-border)', color: 'var(--color-pl-text-tertiary)' }}>
                         <p>DexterBee GmbH · Industriestr. 13 · 63755 Alzenau</p>
-                        <p className="mt-1">E-Mail: support@complens.de · Web: complens.de</p>
+                        <p className="mt-1">E-Mail: hallo@complens.de · Web: complens.de</p>
                         <div className="flex gap-4 mt-4">
                             <Link href="/impressum" style={{ color: 'var(--color-pl-brand-light)' }}>Impressum</Link>
                             <Link href="/datenschutz" style={{ color: 'var(--color-pl-brand-light)' }}>Datenschutz</Link>
+                            <Link href="/compliance" style={{ color: 'var(--color-pl-brand-light)' }}>AI & Compliance</Link>
                         </div>
                     </div>
                 </div>

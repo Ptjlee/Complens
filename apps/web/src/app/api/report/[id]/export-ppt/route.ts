@@ -26,7 +26,7 @@ export async function GET(
             .single(),
         supabase
             .from('organisations')
-            .select('name')
+            .select('name, plan')
             .single(),
         supabase
             .from('remediation_plans')
@@ -45,6 +45,7 @@ export async function GET(
     const rawAnalysis = analysisRes.data as Record<string, unknown>
     const results     = rawAnalysis.results as AnalysisResult
     const orgName     = (orgRes.data?.name as string | null) ?? 'Organisation'
+    const isSample    = orgRes.data?.plan === 'trial'
 
     type PlanStep = { step_number?: number; action_type?: string; horizon: string; description: string; target_salary: number | null; responsible?: string; notes?: string; status?: string }
     const plans = (plansRes.data ?? []) as Array<{ employee_id: string; action_type: string; status: string; deadline_months: number; plan_steps: PlanStep[] }>
@@ -95,10 +96,12 @@ export async function GET(
             explanationAdjustedGap,
             explainedEmployeeIds,
             explClaimedMap,
+            isSample,
         })
 
         const arrayBuffer = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer
-        const safeName    = ((rawAnalysis.name as string) ?? 'report')
+        const prefix      = isSample ? 'MUSTER_' : ''
+        const safeName    = prefix + ((rawAnalysis.name as string) ?? 'report')
             .replace(/[^a-z0-9_\-]/gi, '_')
             .slice(0, 60)
 

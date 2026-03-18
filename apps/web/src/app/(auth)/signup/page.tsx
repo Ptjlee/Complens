@@ -214,8 +214,8 @@ export default function SignupPage() {
                 <ul className="space-y-1">
                     {[
                         'Keine Kreditkarte beim Start',
-                        'Exporte während des Tests gesperrt',
-                        'Nach 7 Tagen: Upgrade oder Konto endet automatisch',
+                        'Voller Funktionsumfang inkl. automatisierte Datenzuordnung und Analyse',
+                        'Nach 7 Tagen: Upgrade oder automatische Beendigung',
                     ].map((item) => (
                         <li key={item} className="flex items-center gap-2 text-xs" style={{ color: 'var(--color-pl-text-secondary)' }}>
                             <Check size={11} strokeWidth={3} style={{ color: 'var(--color-pl-brand-light)', flexShrink: 0 }} />
