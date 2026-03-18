@@ -14,11 +14,11 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: 'CompLens — EU Pay Transparency Software',
+    default: 'CompLens — Entgelttransparenz einfach gemacht',
     template: '%s | CompLens',
   },
   description:
-    'CompLens helps German and European companies comply with the EU Pay Transparency Directive (2023/970/EU). Run pay gap analyses, generate compliant reports, and close gender pay gaps. Made in Germany.',
+    'Erfüllen Sie die EU-Meldepflicht in unter 5 Minuten. Automatisierte Analysen, bereinigter Gender Pay Gap und fertige Berichte – 100% DSGVO-konform.',
   keywords: [
     'Entgelttransparenz',
     'Gender Pay Gap',
@@ -39,8 +39,8 @@ export const metadata: Metadata = {
     locale: 'de_DE',
     alternateLocale: 'en_GB',
     siteName: 'CompLens',
-    title: 'CompLens — EU Pay Transparency Software',
-    description: 'Automatische Entgeltanalyse und Berichterstattung nach der EU-Richtlinie 2023/970.',
+    title: 'CompLens — Entgelttransparenz einfach gemacht',
+    description: 'Erfüllen Sie die EU-Meldepflicht in unter 5 Minuten. So einfach kann es sein.',
     images: [
       {
         url: '/og-image.jpg',
@@ -52,8 +52,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'CompLens — EU Pay Transparency Software',
-    description: 'Automatische Entgeltanalyse und Berichterstattung nach der EU-Richtlinie 2023/970.',
+    title: 'CompLens — Entgelttransparenz einfach gemacht',
+    description: 'Erfüllen Sie die EU-Meldepflicht in unter 5 Minuten. Automatisierte Analysen und fertige Berichte.',
     creator: '@complens',
   },
 }
