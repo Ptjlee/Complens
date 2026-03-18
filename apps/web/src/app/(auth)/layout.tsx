@@ -40,7 +40,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                             { icon: '🇩🇪', text: 'Daten ausschließlich auf EU-Servern in Frankfurt' },
                             { icon: '📊', text: 'EU-Richtlinie 2023/970/EU — vollständig konform' },
                             { icon: '⚡', text: 'Erste Analyse in unter 5 Minuten' },
-                            { icon: '🤖', text: 'KI-gestützte Spaltenzuordnung (optional, DSGVO-sicher)' },
+                            { icon: '🤖', text: 'Automatische Spaltenzuordnung (DSGVO-sicher)' },
                         ].map(({ icon, text }) => (
                             <li key={text} className="flex items-start gap-3">
                                 <span className="text-base mt-0.5">{icon}</span>

@@ -108,7 +108,7 @@ export default function LandingClient() {
                         <span className="flex items-center justify-center sm:justify-start gap-2 w-full sm:w-auto"><CheckCircle size={16} className="text-green-400 shrink-0" /> Daten ausschließlich auf EU-Servern in Frankfurt</span>
                         <span className="flex items-center justify-center sm:justify-start gap-2 w-full sm:w-auto"><CheckCircle size={16} className="text-green-400 shrink-0" /> EU-Richtlinie 2023/970/EU — vollständig konform</span>
                         <span className="flex items-center justify-center sm:justify-start gap-2 w-full sm:w-auto"><CheckCircle size={16} className="text-green-400 shrink-0" /> Erste Analyse in unter 5 Minuten</span>
-                        <span className="flex items-center justify-center sm:justify-start gap-2 w-full sm:w-auto"><CheckCircle size={16} className="text-green-400 shrink-0" /> KI-gestützte Spaltenzuordnung (optional, DSGVO-sicher)</span>
+                        <span className="flex items-center justify-center sm:justify-start gap-2 w-full sm:w-auto"><CheckCircle size={16} className="text-green-400 shrink-0" /> Automatische Spaltenzuordnung (DSGVO-sicher)</span>
                     </div>
                 </div>
 
@@ -174,7 +174,7 @@ export default function LandingClient() {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                         {[
-                            { icon: Upload, title: '1. Sicherer Import', text: 'CSV hochladen, KI sortiert automatisch die Lohnspalten zu. Ohne Namen hochladbar.' },
+                            { icon: Upload, title: '1. Sicherer Import', text: 'Einfach hochladen, was Sie haben. CompLens erkennt und ordnet die Lohnspalten automatisch zu — ohne Vorarbeit, ohne Namen.' },
                             { icon: BarChart2, title: '2. Smarte Analyse', text: 'Bereinigt Gehaltslücken objektiv über WIF-Faktoren (Wage Influencing Factors).' },
                             { icon: FileSignature, title: '3. Fertige Exports', text: '1-Klick Export von PDF & Vorstands-Präsentationen (PowerPoint).' }
                         ].map((F, i) => (
