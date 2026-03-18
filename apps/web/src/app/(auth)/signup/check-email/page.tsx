@@ -74,7 +74,7 @@ function CheckEmailContent() {
             >
                 <strong style={{ color: 'var(--color-pl-text-primary)' }}>Keine E-Mail erhalten?</strong><br />
                 Prüfen Sie Ihren Spam-Ordner. Die E-Mail kommt von{' '}
-                <span style={{ color: 'var(--color-pl-brand-light)' }}>hallo@paylens.de</span>.
+                <span style={{ color: 'var(--color-pl-brand-light)' }}>hallo@complens.de</span>.
             </div>
 
             {/* Resend section */}

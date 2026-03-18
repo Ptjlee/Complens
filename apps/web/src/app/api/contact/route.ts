@@ -19,8 +19,8 @@ export async function POST(req: Request) {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    from: process.env.RESEND_FROM_EMAIL || 'hallo@paylens.de',
-                    to: process.env.CONTACT_EMAIL || 'hallo@paylens.de',
+                    from: process.env.RESEND_FROM_EMAIL || 'hallo@complens.de',
+                    to: process.env.CONTACT_EMAIL || 'hallo@complens.de',
                     subject: `CompLens Lead: ${name} (${company || 'Keine Firma'})`,
                     html: `
                         <h2>Neue Kontaktanfrage</h2>

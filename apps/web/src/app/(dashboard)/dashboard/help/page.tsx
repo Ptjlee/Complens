@@ -77,7 +77,7 @@ export default function HelpPage() {
                 </p>
                 
                 <a 
-                    href="mailto:hallo@paylens.de" 
+                    href="mailto:hallo@complens.de" 
                     className="flex justify-center items-center gap-2 font-bold text-white px-6 py-3 rounded-lg transition-transform hover:-translate-y-0.5"
                     style={{ background: 'linear-gradient(135deg, var(--color-pl-brand), #6366f1)', boxShadow: '0 8px 20px rgba(99,102,241,0.25)' }}
                 >
