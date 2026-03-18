@@ -282,7 +282,7 @@ export default function ApplyPage() {
                                 {loading ? (
                                     <><Loader2 size={16} className="animate-spin" /> Verarbeiten...</>
                                 ) : step === 4 ? (
-                                    <>Anfrage absenden <ArrowRight size={16} /></>
+                                    <>Kostenlos starten <ArrowRight size={16} /></>
                                 ) : (
                                     <>Weiter <ArrowRight size={16} /></>
                                 )}

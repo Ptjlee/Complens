@@ -70,7 +70,7 @@ export default function LandingClient() {
                         <a href="/login" className="text-sm font-medium text-white/80 hover:text-white transition-colors">
                             Login
                         </a>
-                        <a href="/signup" className="text-sm font-bold text-white px-5 py-2.5 rounded-full transition-all hover:scale-105"
+                        <a href="/readiness-check" className="text-sm font-bold text-white px-5 py-2.5 rounded-full transition-all hover:scale-105"
                             style={{ background: 'linear-gradient(135deg, var(--color-pl-brand), #7c3aed)', boxShadow: '0 4px 14px rgba(99,102,241,0.4)' }}>
                             Kostenlos starten
                         </a>
@@ -95,9 +95,9 @@ export default function LandingClient() {
                         Erfüllen Sie die EU-Meldepflicht in unter 5 Minuten. Automatisierte Analysen, bereinigter Gender Pay Gap (WIF) und fertige Vorstands-Berichte — 100% DSGVO-konform.
                     </p>
                     <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start pt-4">
-                        <a href="/signup" className="flex items-center gap-2 px-8 py-4 rounded-full text-base font-bold text-white transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(99,102,241,0.5)]"
+                        <a href="/readiness-check" className="flex items-center gap-2 px-8 py-4 rounded-full text-base font-bold text-white transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(99,102,241,0.5)]"
                             style={{ background: 'linear-gradient(135deg, var(--color-pl-brand), #6366f1)' }}>
-                            Jetzt testen
+                            Readiness Check
                             <ArrowRight size={18} />
                         </a>
                         <a href="#contact" className="px-8 py-4 rounded-full text-base font-medium text-white/80 hover:text-white transition-colors border border-white/10 hover:bg-white/5">
