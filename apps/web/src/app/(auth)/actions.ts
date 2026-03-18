@@ -128,8 +128,15 @@ export async function signOut() {
 const getURL = () => {
     let url =
         process?.env?.NEXT_PUBLIC_SITE_URL ?? // Set this to your site URL in production env.
+        process?.env?.NEXT_PUBLIC_APP_URL ?? // Fallback to APP_URL
         process?.env?.NEXT_PUBLIC_VERCEL_URL ?? // Automatically set by Vercel.
         'http://localhost:3001'
+        
+    // Failsafe: if we are in production but the URL is still pointing to localhost
+    if (process.env.NODE_ENV === 'production' && url.includes('localhost')) {
+        url = 'https://complens.de'
+    }
+
     // Make sure to include `https://` when not localhost.
     url = url.includes('http') ? url : `https://${url}`
     // Make sure to include a trailing `/`.
