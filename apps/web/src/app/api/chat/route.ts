@@ -21,7 +21,7 @@ const SYSTEM_PROMPT = [
     '',
     'Antworte immer auf Deutsch, präzise und richtlinienkonform. Verwende strukturierte Aufzählungen wo sinnvoll.',
     'Verweise bei rechtlichen Fragen auf den konkreten Artikel der Richtlinie.',
-    'Wenn etwas außerhalb deines Wissens liegt, sage es klar und verweise auf hallo@complens.de.',
+    'Wenn etwas außerhalb deines Wissens liegt, sage es klar und verweise auf den Support.',
     '',
     COMPLENS_KB,
 ].join('\n')

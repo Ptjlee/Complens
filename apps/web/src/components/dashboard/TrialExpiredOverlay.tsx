@@ -204,7 +204,7 @@ export default function TrialExpiredOverlay({ trialEndedAt }: { trialEndedAt: st
                     }}>
                         Fragen zur Lizenz?{' '}
                         <a href="mailto:hallo@complens.de" style={{ color: '#3b82f6', textDecoration: 'none' }}>
-                            hallo@complens.de
+                            Support kontaktieren
                         </a>
                     </p>
                 </div>

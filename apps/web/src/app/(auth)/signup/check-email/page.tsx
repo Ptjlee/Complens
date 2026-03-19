@@ -73,8 +73,8 @@ function CheckEmailContent() {
                 }}
             >
                 <strong style={{ color: 'var(--color-pl-text-primary)' }}>Keine E-Mail erhalten?</strong><br />
-                Prüfen Sie Ihren Spam-Ordner. Die E-Mail kommt von{' '}
-                <span style={{ color: 'var(--color-pl-brand-light)' }}>hallo@complens.de</span>.
+                Prüfen Sie Ihren Spam-Ordner. Wenn Sie ein Problem haben,{' '}
+                <a href="mailto:hallo@complens.de" style={{ color: 'var(--color-pl-brand-light)' }}>kontaktieren Sie uns</a>.
             </div>
 
             {/* Resend section */}

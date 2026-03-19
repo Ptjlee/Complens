@@ -63,7 +63,7 @@ export async function parseUploadedFile(formData: FormData): Promise<{
 
         if ((datasetCount ?? 0) >= 10) {
             return {
-                error: 'Im Testzeitraum können maximal 10 Datensätze hochgeladen werden. Upgrade auf CompLens Lizenz für unbegrenzte Uploads: hallo@complens.de',
+                error: 'Im Testzeitraum können maximal 10 Datensätze hochgeladen werden. Upgrade auf CompLens Lizenz im Einstellungsmenü für unbegrenzte Uploads.',
             }
         }
     }

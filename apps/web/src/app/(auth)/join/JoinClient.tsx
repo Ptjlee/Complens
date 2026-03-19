@@ -160,7 +160,7 @@ export default function JoinClient({
                 </div>
 
                 <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                    © 2026 DexterBee GmbH · hallo@complens.de
+                    © 2026 DexterBee GmbH
                 </p>
             </div>
 

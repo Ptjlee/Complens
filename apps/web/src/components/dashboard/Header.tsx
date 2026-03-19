@@ -8,6 +8,9 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
+import dynamic from 'next/dynamic'
+
+const SupportTicketModal = dynamic(() => import('@/components/support/SupportTicketModal'), { ssr: false })
 
 interface HeaderProps {
     user: User
@@ -17,6 +20,7 @@ export default function Header({ user }: HeaderProps) {
     const initials = user.email?.slice(0, 2).toUpperCase() ?? 'CL'
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
+    const [showSupport, setShowSupport] = useState(false)
 
     // Locale switcher
     const [locale, setLocale] = useState<string>(() => {
@@ -83,19 +87,21 @@ export default function Header({ user }: HeaderProps) {
                 
 
 
-                {/* AI Assistant trigger */}
+                {showSupport && <SupportTicketModal onClose={() => setShowSupport(false)} />}
+                
+                {/* Support trigger */}
                 <button
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                    onClick={() => setShowSupport(true)}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all hover:scale-[1.02]"
                     style={{
                         background: 'color-mix(in srgb, var(--color-pl-accent) 10%, transparent)',
                         border: '1px solid color-mix(in srgb, var(--color-pl-accent) 30%, transparent)',
                         color: 'var(--color-pl-accent)',
                     }}
-                    title="Compliance-Assistent öffnen (Cmd+K)"
-                    onClick={() => window.dispatchEvent(new CustomEvent('toggle-chatbot'))}
+                    title="Support kontaktieren"
                 >
                     <MessageSquare size={13} />
-                    Fragen Sie CompLens
+                    Support
                 </button>
 
                 {/* Notifications */}

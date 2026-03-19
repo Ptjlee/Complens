@@ -282,7 +282,7 @@ export async function inviteMember(
 
     if (usedSeats >= maxUsers) {
         return {
-            error: `Alle ${maxUsers} Nutzerplätze sind belegt. Bitte kontaktieren Sie uns für einen zusätzlichen Platz (€ 990/Jahr): hallo@complens.de`,
+            error: `Alle ${maxUsers} Nutzerplätze sind belegt. Bitte kontaktieren Sie den Support für einen zusätzlichen Platz (€ 990/Jahr).`,
         }
     }
 

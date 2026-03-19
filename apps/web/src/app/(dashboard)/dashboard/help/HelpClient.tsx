@@ -373,7 +373,7 @@ const MODULES: Module[] = [
         faqs: [
             { q: 'Wer darf die Auskunft anfordern?', a: 'Jeder Beschäftigte darf einmal pro Jahr eine Auskunft anfordern. Die Auskunft beinhaltet den Median der Vergleichsgruppe, aufgeschlüsselt nach Geschlecht — nicht das Gehalt einzelner Kolleginnen und Kollegen.' },
             { q: 'Wie schütze ich die Anonymität anderer Mitarbeiter?', a: 'CompLens zeigt nur Mediane und Mittelwerte je Kohorte, keine Einzelgehälter. Kohorten mit < 5 Personen werden nicht angezeigt. Das Schreiben enthält keine personenbezogenen Daten Dritter.' },
-            { q: 'Was, wenn die Vergleichsgruppe zu klein ist?', a: 'Wenn die Kohorte des Mitarbeiters weniger als 5 Personen umfasst, kann CompLens keine Auskunft erteilen. In diesem Fall sind alternative Vergleichsgruppen zu definieren. Wenden Sie sich für diesen Sonderfall an hallo@complens.de.' },
+            { q: 'Was, wenn die Vergleichsgruppe zu klein ist?', a: 'Wenn die Kohorte des Mitarbeiters weniger als 5 Personen umfasst, kann CompLens keine Auskunft erteilen. In diesem Fall sind alternative Vergleichsgruppen zu definieren. Wenden Sie sich für diesen Sonderfall an den Support.' },
         ],
     },
     {
@@ -464,7 +464,7 @@ const MODULES: Module[] = [
         ],
         faqs: [
             { q: 'Kann ich mein Passwort zurücksetzen?', a: 'Ja. Klicken Sie auf der Login-Seite auf „Passwort vergessen". Sie erhalten eine E-Mail mit einem Reset-Link (gültig für 60 Minuten).' },
-            { q: 'Wie kündige ich mein Abonnement?', a: 'Kündigung per E-Mail (hallo@complens.de) oder schriftlich mit 3-monatiger Frist zum Jahresende. Bei Fragen zur Kündigung steht unser Support-Team zur Verfügung.' },
+            { q: 'Wie kündige ich mein Abonnement?', a: 'Kündigung per Support-Ticket oder schriftlich mit 3-monatiger Frist zum Jahresende. Bei Fragen zur Kündigung steht unser Support-Team zur Verfügung.' },
             { q: 'Was passiert mit meinen Daten nach der Kündigung?', a: 'Nach Vertragsende haben Sie 30 Tage Zeit, Ihre Daten (Analysen, Berichte) zu exportieren. Danach werden alle Daten unwiderruflich gelöscht. Auf Anfrage erstellen wir vorab einen Vollexport.' },
         ],
     },
@@ -508,17 +508,6 @@ export default function HelpClient() {
                         Vollständige Anleitung für CompLens · EU-Richtlinie 2023/970 · EntgTranspG
                     </p>
                 </div>
-                <button
-                    onClick={() => setShowSupport(true)}
-                    className="flex-shrink-0 flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-all hover:-translate-y-0.5"
-                    style={{
-                        background: 'rgba(59,130,246,0.08)',
-                        border: '1px solid rgba(59,130,246,0.2)',
-                        color: 'var(--color-pl-brand-light)',
-                    }}
-                >
-                    <MessageSquare size={13} /> Support
-                </button>
             </div>
 
             {/* ── Search ── */}

@@ -3,6 +3,7 @@ import {
     CheckCircle2, Globe, Cpu, Key, Trash2, AlertCircle,
     Building2, Mail,
 } from 'lucide-react'
+import Link from 'next/link'
 
 export const metadata = {
     title: 'DSGVO & Compliance — CompLens',
@@ -413,9 +414,9 @@ export default function CompliancePage() {
                         <div className="text-xs space-y-1" style={{ color: 'var(--color-pl-text-secondary)' }}>
                             <div>
                                 <span style={{ color: 'var(--color-pl-text-tertiary)' }}>Allgemein: </span>
-                                <a href="mailto:hallo@complens.de" className="underline" style={{ color: 'var(--color-pl-brand-light)' }}>
-                                    hallo@complens.de
-                                </a>
+                                <Link href="/dashboard/help" className="underline" style={{ color: 'var(--color-pl-brand-light)' }}>
+                                    Support kontaktieren
+                                </Link>
                             </div>
                             <div>
                                 <span style={{ color: 'var(--color-pl-text-tertiary)' }}>Datenschutz: </span>

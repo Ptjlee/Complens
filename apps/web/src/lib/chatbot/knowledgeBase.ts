@@ -195,7 +195,7 @@ FAQ:
 
 AVV (Auftragsverarbeitungsvertrag):
 Pflicht gem. Art. 28 DSGVO wenn personenbezogene Daten verarbeitet werden.
-Anfordern über Compliance-Seite → Knopf "AV-Vertrag anfordern" → E-Mail an hallo@complens.de.
+Anfordern über Compliance-Seite → Bereich "AV-Vertrag anfordern" → Support-Ticket in CompLens eröffnen.
 AVV kostenlos, Zusendung innerhalb 2 Werktagen.
 
 Datenschutzarchitektur:
@@ -237,7 +237,7 @@ Passwort-Reset:
 Login-Seite → "Passwort vergessen" → Reset-Link per E-Mail (60 Minuten gültig).
 
 Kündigung:
-Per E-Mail (hallo@complens.de) oder schriftlich, 3 Monate Frist zum Jahresende.
+Per Support-Ticket in CompLens oder schriftlich, 3 Monate Frist zum Jahresende.
 Nach Vertragsende: 30 Tage Datenexport möglich, dann vollständige Löschung.
 
 ══ NAVIGATIONSÜBERSICHT ══
