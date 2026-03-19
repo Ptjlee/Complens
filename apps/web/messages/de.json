@@ -128,8 +128,8 @@
     "trial": {
       "activeTitle": "Ihre Pro-Testphase läuft",
       "expiredTitle": "Ihre Testphase ist abgelaufen",
-      "activeDesc": "Nutzen Sie alle KI-Funktionen und Exporte noch für {days} Tage kostenfrei. Entscheiden Sie sich jetzt für einen Plan, um danach nahtlos weiterzuarbeiten.",
-      "expiredDesc": "Ihre Testphase ist beendet. Wählen Sie jetzt einen Plan, um weiterhin auf Analysen, Exporte und KI-Funktionen zuzugreifen.",
+      "activeDesc": "Nutzen Sie alle Funktionen und Exporte noch für {days} Tage kostenfrei. Entscheiden Sie sich jetzt für einen Plan, um danach nahtlos weiterzuarbeiten.",
+      "expiredDesc": "Ihre Testphase ist beendet. Wählen Sie jetzt einen Plan, um weiterhin auf Analysen, Exporte und alle Funktionen zuzugreifen.",
       "choosePlan": "Plan auswählen",
       "daysLeft": "Tage übrig"
     },
@@ -145,7 +145,7 @@
       "title": "Willkommen bei CompLens!",
       "desc": "Ihre Umgebung ist bereit. Lassen Sie uns die EU Pay Transparency Compliance gemeinsam in drei einfachen Schritten abschließen.",
       "step1Title": "Daten importieren",
-      "step1Desc": "Laden Sie Ihre CSV/Excel hoch. Die KI übernimmt optional die Zuordnung.",
+      "step1Desc": "Laden Sie Ihre CSV/Excel hoch. CompLens übernimmt optional die Spaltenzuordnung.",
       "step1Btn": "Starten",
       "step1Done": "Erledigt",
       "step2Title": "Erste Analyse ausführen",

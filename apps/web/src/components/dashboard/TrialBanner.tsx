@@ -47,7 +47,7 @@ export default function TrialBanner({ org }: TrialBannerProps) {
                 <span style={{ fontSize: 13, color, fontWeight: 600 }}>{message}</span>
             </div>
             <button
-                onClick={() => router.push('/dashboard/settings?tab=plan')}
+                onClick={() => router.push('/dashboard/settings#billing')}
                 style={{
                     background: color,
                     color: '#fff',

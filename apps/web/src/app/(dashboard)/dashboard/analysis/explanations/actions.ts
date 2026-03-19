@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { requireAdminRoleAction } from '@/lib/api/planGuard'
 import { EXPLANATION_CATEGORIES } from '@/app/(dashboard)/dashboard/import/constants'
 
 // ============================================================
@@ -15,6 +16,10 @@ export async function saveExplanation(params: {
     actionPlan:   string
     status?:      'open' | 'in_review' | 'explained'
 }): Promise<{ id?: string; error?: string }> {
+    // ── Role guard ──
+    const authCheck = await requireAdminRoleAction()
+    if ('error' in authCheck) return { error: authCheck.error }
+
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { error: 'Nicht angemeldet.' }
@@ -67,6 +72,10 @@ export async function updateExplanationStatus(
     explanationId: string,
     status: 'open' | 'in_review' | 'explained' | 'rejected',
 ): Promise<{ error?: string }> {
+    // ── Role guard ──
+    const authCheck = await requireAdminRoleAction()
+    if ('error' in authCheck) return { error: authCheck.error }
+
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { error: 'Nicht angemeldet.' }

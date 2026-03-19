@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { requireAdminRoleAction } from '@/lib/api/planGuard'
 import type { AnalysisResult } from '@/lib/calculations/types'
 
 type DatasetRef = { name: string; reporting_year: number; employee_count: number | null } | null
@@ -36,9 +37,10 @@ export async function getAllAnalyses(): Promise<AnalysisSummary[]> {
             gap_unadjusted_median, gap_adjusted_median,
             exceeds_5pct_threshold,
             report_notes, published_at, archived_at,
-            datasets(name, reporting_year, employee_count)
+            datasets!inner(name, reporting_year, employee_count)
         `)
         .eq('status', 'complete')
+        .is('datasets.deleted_at', null)
         .order('created_at', { ascending: false })
 
     // Supabase returns datasets as array for joined relations; take first element
@@ -161,9 +163,10 @@ export async function saveReportNotes(
     analysisId: string,
     notes: string,
 ): Promise<{ error?: string }> {
+    const authCheck = await requireAdminRoleAction()
+    if ('error' in authCheck) return { error: authCheck.error }
+
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Nicht angemeldet.' }
 
     const { error } = await supabase
         .from('analyses')
@@ -180,9 +183,8 @@ export async function saveReportNotes(
 export async function archiveAnalysis(
     analysisId: string,
 ): Promise<{ error?: string }> {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Nicht angemeldet.' }
+    const authCheck = await requireAdminRoleAction()
+    if ('error' in authCheck) return { error: authCheck.error }
 
     const admin = createAdminClient()
     const { error } = await admin
@@ -200,9 +202,8 @@ export async function archiveAnalysis(
 export async function unarchiveAnalysis(
     analysisId: string,
 ): Promise<{ error?: string }> {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Nicht angemeldet.' }
+    const authCheck = await requireAdminRoleAction()
+    if ('error' in authCheck) return { error: authCheck.error }
 
     const admin = createAdminClient()
     const { error } = await admin
@@ -220,9 +221,8 @@ export async function unarchiveAnalysis(
 export async function deleteAnalysis(
     analysisId: string,
 ): Promise<{ error?: string }> {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Nicht angemeldet.' }
+    const authCheck = await requireAdminRoleAction()
+    if ('error' in authCheck) return { error: authCheck.error }
 
     const admin = createAdminClient()
     const { error } = await admin

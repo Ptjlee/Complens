@@ -139,8 +139,10 @@ export const PortalDocument = ({ orgName, analysis, employee, gradeInfo }: Porta
         <Document>
             <Page size="A4" style={s.page}>
                 <View style={s.pageHeader}>
-                    <Text style={s.pageHeaderLogo}>CompLens</Text>
-                    <Text style={s.pageHeaderRight}>{orgName} · Auskunftsrecht</Text>
+                    {/* Client org name — prominent left */}
+                    <Text style={{ ...s.pageHeaderLogo, fontSize: 14 }}>{orgName}</Text>
+                    {/* Right: document type */}
+                    <Text style={s.pageHeaderRight}>Auskunftsrecht · Art. 7 EU 2023/970</Text>
                 </View>
 
                 <View style={s.content}>
@@ -202,8 +204,8 @@ export const PortalDocument = ({ orgName, analysis, employee, gradeInfo }: Porta
                 </View>
 
                 <View style={s.footer} fixed>
-                    <Text style={s.footerTxt}>CompLens — EU Entgelttransparenz 2023/970</Text>
-                    <Text style={s.footerTxt} render={({ pageNumber, totalPages }) => `Seite ${pageNumber} von ${totalPages}`} />
+                    <Text style={s.footerTxt}>{orgName} · EU-Entgelttransparenz 2023/970</Text>
+                    <Text style={{ ...s.footerTxt, color: '#94a3b8' }}>Erstellt mit CompLens</Text>
                 </View>
             </Page>
         </Document>

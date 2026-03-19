@@ -197,18 +197,110 @@ function InnerPage({ orgName, reportYear, isSample, children }: {
 }) {
     return (
         <Page size="A4" style={s.page}>
-            {isSample && (
-                <View style={{ position: 'absolute', top: 300, left: 70, zIndex: 9999 }}>
-                    <Text style={{ fontSize: 130, color: 'rgba(239, 68, 68, 0.1)', fontFamily: 'Helvetica-Bold', transform: 'rotate(-45deg)' }}>MUSTER</Text>
-                </View>
-            )}
             <View style={s.pageHeader}>
-                <Text style={s.pageHeaderLogo}>CompLens</Text>
-                <Text style={s.pageHeaderRight}>{orgName} · Entgeltbericht {reportYear}</Text>
+                {/* Client org name — prominent left */}
+                <Text style={{ ...s.pageHeaderLogo, fontSize: 10, fontFamily: 'Helvetica-Bold' }}>{orgName}</Text>
+                {/* CompLens — subtle right */}
+                <Text style={{ ...s.pageHeaderRight, fontSize: 7, color: '#94a3b8' }}>Entgeltbericht {reportYear} · erstellt mit CompLens</Text>
             </View>
             <View style={s.content}>
                 {children}
             </View>
+            <View style={s.footer} fixed>
+                <Text style={s.footerTxt}>{orgName} · Entgeltbericht {reportYear} · EU 2023/970</Text>
+                <Text style={s.footerTxt} render={({ pageNumber, totalPages }) => `Seite ${pageNumber} von ${totalPages}`} />
+            </View>
+            {/* MUSTER overlaid LAST so it renders on top of all content */}
+            {isSample && (
+                <>
+                    <View style={{ position: 'absolute', top: 80,  left: 50, zIndex: 9999, opacity: 1 }}>
+                        <Text style={{ fontSize: 110, color: 'rgba(220, 38, 38, 0.55)', fontFamily: 'Helvetica-Bold', transform: 'rotate(-40deg)' }}>MUSTER</Text>
+                    </View>
+                    <View style={{ position: 'absolute', top: 320, left: 50, zIndex: 9999, opacity: 1 }}>
+                        <Text style={{ fontSize: 110, color: 'rgba(220, 38, 38, 0.55)', fontFamily: 'Helvetica-Bold', transform: 'rotate(-40deg)' }}>MUSTER</Text>
+                    </View>
+                    <View style={{ position: 'absolute', top: 560, left: 50, zIndex: 9999, opacity: 1 }}>
+                        <Text style={{ fontSize: 110, color: 'rgba(220, 38, 38, 0.55)', fontFamily: 'Helvetica-Bold', transform: 'rotate(-40deg)' }}>MUSTER</Text>
+                    </View>
+                </>
+            )}
+        </Page>
+    )
+}
+
+// ── Locked upgrade page (trial/expired, page 5+) ──────────────
+function LockedPage({ orgName, reportYear, sampleMode }: { orgName: string; reportYear: number; sampleMode: 'trial' | 'expired' }) {
+    const headline = sampleMode === 'expired'
+        ? 'Testzeitraum abgelaufen'
+        : 'Bericht im Testmodus eingeschränkt'
+    const body = sampleMode === 'expired'
+        ? 'Ihr Testzeitraum ist beendet. Diese und alle weiteren Seiten sind gesperrt.\n' +
+          'Lizenzieren Sie CompLens, um den vollständigen EU-Entgeltbericht herunterzuladen und rechtssicher einzusetzen.'
+        : 'Diese und alle weiteren Seiten sind im Testmodus gesperrt.\n' +
+          'Lizenzieren Sie CompLens, um den vollständigen EU-Entgeltbericht herunterzuladen und rechtssicher einzusetzen.'
+    return (
+        <Page size="A4" style={s.page}>
+            {/* Header */}
+            <View style={s.pageHeader}>
+                <Text style={s.pageHeaderLogo}>CompLens</Text>
+                <Text style={s.pageHeaderRight}>{orgName} · Entgeltbericht {reportYear}</Text>
+            </View>
+
+            {/* Locked content area */}
+            <View style={{
+                flex: 1,
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingHorizontal: 60,
+                paddingVertical: 40,
+            }}>
+                {/* Lock symbol */}
+                <Text style={{ fontSize: 48, marginBottom: 20, color: 'rgba(220, 38, 38, 0.8)' }}>&#128274;</Text>
+
+                {/* Headline */}
+                <Text style={{
+                    fontSize: 22, fontFamily: 'Helvetica-Bold', color: NAVY,
+                    textAlign: 'center', marginBottom: 12,
+                }}>
+                    {headline}
+                </Text>
+
+                {/* Body */}
+                <Text style={{
+                    fontSize: 11, color: MUTED, textAlign: 'center',
+                    lineHeight: 1.6, marginBottom: 24, maxWidth: 380,
+                }}>
+                    {body}
+                </Text>
+
+                {/* CTA box */}
+                <View style={{
+                    backgroundColor: '#1A3E66',
+                    borderRadius: 6,
+                    paddingVertical: 10,
+                    paddingHorizontal: 28,
+                }}>
+                    <Text style={{
+                        fontSize: 11, fontFamily: 'Helvetica-Bold',
+                        color: WHITE, textAlign: 'center',
+                    }}>
+                        Jetzt upgraden – Vollständigen Bericht auf complens.de freischalten
+                    </Text>
+                </View>
+            </View>
+
+            {/* MUSTER watermark on top */}
+            <View style={{ position: 'absolute', top: 80,  left: 50, zIndex: 9999 }}>
+                <Text style={{ fontSize: 110, color: 'rgba(220, 38, 38, 0.55)', fontFamily: 'Helvetica-Bold', transform: 'rotate(-40deg)' }}>MUSTER</Text>
+            </View>
+            <View style={{ position: 'absolute', top: 320, left: 50, zIndex: 9999 }}>
+                <Text style={{ fontSize: 110, color: 'rgba(220, 38, 38, 0.55)', fontFamily: 'Helvetica-Bold', transform: 'rotate(-40deg)' }}>MUSTER</Text>
+            </View>
+            <View style={{ position: 'absolute', top: 560, left: 50, zIndex: 9999 }}>
+                <Text style={{ fontSize: 110, color: 'rgba(220, 38, 38, 0.55)', fontFamily: 'Helvetica-Bold', transform: 'rotate(-40deg)' }}>MUSTER</Text>
+            </View>
+
+            {/* Footer */}
             <View style={s.footer} fixed>
                 <Text style={s.footerTxt}>CompLens — EU Entgelttransparenz 2023/970</Text>
                 <Text style={s.footerTxt} render={({ pageNumber, totalPages }) => `Seite ${pageNumber} von ${totalPages}`} />
@@ -262,6 +354,7 @@ export type ReportDocumentProps = {
     explanationAdjustedGap?: number | null   // Tier 3, computed by caller
     remediationPlans?:       RemPlan[]
     isSample?:               boolean
+    sampleMode?:             'trial' | 'expired' | null
     explanations: Array<{
         id:                  string
         employee_id:         string
@@ -276,7 +369,7 @@ export type ReportDocumentProps = {
 
 export function ReportDocument({
     result, orgName, reportName, createdAt, reportNotes, explanations,
-    sections, signatories, explanationAdjustedGap, remediationPlans = [], isSample,
+    sections, signatories, explanationAdjustedGap, remediationPlans = [], isSample, sampleMode,
 }: ReportDocumentProps) {
     // Helper: is a section enabled? (null/undefined = all enabled)
     const show = (key: string) => !sections || sections.has(key)
@@ -322,39 +415,48 @@ export function ReportDocument({
         >
             {/* ── COVER PAGE ─────────────────────────────────── */}
             <Page size="A4" style={s.page}>
-                {isSample && (
-                    <View style={{ position: 'absolute', top: 300, left: 70, zIndex: 9999 }}>
-                        <Text style={{ fontSize: 130, color: 'rgba(239, 68, 68, 0.12)', fontFamily: 'Helvetica-Bold', transform: 'rotate(-45deg)' }}>MUSTER</Text>
-                    </View>
-                )}
                 <View style={s.cover}>
-                    {/* Logo */}
-                    <View>
-                        <View style={s.coverLogoBox}>
-                            <Text style={s.coverLogoTxt}>C</Text>
-                        </View>
+                    {/* EU badge + tiny CompLens attribution */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                         <View style={s.coverBadge}>
                             <Text style={s.coverBadgeTxt}>EU ENTGELTTRANSPARENZ — ART. 9</Text>
                         </View>
+                        <Text style={{ fontSize: 7, color: '#94a3b8' }}>Erstellt mit CompLens</Text>
                     </View>
 
-                    {/* Title block */}
+                    {/* Title block — org name as the hero */}
                     <View>
+                        <Text style={{ ...s.coverSubtitle, fontSize: 26, fontFamily: 'Helvetica-Bold', marginBottom: 4 }}>
+                            {orgName}
+                        </Text>
                         <Text style={s.coverTitle}>
                             Entgelt{'\n'}gleichheits{'\n'}bericht
                         </Text>
-                        <Text style={s.coverSubtitle}>{orgName}</Text>
                         <Text style={s.coverMeta}>Berichtszeitraum: {year} · Erstellt: {date}</Text>
                         <Text style={{ ...s.coverMeta, marginTop: 8 }}>{reportName}</Text>
                     </View>
 
-                    {/* Footer */}
+                    {/* Footer — legal ref only */}
                     <View>
                         <Text style={s.coverFooter}>
-                            Erstellt mit CompLens · Konform mit EU-Richtlinie 2023/970 und EntgTranspG
+                            Konform mit EU-Richtlinie 2023/970 und EntgTranspG
                         </Text>
                     </View>
                 </View>
+                {/* MUSTER after cover content — renders ON TOP of everything */}
+                {isSample && (
+                    <>
+                        <View style={{ position: 'absolute', top: 100, left: 50, zIndex: 9999 }}>
+                            <Text style={{ fontSize: 110, color: 'rgba(220, 38, 38, 0.55)', fontFamily: 'Helvetica-Bold', transform: 'rotate(-40deg)' }}>MUSTER</Text>
+                        </View>
+                        <View style={{ position: 'absolute', top: 370, left: 50, zIndex: 9999 }}>
+                            <Text style={{ fontSize: 110, color: 'rgba(220, 38, 38, 0.55)', fontFamily: 'Helvetica-Bold', transform: 'rotate(-40deg)' }}>MUSTER</Text>
+                        </View>
+                        <View style={{ position: 'absolute', top: 630, left: 50, zIndex: 9999 }}>
+                            <Text style={{ fontSize: 110, color: 'rgba(220, 38, 38, 0.55)', fontFamily: 'Helvetica-Bold', transform: 'rotate(-40deg)' }}>MUSTER</Text>
+                        </View>
+                    </>
+                )}
             </Page>
 
             {/* ── EXECUTIVE SUMMARY ──────────────────────────── */}
@@ -574,6 +676,12 @@ export function ReportDocument({
                 ))}
             </InnerPage>
             )}
+
+            {/* ── PAGE 5+ LOCKED FOR TRIAL ──────────────────── */}
+            {isSample ? (
+                <LockedPage orgName={orgName} reportYear={year} sampleMode={sampleMode ?? 'trial'} />
+            ) : (
+            <>
 
             {/* ── GRADE & QUARTILE ───────────────────────────── */}
             {(show('grades') || show('quartiles')) && (
@@ -883,6 +991,9 @@ export function ReportDocument({
                     ))}
                 </View>
             </InnerPage>
+            )}
+
+            </>
             )}
         </Document>
     )

@@ -71,12 +71,14 @@ function ReportCard({
     onUnarchive,
     onDelete,
     onPdfClick,
+    isAdmin,
 }: {
     a:           Analysis
     onArchive:   (id: string) => void
     onUnarchive: (id: string) => void
     onDelete:    (id: string) => void
     onPdfClick:  (a: Analysis) => void
+    isAdmin?:    boolean
 }) {
     const [action, setAction]     = useState<'archive' | 'delete' | null>(null)
     const [pending, startT]       = useTransition()
@@ -166,8 +168,11 @@ function ReportCard({
                             </a>
                         </>
                     )}
-                    {/* Archive / Unarchive */}
-                    <div className="relative">
+                    {/* Admin only: Archive and Delete */}
+                    {isAdmin && (
+                        <>
+                            {/* Archive / Unarchive */}
+                            <div className="relative">
                         <button
                             onClick={() => setAction(action === 'archive' ? null : 'archive')}
                             className="btn-icon"
@@ -234,6 +239,8 @@ function ReportCard({
                             </div>
                         )}
                     </div>
+                        </>
+                    )}
                 </div>
             </div>
         </div>
@@ -242,7 +249,7 @@ function ReportCard({
 
 // ── Main list ────────────────────────────────────────────────
 
-export default function ReportsListClient({ analyses: initial }: { analyses: Analysis[] }) {
+export default function ReportsListClient({ analyses: initial, isAdmin }: { analyses: Analysis[], isAdmin?: boolean }) {
     const [analyses, setAnalyses] = useState(initial)
     const [pdfModal, setPdfModal] = useState<{ id: string; orgName: string; year: number } | null>(null)
     const [showArchived, setShowArchived] = useState(false)
@@ -293,7 +300,7 @@ export default function ReportsListClient({ analyses: initial }: { analyses: Ana
                         {visible.length} Bericht{visible.length !== 1 ? 'e' : ''} · EU-Richtlinie 2023/970 Art. 9
                     </p>
                 </div>
-                {archivedCount > 0 && (
+                {isAdmin && archivedCount > 0 && (
                     <button
                         onClick={() => setShowArchived(v => !v)}
                         className="btn-ghost text-xs flex items-center gap-1.5">
@@ -317,6 +324,7 @@ export default function ReportsListClient({ analyses: initial }: { analyses: Ana
                             orgName: a.datasets?.name ?? 'Organisation',
                             year:    a.datasets?.reporting_year ?? new Date().getFullYear(),
                         })}
+                        isAdmin={isAdmin}
                     />
                 ))}
             </div>

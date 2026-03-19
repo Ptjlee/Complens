@@ -34,8 +34,28 @@ const bottomItems = [
     { href: '/dashboard/help', label: 'Hilfe & Handbuch', icon: HelpCircle },
 ]
 
-export default function Sidebar() {
+export default function Sidebar({ role }: { role?: 'admin' | 'viewer' }) {
     const pathname = usePathname()
+
+    // Filter out items that viewers shouldn't see
+    const visibleNavItems = navItems.filter(item => {
+        if (role !== 'admin' && [
+            '/dashboard/import',
+            '/dashboard/datasets',
+            '/dashboard/remediation',
+            '/dashboard/portal',
+        ].includes(item.href)) {
+            return false
+        }
+        return true
+    })
+
+    const visibleBottomItems = bottomItems.filter(item => {
+        if (role !== 'admin' && item.href === '/dashboard/settings') {
+            return false
+        }
+        return true
+    })
 
     return (
         <aside
@@ -60,7 +80,7 @@ export default function Sidebar() {
 
             {/* Main nav */}
             <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-                {navItems.map(({ href, label, icon: Icon }) => (
+                {visibleNavItems.map(({ href, label, icon: Icon }) => (
                     <Link
                         key={href}
                         href={href}
@@ -74,7 +94,7 @@ export default function Sidebar() {
 
             {/* Bottom nav */}
             <div className="px-3 py-4 border-t space-y-0.5" style={{ borderColor: 'var(--color-pl-border)' }}>
-                {bottomItems.map(({ href, label, icon: Icon }) => (
+                {visibleBottomItems.map(({ href, label, icon: Icon }) => (
                     <Link
                         key={href}
                         href={href}

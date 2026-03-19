@@ -1,44 +1,80 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Sidebar from '@/components/dashboard/Sidebar'
 import Header from '@/components/dashboard/Header'
 import OnboardingModal from '@/components/dashboard/OnboardingModal'
 import TrialBanner from '@/components/dashboard/TrialBanner'
+import TrialExpiredOverlay from '@/components/dashboard/TrialExpiredOverlay'
+import DeviceFingerprintRegistrar from '@/components/dashboard/DeviceFingerprintRegistrar'
+import AnalysisChatbot from './dashboard/analysis/AnalysisChatbot'
 import { getOrCreateOnboardingProgress } from './dashboard/onboarding/actions'
+import { LanguageProvider } from '@/lib/i18n/LanguageContext'
+import type { Lang } from '@/lib/i18n/translations'
 
 export default async function DashboardLayout({
     children,
 }: {
     children: React.ReactNode
 }) {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const supabase    = await createClient()
+    const adminClient = createAdminClient()
 
+    const { data: { user } } = await supabase.auth.getUser()
     if (!user) redirect('/login')
 
-    // Load onboarding state + org plan in parallel
+    // Step 1: Resolve member row → guaranteed correct org_id + language preference
+    const { data: member } = await adminClient
+        .from('organisation_members')
+        .select('org_id, preferred_language, role')
+        .eq('user_id', user.id)
+        .single()
+
+    // Step 2: Load org by explicit ID (avoids RLS caching returning stale plan data)
+    // and onboarding progress — in parallel
     const [onboarding, { data: org }] = await Promise.all([
         getOrCreateOnboardingProgress(),
-        supabase.from('organisations')
-            .select('id, name, plan, trial_ends_at, ai_enabled')
-            .single(),
+        member?.org_id
+            ? adminClient
+                .from('organisations')
+                .select('id, name, plan, trial_ends_at, ai_enabled')
+                .eq('id', member.org_id)
+                .single()
+            : Promise.resolve({ data: null }),
     ])
+
+    const initialLang = ((member?.preferred_language as Lang | undefined) ?? 'de') as Lang
 
     const showOnboarding = !!onboarding && !onboarding.completed_at
 
+    // Detect expired trial
+    const isLicensed   = ['licensed', 'paylens', 'paylens_ai'].includes(org?.plan ?? '')
+    const trialEnd     = org?.trial_ends_at ? new Date(org.trial_ends_at) : null
+    const trialExpired = !isLicensed && trialEnd !== null && trialEnd < new Date()
+
     return (
-        <div className="flex h-screen overflow-hidden" style={{ background: 'var(--color-pl-bg)' }}>
-            <Sidebar />
-            <div className="flex flex-col flex-1 overflow-hidden">
-                <Header user={user} />
-                {org && <TrialBanner org={org as any} />}
-                <main className="flex-1 overflow-y-auto p-6">
-                    {children}
-                </main>
+        <LanguageProvider initialLang={initialLang}>
+            <div className="flex h-screen overflow-hidden" style={{ background: 'var(--color-pl-bg)' }}>
+                <Sidebar role={member?.role as 'admin' | 'viewer'} />
+                <div className="flex flex-col flex-1 overflow-hidden">
+                    <Header user={user} />
+                    {org && <TrialBanner org={org as any} />}
+                    <main className="flex-1 overflow-y-auto p-6">
+                        {children}
+                    </main>
+                </div>
+                {showOnboarding && (
+                    <OnboardingModal initialStep={onboarding.current_step} />
+                )}
+                {/* Silent: register device fingerprint once per session */}
+                <DeviceFingerprintRegistrar />
+                {/* Global CompLens Assistent — available on all pages, all plans */}
+                <AnalysisChatbot />
+                {/* Trial expired — full-screen overlay blocking all access */}
+                {trialExpired && org?.trial_ends_at && (
+                    <TrialExpiredOverlay trialEndedAt={org.trial_ends_at} />
+                )}
             </div>
-            {showOnboarding && (
-                <OnboardingModal initialStep={onboarding.current_step} />
-            )}
-        </div>
+        </LanguageProvider>
     )
 }

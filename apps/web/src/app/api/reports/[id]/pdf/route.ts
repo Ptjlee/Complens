@@ -41,8 +41,14 @@ export async function GET(
 
     if (!analysis) return new NextResponse('Not found', { status: 404 })
 
-    const { data: org } = await supabase.from('organisations').select('name, plan').single()
-    const isSample = org?.plan === 'trial'
+    const { data: org } = await supabase.from('organisations').select('name, plan, trial_ends_at').single()
+    const isLicensed   = ['licensed', 'paylens', 'paylens_ai'].includes(org?.plan ?? '')
+    const trialEnd     = org?.trial_ends_at ? new Date(org.trial_ends_at) : null
+    const now          = new Date()
+    const trialExpired = !isLicensed && trialEnd !== null && trialEnd < now
+    const trialActive  = !isLicensed && trialEnd !== null && trialEnd >= now && org?.plan === 'trial'
+    const sampleMode: 'trial' | 'expired' | null =
+        trialExpired ? 'expired' : trialActive ? 'trial' : null
 
     const [explRes, plansRes] = await Promise.all([
         supabase
@@ -97,11 +103,12 @@ export async function GET(
         sections,
         signatories,
         explanationAdjustedGap,
-        isSample,
+        isSample:             sampleMode !== null,
+        sampleMode,
     })
 
     const pdfBuffer = await renderToBuffer(doc as React.ReactElement<import('@react-pdf/renderer').DocumentProps>)
-    const prefix    = isSample ? 'MUSTER_' : ''
+    const prefix    = sampleMode ? 'MUSTER_' : ''
     const filename  = `${prefix}CompLens_Entgeltbericht_${reportYear}_${orgName.replace(/\s+/g, '_')}.pdf`
 
     return new NextResponse(new Uint8Array(pdfBuffer), {

@@ -1,7 +1,5 @@
 'use client'
 
-import { type OrgPlanFields, trialDaysLeft } from '@/lib/plans'
-
 import { useState, useCallback, useEffect } from 'react'
 import { TrendingDown, TrendingUp, AlertTriangle, BarChart2, ChevronRight, ChevronDown, Database } from 'lucide-react'
 import { getAnalysisForDataset } from './analysis/actions'
@@ -175,7 +173,7 @@ function TrendChart({ data }: { data: TrendPoint[] }) {
     )
 }
 
-export default function DashboardOverview({ datasets, trend, org }: { datasets: Dataset[]; trend: TrendPoint[]; org?: OrgPlanFields }) {
+export default function DashboardOverview({ datasets, trend, role = 'admin' }: { datasets: Dataset[]; trend: TrendPoint[]; role?: string }) {
     const t = useTranslations('dashboard')
     const [selectedId, setSelectedId] = useState(datasets[0]?.id ?? '')
     const [analysis, setAnalysis]     = useState<AnalysisData | null>(null)
@@ -205,40 +203,9 @@ export default function DashboardOverview({ datasets, trend, org }: { datasets: 
         ? new Date(analysis.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: 'numeric' })
         : null
     const selectedDs = datasets.find(d => d.id === selectedId)
-    const isTrial = org?.plan === 'trial'
-    const daysLeft = org ? trialDaysLeft(org) : 0
 
     return (
         <div className="space-y-6">
-            {/* ── Trial Banner ── */}
-            {isTrial && (
-                <div className="glass-card p-5 flex items-center justify-between" style={{ background: 'linear-gradient(90deg, rgba(245,158,11,0.1) 0%, rgba(245,158,11,0.02) 100%)', borderLeft: '4px solid var(--color-pl-amber)' }}>
-                    <div className="flex items-start gap-4">
-                        <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(245,158,11,0.15)' }}>
-                            <span className="text-xl">🚀</span>
-                        </div>
-                        <div>
-                            <h3 className="text-sm font-bold" style={{ color: 'var(--color-pl-text-primary)' }}>
-                                {daysLeft > 0 ? t('trial.activeTitle') : t('trial.expiredTitle')}
-                            </h3>
-                            <p className="text-xs mt-1 max-w-lg" style={{ color: 'var(--color-pl-text-secondary)', lineHeight: 1.5 }}>
-                               {daysLeft > 0 ? t('trial.activeDesc', { days: daysLeft }) : t('trial.expiredDesc')}
-                            </p>
-                            <div className="mt-3 flex gap-3">
-                                <a href="/dashboard/settings" className="px-4 py-1.5 rounded-lg text-xs font-semibold transition-colors hover:brightness-110 shadow-sm" style={{ background: 'var(--color-pl-amber)', color: '#fff' }}>{t('trial.choosePlan')}</a>
-                            </div>
-                        </div>
-                    </div>
-                    {daysLeft > 0 && (
-                        <div className="hidden lg:flex flex-col items-end pr-2">
-                            <span className="text-3xl font-bold" style={{ color: 'var(--color-pl-amber)' }}>{daysLeft}</span>
-                            <span className="text-xs font-medium uppercase tracking-widest" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('trial.daysLeft')}</span>
-                        </div>
-                    )}
-                </div>
-            )}
-
-
             {/* ── Header ── */}
             <div className="flex items-start justify-between gap-4">
                 <div>
@@ -384,7 +351,11 @@ export default function DashboardOverview({ datasets, trend, org }: { datasets: 
                                 </p>
                             </div>
                             {datasets.length === 0 ? (
-                                <a href="/dashboard/import" className="btn-primary flex-shrink-0 text-xs py-1.5 px-3">{t('onboarding.step1Btn')}</a>
+                                role === 'admin' ? (
+                                    <a href="/dashboard/import" className="btn-primary flex-shrink-0 text-xs py-1.5 px-3">{t('onboarding.step1Btn')}</a>
+                                ) : (
+                                    <span className="text-xs font-semibold px-3 py-1.5 rounded-lg flex-shrink-0" style={{ background: 'var(--color-pl-surface-raised)', color: 'var(--color-pl-text-tertiary)' }}>Ausstehend</span>
+                                )
                             ) : (
                                 <span className="text-xs font-semibold px-3 py-1.5 rounded-lg flex-shrink-0" style={{ background: 'rgba(52,211,153,0.1)', color: '#34d399' }}>{t('onboarding.step1Done')}</span>
                             )}

@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { requireAdminRoleAction } from '@/lib/api/planGuard'
 
 // ============================================================
 // Types
@@ -31,6 +32,10 @@ export type PayOverride = {
 export async function savePayOverride(
     params: Omit<PayOverride, 'id'>,
 ): Promise<{ id?: string; error?: string }> {
+    // ── Role guard: viewers cannot set pay overrides ──
+    const authCheck = await requireAdminRoleAction()
+    if ('error' in authCheck) return { error: authCheck.error }
+
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { error: 'Nicht angemeldet.' }

@@ -67,13 +67,13 @@ const STEPS = [
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <p style={{ color: 'var(--color-pl-text-sub)', fontSize: 14, lineHeight: 1.6 }}>
                     Laden Sie eine <strong style={{ color: 'var(--color-pl-text)' }}>CSV oder Excel-Datei</strong> mit Ihren Lohndaten hoch.
-                    Unser KI-Assistent erkennt automatisch, welche Spalte welchem Feld entspricht.
+                    CompLens erkennt automatisch, welche Spalte welchem Feld entspricht — ohne manuelle Vorbereitung.
                 </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {[
                         { num: '1', label: 'Import öffnen', desc: 'Menü links → „Datensatz importieren"' },
                         { num: '2', label: 'Datei hochladen', desc: 'CSV, XLSX — bis zu 10.000 Mitarbeitende' },
-                        { num: '3', label: 'Spalten prüfen', desc: 'KI schlägt Mapping vor — Sie bestätigen' },
+                        { num: '3', label: 'Spalten prüfen', desc: 'Automatisches Mapping — Sie bestätigen' },
                         { num: '4', label: 'Speichern', desc: 'Datensatz wird DSGVO-konform gespeichert' },
                     ].map(({ num, label, desc }) => (
                         <div key={num} style={{ display: 'flex', gap: 12, alignItems: 'center' }}>

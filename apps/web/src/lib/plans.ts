@@ -74,9 +74,9 @@ export const PLAN_META: Record<PlanId, {
 export const FEATURE_LABELS: Record<Feature, string> = {
     pdf_export:           'PDF-Export',
     ppt_export:           'PowerPoint-Export',
-    ai_import:            'KI-Spaltenerkennung',
-    ai_explanations:      'Individuelle KI-Analyse',
-    ai_narrative:         'KI-Berichtsgenerator',
+    ai_import:            'Automatische Spaltenerkennung',
+    ai_explanations:      'Individuelle Entgeltanalyse',
+    ai_narrative:         'Berichtsgenerator',
     unlimited_employees:  'Unbegrenzte Mitarbeitende',
     multi_user:           'Mehrere Nutzer',
 }

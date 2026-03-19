@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useRef, useEffect, useTransition } from 'react'
-import { Bell, MessageSquare, Globe, LogOut, ChevronDown } from 'lucide-react'
+import { Bell, MessageSquare, Globe, LogOut, Settings, ChevronDown } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 import { routing } from '@/i18n/routing'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 
 interface HeaderProps {
@@ -45,8 +46,6 @@ export default function Header({ user }: HeaderProps) {
             }
         }
         function handleOpenChatbot() {
-            sessionStorage.setItem('openChatbot', 'true')
-            router.push('/dashboard/analysis')
             window.dispatchEvent(new CustomEvent('toggle-chatbot'))
         }
         function handleKeyDown(e: KeyboardEvent) {
@@ -92,12 +91,8 @@ export default function Header({ user }: HeaderProps) {
                         border: '1px solid color-mix(in srgb, var(--color-pl-accent) 30%, transparent)',
                         color: 'var(--color-pl-accent)',
                     }}
-                    title="CompLens AI-Assistent öffnen (Cmd+K)"
-                    onClick={() => {
-                        sessionStorage.setItem('openChatbot', 'true')
-                        router.push('/dashboard/analysis')
-                        window.dispatchEvent(new CustomEvent('toggle-chatbot'))
-                    }}
+                    title="Compliance-Assistent öffnen (Cmd+K)"
+                    onClick={() => window.dispatchEvent(new CustomEvent('toggle-chatbot'))}
                 >
                     <MessageSquare size={13} />
                     Fragen Sie CompLens
@@ -167,6 +162,26 @@ export default function Header({ user }: HeaderProps) {
                                     {user.email}
                                 </div>
                             </div>
+
+                            {/* Settings link */}
+                            <Link
+                                href="/dashboard/settings"
+                                onClick={() => setMenuOpen(false)}
+                                style={{
+                                    width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+                                    padding: '10px 16px',
+                                    color: 'var(--color-pl-text-secondary)',
+                                    fontSize: 13, fontWeight: 500,
+                                    textDecoration: 'none',
+                                    borderBottom: '1px solid var(--color-pl-border)',
+                                    transition: 'background 0.15s',
+                                }}
+                                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+                                onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                            >
+                                <Settings size={15} />
+                                Einstellungen
+                            </Link>
 
                             {/* Logout */}
                             <button

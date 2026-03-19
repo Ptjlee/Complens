@@ -26,7 +26,7 @@ export async function GET(
             .single(),
         supabase
             .from('organisations')
-            .select('name, plan')
+            .select('name, plan, trial_ends_at')
             .single(),
         supabase
             .from('remediation_plans')
@@ -45,7 +45,15 @@ export async function GET(
     const rawAnalysis = analysisRes.data as Record<string, unknown>
     const results     = rawAnalysis.results as AnalysisResult
     const orgName     = (orgRes.data?.name as string | null) ?? 'Organisation'
-    const isSample    = orgRes.data?.plan === 'trial'
+    const orgPlan      = orgRes.data?.plan as string | null
+    const trialEndsAt  = orgRes.data?.trial_ends_at as string | null
+    const isLicensed   = ['licensed', 'paylens', 'paylens_ai'].includes(orgPlan ?? '')
+    const trialEnd     = trialEndsAt ? new Date(trialEndsAt) : null
+    const now          = new Date()
+    const trialExpired = !isLicensed && trialEnd !== null && trialEnd < now
+    const trialActive  = !isLicensed && trialEnd !== null && trialEnd >= now && orgPlan === 'trial'
+    const sampleMode: 'trial' | 'expired' | null =
+        trialExpired ? 'expired' : trialActive ? 'trial' : null
 
     type PlanStep = { step_number?: number; action_type?: string; horizon: string; description: string; target_salary: number | null; responsible?: string; notes?: string; status?: string }
     const plans = (plansRes.data ?? []) as Array<{ employee_id: string; action_type: string; status: string; deadline_months: number; plan_steps: PlanStep[] }>
@@ -96,11 +104,12 @@ export async function GET(
             explanationAdjustedGap,
             explainedEmployeeIds,
             explClaimedMap,
-            isSample,
+            isSample:   sampleMode !== null,
+            sampleMode,
         })
 
         const arrayBuffer = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer
-        const prefix      = isSample ? 'MUSTER_' : ''
+        const prefix      = sampleMode ? 'MUSTER_' : ''
         const safeName    = prefix + ((rawAnalysis.name as string) ?? 'report')
             .replace(/[^a-z0-9_\-]/gi, '_')
             .slice(0, 60)

@@ -512,7 +512,7 @@ function PlanRow({
                     {/* AI plan section */}
                     <div>
                         <div className="flex items-center justify-between mb-2">
-                            <p className="text-xs font-semibold" style={{ color: 'var(--color-pl-text-secondary)' }}>KI-Maßnahmenplan</p>
+                            <p className="text-xs font-semibold" style={{ color: 'var(--color-pl-text-secondary)' }}>Maßnahmenplan</p>
                             <button
                                 onClick={handleGenerate}
                                 disabled={aiLoading}
@@ -525,7 +525,7 @@ function PlanRow({
                             >
                                 {aiLoading
                                     ? <><Loader2 size={11} className="animate-spin" /> Generiert…</>
-                                    : <><Sparkles size={11} /> {aiText ? 'Neu generieren' : 'KI-Plan generieren'}</>}
+                                    : <><Sparkles size={11} /> {aiText ? 'Neu generieren' : 'Plan generieren'}</>}
                             </button>
                         </div>
                         {aiError && <p className="text-xs mb-2" style={{ color: '#f87171' }}>{aiError}</p>}
@@ -533,7 +533,7 @@ function PlanRow({
                             rows={6}
                             value={aiText}
                             onChange={e => setAiText(e.target.value)}
-                            placeholder="Klicken Sie 'KI-Plan generieren' oder geben Sie Ihren Plan manuell ein…"
+                            placeholder="Klicken Sie 'Plan generieren' oder geben Sie Ihren Plan manuell ein…"
                             className="w-full text-xs rounded-lg resize-y p-3"
                             style={{
                                 background: 'var(--color-pl-surface-raised)',
@@ -991,7 +991,7 @@ export default function RemediationClient({
                             Maßnahmen
                         </h1>
                         <p className="text-sm mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                            KI-gestützte Maßnahmenpläne für Entgeltlücken · EU-Richtlinie 2023/970 Art. 9
+                            Maßnahmenpläne für Entgeltlücken · EU-Richtlinie 2023/970 Art. 9
                         </p>
                     </div>
 

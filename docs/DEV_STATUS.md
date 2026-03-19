@@ -1,99 +1,116 @@
-# PayLens — Development Status
-*Last updated: 2026-03-10 20:23 CET*
+# PayLens / CompLens — Development Status
+*Last updated: 2026-03-19 22:19 CET*
 
 ---
 
-## Current State: Phase 0 — Foundation (in progress)
+## Current State: Phase 3 — In Progress
 
-### What is running
-- Next.js 16 dev server on **http://localhost:3001**
-  - Started with: `cd /Users/peter/Documents/DexterBee/PayLens/apps/web && npm run dev -- --port 3001`
-- HR Street App 3 still running on **http://localhost:3000** (separate product, separate window)
+### Dev Server
+- Next.js 16 (Turbopack) on **http://localhost:3001**
+- Start: `cd /Users/peter/Documents/DexterBee/PayLens/apps/web && npm run dev`
 
 ---
 
-## What has been built
+## ✅ Completed — Phase 2
 
-### Infrastructure
-| File | Status |
+All core product features are live.
+
+| Area | Status |
 |------|--------|
-| `apps/web/` | Next.js 16 + TypeScript + Tailwind v4 + App Router |
-| `src/app/globals.css` | Full design system (deep navy palette, glass cards, brand buttons, AI badge, status pills) |
-| `src/app/layout.tsx` | Root layout — SEO metadata (German), Inter font, `lang="de"` |
-| `src/proxy.ts` | Auth guard — `/dashboard/*` requires login; `/login`+`/signup` redirect if logged in |
-| `src/lib/supabase/server.ts` | Server-side Supabase client (SSR-safe, cookie-based) |
-| `src/lib/supabase/client.ts` | Browser-side Supabase client |
-| `src/lib/supabase/admin.ts` | ✅ Service-role client — bypasses RLS; used only for org provisioning |
-| `.env.local` | ✅ Supabase + Gemini keys set; Stripe + Resend to be added later |
-
-### Auth Flow
-| Route | Status |
-|-------|--------|
-| `/login` | ✅ Complete — email/password, show/hide, German errors, GDPR note |
-| `/signup` | ✅ Complete — company name, live password strength, trial info box, terms checkbox |
-| `/signup/check-email` | ✅ Complete — post-registration confirmation screen |
-| `/auth/confirm` | ✅ Complete — exchanges email code, **provisions org + member + onboarding rows via service role** |
-| `(auth)/layout.tsx` | ✅ Complete — split-screen with brand panel left, form right |
-| `(auth)/actions.ts` | ✅ Complete — `login()`, `signup()`, `signOut()` server actions |
-
-### Database
-| Item | Status |
-|------|--------|
-| `database/migrations/001_initial_schema.sql` | ✅ Executed in Supabase — all tables live |
-| `organisations` | ✅ Table + RLS live |
-| `organisation_members` | ✅ Table + RLS live |
-| `datasets` | ✅ Table + RLS live |
-| `employees` | ✅ Table + RLS live |
-| `analyses` | ✅ Table + RLS live |
-| `onboarding_progress` | ✅ Table + RLS live |
-| Post-signup provisioning | ✅ `/auth/confirm` creates org + member + onboarding row on email verify |
-
-### Dashboard Shell
-| File | Status |
-|------|--------|
-| `(dashboard)/layout.tsx` | ✅ Complete — auth guard, sidebar + header wrapper |
-| `components/dashboard/Sidebar.tsx` | ✅ Complete — German nav labels, active states, logo |
-| `components/dashboard/Header.tsx` | ✅ Complete — AI assistant trigger, notifications, avatar |
-| `(dashboard)/dashboard/page.tsx` | ✅ Complete — KPI cards, 5% threshold alert, empty state with import CTA |
+| Auth flow (login, signup, email confirm, org provisioning) | ✅ |
+| Dashboard shell (sidebar, header, KPI cards) | ✅ |
+| Import module (CSV/Excel upload, AI column mapping, validation) | ✅ |
+| Pay gap engine (unadjusted, WIF-adjusted, residual; median + mean) | ✅ |
+| Explanations (Art. 10 per-employee justification, multi-category) | ✅ |
+| Pay overrides (manual salary corrections before analysis) | ✅ |
+| Remediation planner (Art. 11 action plans + step tracking) | ✅ |
+| Reports — Interactive viewer | ✅ |
+| Reports — PDF export with MUSTER watermark + content lock (trial/expired) | ✅ |
+| Reports — PPT export with MUSTER watermark + content lock (trial/expired) | ✅ |
+| Employee portal (Art. 7 right-to-info lookup + PDF letter) | ✅ |
+| Trial banner + countdown | ✅ |
+| Trial expired overlay (full-screen, Stripe CTA) | ✅ |
+| Stripe checkout (subscription) | ✅ |
+| Stripe webhook → license activation | ✅ |
+| Team invitations (email, join page, name + function on join) | ✅ |
+| Settings (org, team, plan/billing display, security) | ✅ |
+| AI chatbot (Gemini 2.5 Pro, floating panel, all pages) | ✅ |
+| Onboarding modal (5-step guided flow) | ✅ |
+| Superadmin panel (user list, stats, license actions, bulk email, AI org analysis) | ✅ |
 
 ---
 
-## What needs to be done next (in order)
+## ✅ Completed — Phase 3
 
-### Step 3 — AI Import Wizard ⬅ NEXT
-The core product differentiator:
-- Drag-and-drop file upload (CSV, XLSX, ODS) → Supabase Storage
-- Gemini API column mapping with confidence scores
-- GDPR opt-in prompt before AI call
-- Manual mapping fallback for PayLens (non-AI) plan
-- Saves to `datasets` + `employees` tables on confirm
-
-### Step 4 — Pay Gap Calculation Engine
-Shared TypeScript module (`apps/shared/calculations/`):
-- Unadjusted gap (mean + median)
-- Adjusted gap (WIF regression)
-- Quartile distribution
-- 5% threshold flag
-
-### Step 5 — Report Generation (PDF + PPT)
-- EU Directive report (PDF)
-- German EntgTranspG format
-- PowerPoint slide deck (pptxgenjs)
+| Feature | Notes |
+|---------|-------|
+| **Superadmin email-allowlist auth** | `SUPERADMIN_EMAILS` env var; `superadminAuth.ts` used by all 7 action routes. Old `?key=` / `ADMIN_SECRET` retired. |
+| **Support ticket system** | Migration 019; `support_tickets` table with RLS. Users submit via `/dashboard/help`. |
+| **AI ticket triage** | On ticket creation, Gemini classifies category, priority, writes one-line summary + draft reply |
+| **Superadmin Support tab** | Full ticket management UI: KPI row, status/priority/search filters, multi-turn thread view, AI draft loading, polish button |
+| **AI reply polish** | `/api/support/ai-polish-reply` — admin can refine draft before sending, bilingual (DE / EN toggle) |
+| **Internationalisation (DE/EN)** | `LanguageContext` + `translations.ts`; preference stored in `organisation_members.preferred_language` (migration 017) |
+| **Contract generation** | `/api/contracts/avv` + `/api/contracts/license` — auto-generated from org legal fields |
+| **Org legal fields** | Migration 018 — `legal_representative`, `legal_address`, `legal_city`, `legal_zip`, `vat_id` on `organisations` |
+| **Legal pages** | `/agb`, `/datenschutz`, `/impressum` live in-app |
+| **Email template branding** | Rich HTML email template with CompLens gradient header, CTA button, bilingual footer |
+| **planGuard helper** | `src/lib/api/planGuard.ts` — shared plan-check middleware for API routes |
+| **Superadmin suspend / delete** | Admin can suspend or hard-delete user accounts |
+| **Public pages** | `/(public)/` — readiness check, booking pages |
 
 ---
 
-## Key file paths
+## 🔲 Remaining — Phase 3 / Launch
+
+### 🔴 High (blockers for production)
+
+| Task | Notes |
+|------|-------|
+| **Stripe price IDs** | `STRIPE_PRICE_PAYLENS` must use real price ID from Stripe dashboard |
+| **Stripe webhook on Vercel** | Register endpoint + set `STRIPE_WEBHOOK_SECRET` in Vercel env |
+| **All env vars on Vercel** | Gemini, Resend, Supabase, Stripe, `SUPERADMIN_EMAILS`, `NEXT_PUBLIC_SITE_URL` |
+
+### 🟡 Medium (important before launch)
+
+| Task | Notes |
+|------|-------|
+| **Support email delivery** | Wire admin reply in Support tab to send actual Resend email to user |
+| **Add-on seat Stripe checkout** | `/api/stripe/checkout?product=addon-seat` route not yet implemented |
+| **Stripe customer portal** | Let licensed users manage/cancel subscription |
+| **Trends module** | UI scaffolded; needs multi-year comparison logic wired to real data |
+| **Compliance dashboard** | Dynamic status per EU Art. 9 sub-requirement |
+| **Employee portal polish** | Art. 7 PDF letter final review + token auth |
+| **Landing page** | Astro site needs UI showcase section + contact form CTA |
+
+### 🟢 Low (post-launch / nice-to-have)
+
+| Task | Notes |
+|------|-------|
+| **Custom email domain** | Verify `hallo@complens.de` in Resend dashboard |
+| **Dataset side-by-side comparison** | Year-over-year diff view |
+| **GDPR / AVV end-to-end test** | Confirm contract PDF download flow with real org legal fields |
+| **Desktop app** | Electron wrapper — not priority before June 2026 |
+
+---
+
+## Key File Paths
+
 | What | Path |
 |------|------|
 | Web app root | `/Users/peter/Documents/DexterBee/PayLens/apps/web/` |
 | Env file | `/Users/peter/Documents/DexterBee/PayLens/apps/web/.env.local` |
-| Master plan | `/Users/peter/Documents/DexterBee/PayLens/docs/product/MASTER_PLAN.md` |
-| DB migration | `/Users/peter/Documents/DexterBee/PayLens/database/migrations/001_initial_schema.sql` |
-| Shared calculation engine (to be created) | `/Users/peter/Documents/DexterBee/PayLens/apps/shared/calculations/` |
+| DB migrations | `/Users/peter/Documents/DexterBee/PayLens/database/migrations/` |
+| Pay gap engine | `/Users/peter/Documents/DexterBee/PayLens/apps/web/src/lib/calculations/payGap.ts` |
+| Superadmin auth helper | `/Users/peter/Documents/DexterBee/PayLens/apps/web/src/lib/api/superadminAuth.ts` |
+| Plan guard helper | `/Users/peter/Documents/DexterBee/PayLens/apps/web/src/lib/api/planGuard.ts` |
+| i18n translations | `/Users/peter/Documents/DexterBee/PayLens/apps/web/src/lib/i18n/translations.ts` |
+| PDF report | `/Users/peter/Documents/DexterBee/PayLens/apps/web/src/lib/pdf/ReportDocument.tsx` |
+| PPT report | `/Users/peter/Documents/DexterBee/PayLens/apps/web/src/lib/ppt/ReportPresentation.ts` |
 
-## How to resume dev server
+## How to Resume Dev Server
 ```bash
 cd /Users/peter/Documents/DexterBee/PayLens/apps/web
-npm run dev -- --port 3001
+npm run dev
 # App runs at http://localhost:3001
+# Superadmin at http://localhost:3001/superadmin (login with an SUPERADMIN_EMAILS address)
 ```

@@ -1,4 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { redirect } from 'next/navigation'
 import PortalClient from './PortalClient'
 
 export const metadata = { title: 'Auskunftsrecht (Art. 7) — CompLens' }
@@ -7,6 +9,16 @@ export default async function PortalPage() {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return null
+
+    const admin = createAdminClient()
+    const { data: member } = await admin
+        .from('organisation_members')
+        .select('role')
+        .eq('user_id', user.id)
+        .single()
+    if (member?.role !== 'admin') {
+        redirect('/dashboard')
+    }
 
     // Fetch the most recent completed analysis and its dataset
     const { data: latestAnalysis } = await supabase

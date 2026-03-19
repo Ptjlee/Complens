@@ -65,15 +65,20 @@ function addBackground(slide: PptxGenJS.Slide, isSample = false) {
     }
 }
 
-function addHeader(slide: PptxGenJS.Slide, title: string, subtitle?: string) {
+function addHeader(slide: PptxGenJS.Slide, title: string, subtitle?: string, orgName = '') {
     // Top accent bar
     slide.addShape('rect', { x: 0, y: 0, w: W, h: 0.48, fill: { color: C.surface } })
-    // Brand dot
-    slide.addShape('ellipse', { x: ML, y: 0.1, w: 0.27, h: 0.27, fill: { color: C.brand } })
-    // App name
+    // Client org name (prominent)
+    if (orgName) {
+        slide.addText(orgName, {
+            x: ML, y: 0.08, w: 5, h: 0.3,
+            fontSize: 11, bold: true, color: C.text, fontFace: 'Calibri',
+        })
+    }
+    // 'Erstellt mit CompLens' — subtle right side
     slide.addText('CompLens', {
-        x: ML + 0.35, y: 0.08, w: 2, h: 0.3,
-        fontSize: 11, bold: true, color: C.text, fontFace: 'Calibri',
+        x: W - 1.5, y: 0.08, w: 1.3, h: 0.3,
+        fontSize: 8, color: '4d5562', fontFace: 'Calibri', align: 'right',
     })
     // Slide title
     slide.addText(title, {
@@ -88,14 +93,18 @@ function addHeader(slide: PptxGenJS.Slide, title: string, subtitle?: string) {
     }
 }
 
-function addFooter(slide: PptxGenJS.Slide, pageNum: number, total: number) {
+function addFooter(slide: PptxGenJS.Slide, pageNum: number, total: number, orgName = '') {
     slide.addShape('rect', { x: 0, y: FOOTER_Y, w: W, h: 0.38, fill: { color: C.footer } })
-    slide.addText('CompLens · EU-Entgelttransparenzrichtlinie 2023/970 · Vertraulich', {
-        x: ML, y: FOOTER_Y + 0.05, w: CW - 1, h: 0.25,
+    slide.addText(orgName ? `${orgName} · EU-Entgelttransparenzrichtlinie 2023/970` : 'EU-Entgelttransparenzrichtlinie 2023/970', {
+        x: ML, y: FOOTER_Y + 0.05, w: CW - 1.8, h: 0.25,
         fontSize: 8, color: C.textSub, fontFace: 'Calibri',
     })
+    slide.addText('Erstellt mit CompLens', {
+        x: W - 2.3, y: FOOTER_Y + 0.05, w: 1.8, h: 0.25,
+        fontSize: 7, color: '4d5562', align: 'right', fontFace: 'Calibri',
+    })
     slide.addText(`${pageNum} / ${total}`, {
-        x: W - 1, y: FOOTER_Y + 0.05, w: 0.7, h: 0.25,
+        x: W - MR - 0.65, y: FOOTER_Y + 0.05, w: 0.6, h: 0.25,
         fontSize: 8, color: C.textSub, align: 'right', fontFace: 'Calibri',
     })
 }
@@ -141,15 +150,15 @@ function addCoverSlide(pptx: PptxGenJS, r: AnalysisResult, orgName: string, anal
     // Left accent bar
     slide.addShape('rect', { x: 0, y: 0, w: 0.06, h: H, fill: { color: C.brand } })
 
-    // Top-left: brand logo box
-    slide.addShape('rect', { x: 0.4, y: 0.35, w: 0.52, h: 0.52, fill: { color: C.brand }, rectRadius: 0.08 })
-    slide.addText('C', {
-        x: 0.4, y: 0.35, w: 0.52, h: 0.52,
-        fontSize: 22, bold: true, color: 'ffffff', fontFace: 'Calibri', align: 'center', valign: 'middle',
+    // Top-left: CLIENT ORG NAME — prominent
+    slide.addText(orgName, {
+        x: 0.4, y: 0.38, w: 5, h: 0.52,
+        fontSize: 22, bold: true, color: C.text, fontFace: 'Calibri', valign: 'middle',
     })
-    slide.addText('CompLens', {
-        x: 1.02, y: 0.42, w: 2.5, h: 0.38,
-        fontSize: 18, bold: true, color: C.text, fontFace: 'Calibri', valign: 'middle',
+    // tiny CompLens tag top-right
+    slide.addText('Erstellt mit CompLens', {
+        x: W - 2.5, y: 0.44, w: 2.2, h: 0.28,
+        fontSize: 7.5, color: '4d5562', fontFace: 'Calibri', align: 'right',
     })
 
     // EU badge top-right
@@ -207,9 +216,9 @@ function addCoverSlide(pptx: PptxGenJS, r: AnalysisResult, orgName: string, anal
         fontFace: 'Calibri', valign: 'middle',
     })
 
-    // Bottom footer
+    // Bottom footer — org name left, 'Erstellt mit CompLens' tiny right
     slide.addShape('rect', { x: 0, y: FOOTER_Y, w: W, h: 0.38, fill: { color: C.footer } })
-    slide.addText('Erstellt mit CompLens · Konform mit EU-Richtlinie 2023/970 und EntgTranspG · Vertraulich', {
+    slide.addText(`${orgName} · EU-Richtlinie 2023/970 · Vertraulich`, {
         x: ML, y: FOOTER_Y + 0.05, w: CW - 0.5, h: 0.26,
         fontSize: 8, color: C.textSub, fontFace: 'Calibri',
     })
@@ -224,7 +233,7 @@ function addCoverSlide(pptx: PptxGenJS, r: AnalysisResult, orgName: string, anal
 function addSlide1(pptx: PptxGenJS, r: AnalysisResult, orgName: string, date: string, total: number, reportNotes?: string | null, explanationAdjustedGap?: number | null, isSample = false) {
     const slide = pptx.addSlide()
     addBackground(slide, isSample)
-    addHeader(slide, 'Executive Summary', `${orgName} · Berichtsjahr ${r.reporting_year} · Erstellt: ${date}`)
+    addHeader(slide, 'Executive Summary', `Berichtsjahr ${r.reporting_year} · Erstellt: ${date}`, orgName)
 
     const o = r.overall
     const exceeds = o.exceeds_5pct
@@ -775,7 +784,7 @@ function addSlide6(pptx: PptxGenJS, r: AnalysisResult, total: number, explainedI
 function addSlide7(pptx: PptxGenJS, r: AnalysisResult, orgName: string, date: string, total: number, isSample = false) {
     const slide = pptx.addSlide()
     addBackground(slide, isSample)
-    addHeader(slide, 'Methodik & Rechtsgrundlage', `Erstellt: ${date} · ${orgName}`)
+    addHeader(slide, 'Methodik & Rechtsgrundlage', `Erstellt: ${date}`, orgName)
 
     const lines = [
         ['Berechnungsmethode', 'Bruttostundenverdienst gem. Art. 3 EU-RL 2023/970. Jahresvergütung (Gesamtvergütung inkl. variable Vergütung, Überstunden, Sachleistungen) geteilt durch annualisierte Arbeitsstunden.'],
@@ -938,6 +947,62 @@ export interface PptOptions {
     explainedEmployeeIds?:   Set<string>
     explClaimedMap?:         Map<string, number>   // employee_id → total claimed reduction %
     isSample?:               boolean
+    sampleMode?:             'trial' | 'expired' | null
+}
+
+// ── Locked upgrade slide (trial/expired) ─────────────────────────────
+
+function addLockedSlide(pptx: PptxGenJS, slideNum: number, total: number, sampleMode: 'trial' | 'expired' = 'trial') {
+    const slide = pptx.addSlide()
+
+    // Dark background
+    slide.addShape('rect', { x: 0, y: 0, w: W, h: H, fill: { color: C.bg } })
+
+    // MUSTER watermark (high opacity — on top of everything)
+    slide.addText('MUSTER', {
+        x: 0, y: 0, w: W, h: H,
+        fontSize: 140, bold: true, color: 'dc2626', transparency: 40,
+        align: 'center', valign: 'middle', rotate: 315, fontFace: 'Calibri',
+    })
+
+    // Lock icon
+    slide.addText('🔒', {
+        x: W / 2 - 0.5, y: 1.4, w: 1, h: 0.8,
+        fontSize: 38, align: 'center', fontFace: 'Segoe UI Emoji',
+    })
+
+    // Headline
+    const headline = sampleMode === 'expired'
+        ? 'Testzeitraum abgelaufen'
+        : 'Präsentation im Testmodus eingeschränkt'
+    slide.addText(headline, {
+        x: 1.5, y: 2.25, w: W - 3, h: 0.55,
+        fontSize: 22, bold: true, color: C.text, fontFace: 'Calibri', align: 'center',
+    })
+
+    // Sub-text
+    const body = sampleMode === 'expired'
+        ? 'Ihr Testzeitraum ist beendet. Diese und alle weiteren Folien sind gesperrt.\n' +
+          'Lizenzieren Sie CompLens, um die vollständige Präsentation herunterzuladen.'
+        : 'Diese und alle weiteren Folien sind im Testmodus gesperrt.\n' +
+          'Lizenzieren Sie CompLens, um die vollständige Präsentation herunterzuladen.'
+    slide.addText(body, {
+        x: 1.5, y: 2.88, w: W - 3, h: 0.7,
+        fontSize: 11, color: C.textSub, fontFace: 'Calibri', align: 'center',
+    })
+
+    // CTA button
+    slide.addShape('rect', {
+        x: W / 2 - 1.5, y: 3.72, w: 3.0, h: 0.44,
+        fill: { color: C.brand }, rectRadius: 0.06,
+        line: { color: 'transparent', width: 0 },
+    })
+    slide.addText('Jetzt upgraden – Vollständigen Bericht auf complens.de freischalten', {
+        x: W / 2 - 1.5, y: 3.72, w: 3.0, h: 0.44,
+        fontSize: 11, bold: true, color: 'ffffff', fontFace: 'Calibri', align: 'center', valign: 'middle',
+    })
+
+    addFooter(slide, slideNum, total)
 }
 
 export async function generateReportPptx(
@@ -945,7 +1010,7 @@ export async function generateReportPptx(
     opts:    PptOptions,
 ): Promise<Uint8Array> {
     const pptx = new PptxGenJS()
-    pptx.layout  = 'LAYOUT_16x9'   // 10 × 5.63 inches — matches W/H layout constants
+    pptx.layout  = 'LAYOUT_16x9'
     pptx.author  = 'CompLens'
     pptx.company = 'CompLens'
     pptx.subject = `${opts.orgName} – Entgeltbericht ${results.reporting_year} (EU-RL 2023/970)`
@@ -953,21 +1018,28 @@ export async function generateReportPptx(
 
     const date  = new Date(opts.analysisDate).toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' })
     const hasMaßnahmen = (opts.plans ?? []).length > 0
-    const total = hasMaßnahmen ? 10 : 9   // cover + 8 content slides (+ optional Maßnahmen slide)
+    const total = hasMaßnahmen ? 10 : 9
     const isSample = !!opts.isSample
 
+    // Slide 1 — Cover (always shown)
     addCoverSlide(pptx, results, opts.orgName, opts.analysisName, date, total, isSample as any)
+    // Slide 2 — Executive Summary (always shown)
     addSlide1(pptx, results, opts.orgName, date, total, opts.reportNotes, opts.explanationAdjustedGap, isSample)
-    addSlide2(pptx, results, total, opts.explanationAdjustedGap ?? null, isSample)
-    addGradeSlide(pptx, results, total, opts.explClaimedMap ?? new Map(), isSample)
-    addSlide3(pptx, results, total, opts.explClaimedMap ?? new Map(), isSample)
-    addSlide4(pptx, results, total, isSample)
-    addSlide5(pptx, results, total, isSample)
-    addSlide6(pptx, results, total, opts.explainedEmployeeIds ?? new Set(), isSample)
-    if (hasMaßnahmen) addMaßnahmenSlide(pptx, opts.plans!, total, isSample)
-    addSlide7(pptx, results, opts.orgName, date, total, isSample)
 
-    // pptxgenjs write() returns Buffer in Node; cast as Uint8Array for NextResponse compatibility
+    if (isSample) {
+        // Trial/expired: from slide 3 onwards — single locked upgrade slide
+        addLockedSlide(pptx, 3, total, opts.sampleMode ?? 'trial')
+    } else {
+        addSlide2(pptx, results, total, opts.explanationAdjustedGap ?? null, isSample)
+        addGradeSlide(pptx, results, total, opts.explClaimedMap ?? new Map(), isSample)
+        addSlide3(pptx, results, total, opts.explClaimedMap ?? new Map(), isSample)
+        addSlide4(pptx, results, total, isSample)
+        addSlide5(pptx, results, total, isSample)
+        addSlide6(pptx, results, total, opts.explainedEmployeeIds ?? new Set(), isSample)
+        if (hasMaßnahmen) addMaßnahmenSlide(pptx, opts.plans!, total, isSample)
+        addSlide7(pptx, results, opts.orgName, date, total, isSample)
+    }
+
     const nodeBuf = await pptx.write({ outputType: 'nodebuffer' }) as unknown as Buffer
     return new Uint8Array(nodeBuf.buffer, nodeBuf.byteOffset, nodeBuf.byteLength)
 }

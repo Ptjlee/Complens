@@ -14,7 +14,6 @@ import { getExplanationsForAnalysis } from './explanations/actions'
 import type { AnalysisResult, DepartmentResult } from '@/lib/calculations/types'
 import EmployeesTab from './EmployeesTab'
 import { PayGapChartGrid } from '@/components/dashboard/PayGapChartGrid'
-import AnalysisChatbot from './AnalysisChatbot'
 
 // ============================================================
 // Gap badge
@@ -194,8 +193,10 @@ const WIF_LABELS: Record<string, string> = {
 
 export default function AnalysisPageClient({
     datasets,
+    isAdmin,
 }: {
     datasets: Dataset[]
+    isAdmin: boolean
 }) {
     const [selectedId, setSelectedId]             = useState(datasets[0]?.id ?? '')
     const [analysis, setAnalysis]                 = useState<AnalysisData | null>(null)
@@ -308,6 +309,13 @@ export default function AnalysisPageClient({
                         }
                     </div>
                 )}
+                {/* Read-only badge for viewers */}
+                {!isAdmin && (
+                    <span className="text-xs px-2.5 py-1 rounded-full font-semibold"
+                        style={{ background: 'rgba(245,158,11,0.12)', color: 'var(--color-pl-amber)', border: '1px solid rgba(245,158,11,0.25)' }}>
+                        Lesezugriff
+                    </span>
+                )}
             </div>
 
             {/* ── Control bar: picker + refresh + re-run ── */}
@@ -340,7 +348,8 @@ export default function AnalysisPageClient({
 
                 <div className="flex-1" />
 
-                {/* Re-run button (with confirmation popover) */}
+                {/* Re-run button — admin only */}
+                {isAdmin && (
                 <div className="relative flex-shrink-0" ref={rerunRef}>
                     <button
                         onClick={() => setShowRerunConfirm(v => !v)}
@@ -388,7 +397,7 @@ export default function AnalysisPageClient({
                                         onMouseLeave={e => (e.currentTarget.style.background = 'var(--theme-pl-action-ghost)')}
                                     >
                                         <p className="text-xs font-semibold mb-0.5" style={{ color: 'var(--color-pl-text-primary)' }}>
-                                            📂 Neu berechnen &amp; Archivieren
+                                            📂 Neu berechnen &amp; Archivieren
                                         </p>
                                         <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
                                             Neue Version erstellen. Bisherige Analyse bleibt im Bericht-Archiv.
@@ -407,7 +416,7 @@ export default function AnalysisPageClient({
                                         onMouseLeave={e => (e.currentTarget.style.background = 'var(--theme-pl-action-ghost)')}
                                     >
                                         <p className="text-xs font-semibold mb-0.5" style={{ color: 'var(--color-pl-text-primary)' }}>
-                                            ♻️ Ersetzen
+                                            ♻️ Ersetzen
                                         </p>
                                         <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
                                             Aktuelle Analyse überschreiben. Kein neuer Archiv-Eintrag.
@@ -438,6 +447,7 @@ export default function AnalysisPageClient({
                         </div>
                     )}
                 </div>
+                )}
             </div>
 
             {runError && (
@@ -468,8 +478,8 @@ export default function AnalysisPageClient({
                 </div>
             )}
 
-            {/* ── WIF Factor Selector ── only shown when a dataset is selected */}
-            {selectedId && (
+            {/* ── WIF Factor Selector ── admin only */}
+            {selectedId && isAdmin && (
                 <div className="glass-card p-4">
                     <div className="flex items-center justify-between mb-3">
                         <div>
@@ -514,11 +524,17 @@ export default function AnalysisPageClient({
             {/* ── Tab bar ── */}
             {results && (
                 <div className="flex gap-1 p-1 rounded-xl" style={{ background: 'var(--theme-pl-action-ghost)', border: '1px solid var(--color-pl-border)', width: 'fit-content' }}>
-                    {([
-                        { id: 'overview',  label: 'Übersicht' },
-                        { id: 'employees', label: `Mitarbeitende (${results.individual_flags?.length ?? 0})` },
-                    ] as const).map(tab => (
-                        <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                    {(
+                        isAdmin
+                            ? [
+                                { id: 'overview',  label: 'Übersicht' },
+                                { id: 'employees', label: `Mitarbeitende (${results.individual_flags?.length ?? 0})` },
+                              ]
+                            : [
+                                { id: 'overview',  label: 'Übersicht' },
+                              ]
+                    ).map(tab => (
+                        <button key={tab.id} onClick={() => setActiveTab(tab.id as 'overview' | 'employees')}
                             className="px-4 py-1.5 rounded-lg text-xs font-medium transition-all"
                             style={{
                                 background: activeTab === tab.id ? 'var(--color-pl-brand)' : 'transparent',
@@ -650,7 +666,7 @@ export default function AnalysisPageClient({
             )}
 
             {/* ── Employees tab ── */}
-            {results && activeTab === 'employees' && analysis?.id && (
+            {isAdmin && results && activeTab === 'employees' && analysis?.id && (
                 <EmployeesTab
                     flags={results.individual_flags ?? []}
                     analysisId={analysis.id}
@@ -660,11 +676,6 @@ export default function AnalysisPageClient({
                 />
             )}
         </div>
-
-        {/* ── Floating AI Chatbot ── */}
-        {results && analysis?.id && (
-            <AnalysisChatbot analysisId={analysis.id!} />
-        )}
         </>
     )
 }

@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { runAnalysis } from '@/lib/calculations/payGap'
+import { requireAdminRoleAction } from '@/lib/api/planGuard'
 import type { EmployeeRecord } from '@/lib/calculations/types'
 
 // ============================================================
@@ -16,6 +17,10 @@ export async function runDatasetAnalysis(
     existingAnalysisId?: string,
     wifFactors?: string[],
 ): Promise<{ analysisId?: string; error?: string }> {
+    // ── Role guard: viewers cannot run analyses ──────────────────
+    const authCheck = await requireAdminRoleAction()
+    if ('error' in authCheck) return { error: authCheck.error }
+
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { error: 'Nicht angemeldet.' }
@@ -217,6 +222,10 @@ export async function getAllDatasets() {
 export async function deleteDataset(
     datasetId: string,
 ): Promise<{ error?: string }> {
+    // ── Role guard: viewers cannot delete datasets ───────────────
+    const authCheck = await requireAdminRoleAction()
+    if ('error' in authCheck) return { error: authCheck.error }
+
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { error: 'Nicht angemeldet.' }
@@ -238,6 +247,10 @@ export async function renameDataset(
     datasetId: string,
     newName: string,
 ): Promise<{ error?: string }> {
+    // ── Role guard: viewers cannot rename datasets ───────────────
+    const authCheck2 = await requireAdminRoleAction()
+    if ('error' in authCheck2) return { error: authCheck2.error }
+
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { error: 'Nicht angemeldet.' }
@@ -304,10 +317,11 @@ export async function getAnalysisTrend(): Promise<TrendPoint[]> {
             id, created_at,
             gap_unadjusted_median, gap_adjusted_median,
             exceeds_5pct_threshold,
-            datasets(reporting_year, employee_count)
+            datasets!inner(reporting_year, employee_count)
         `)
         .eq('status', 'complete')
         .is('archived_at', null)
+        .is('datasets.deleted_at', null)
         .order('created_at', { ascending: false })
 
     if (!data) return []

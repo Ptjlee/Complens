@@ -24,10 +24,12 @@ function DatasetRow({
     d,
     onDeleted,
     onRenamed,
+    isAdmin,
 }: {
     d:         Dataset
     onDeleted: (id: string) => void
     onRenamed: (id: string, newName: string) => void
+    isAdmin:   boolean
 }) {
     const [mode, setMode]             = useState<'idle' | 'renaming' | 'confirming'>('idle')
     const [pending, startT]           = useTransition()
@@ -71,9 +73,17 @@ function DatasetRow({
         })
     }
 
+    const [deleteError, setDeleteError] = useState('')
+
     function doDelete() {
+        setDeleteError('')
         startT(async () => {
-            await deleteDataset(d.id)
+            const result = await deleteDataset(d.id)
+            if (result.error) {
+                setDeleteError(result.error)
+                setMode('idle')
+                return
+            }
             onDeleted(d.id)
         })
     }
@@ -156,6 +166,9 @@ function DatasetRow({
                     {renameError && (
                         <p className="text-xs mb-1" style={{ color: 'var(--color-pl-red)' }}>{renameError}</p>
                     )}
+                    {deleteError && (
+                        <p className="text-xs mb-1" style={{ color: 'var(--color-pl-red)' }}>{deleteError}</p>
+                    )}
 
                     <div className="flex flex-wrap items-center gap-4 text-xs"
                         style={{ color: 'var(--color-pl-text-tertiary)' }}>
@@ -165,8 +178,8 @@ function DatasetRow({
                     </div>
                 </div>
 
-                {/* Actions — hide during rename */}
-                {mode !== 'renaming' && (
+                {/* Actions — hide during rename; omit entirely for viewers */}
+                {mode !== 'renaming' && isAdmin && (
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                         {d.status === 'ready' && (
                             <Link href="/dashboard/analysis"
@@ -232,7 +245,7 @@ function DatasetRow({
 
 // ── Main ─────────────────────────────────────────────────────
 
-export default function DatasetsClient({ datasets: initial }: { datasets: Dataset[] }) {
+export default function DatasetsClient({ datasets: initial, isAdmin }: { datasets: Dataset[]; isAdmin: boolean }) {
     const [datasets, setDatasets] = useState(initial)
     const [search, setSearch]     = useState('')
 
@@ -259,11 +272,19 @@ export default function DatasetsClient({ datasets: initial }: { datasets: Datase
                     </h1>
                     <p className="text-sm mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>
                         {datasets.length} importierte Datensätze
+                        {!isAdmin && (
+                            <span className="ml-2 text-xs px-2 py-0.5 rounded-full font-semibold"
+                                style={{ background: 'rgba(245,158,11,0.12)', color: 'var(--color-pl-amber)', border: '1px solid rgba(245,158,11,0.25)' }}>
+                                Lesezugriff
+                            </span>
+                        )}
                     </p>
                 </div>
-                <Link href="/dashboard/import" className="btn-primary text-sm flex items-center gap-2">
-                    <Upload size={14} /> Neuer Import
-                </Link>
+                {isAdmin && (
+                    <Link href="/dashboard/import" className="btn-primary text-sm flex items-center gap-2">
+                        <Upload size={14} /> Neuer Import
+                    </Link>
+                )}
             </div>
 
             {/* Search */}
@@ -298,6 +319,7 @@ export default function DatasetsClient({ datasets: initial }: { datasets: Datase
                             d={d}
                             onDeleted={handleDeleted}
                             onRenamed={handleRenamed}
+                            isAdmin={isAdmin}
                         />
                     ))}
                 </div>

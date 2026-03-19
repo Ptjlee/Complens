@@ -45,6 +45,30 @@ export async function parseUploadedFile(formData: FormData): Promise<{
         .single()
     if (!member) return { error: 'Keine Organisation gefunden.' }
 
+    // ── Trial upload limit enforcement ────────────────────────────────
+    // Trial orgs: max 10 datasets. Licensed: unlimited.
+    const { data: org } = await admin
+        .from('organisations')
+        .select('plan')
+        .eq('id', member.org_id)
+        .single()
+
+    const isTrial = !org?.plan || org.plan === 'trial' || org.plan === 'free'
+
+    if (isTrial) {
+        const { count: datasetCount } = await admin
+            .from('datasets')
+            .select('*', { count: 'exact', head: true })
+            .eq('org_id', member.org_id)
+
+        if ((datasetCount ?? 0) >= 10) {
+            return {
+                error: 'Im Testzeitraum können maximal 10 Datensätze hochgeladen werden. Upgrade auf CompLens Lizenz für unbegrenzte Uploads: hallo@complens.de',
+            }
+        }
+    }
+    // ─────────────────────────────────────────────────────────────────
+
     const file = formData.get('file') as File | null
     const datasetName = formData.get('datasetName') as string
     const reportingYear = parseInt(formData.get('reportingYear') as string)
