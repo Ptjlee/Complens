@@ -116,7 +116,7 @@ function AddOnButton() {
 
 // ─── Pro-forma download button (simple, no payment selector) ──
 
-function ProformaDownloadButton({ legalComplete, plan }: { legalComplete: boolean; plan: string }) {
+function ProformaDownloadButton({ legalComplete, plan, onGoToOrg }: { legalComplete: boolean; plan: string; onGoToOrg: () => void }) {
     const [loading, setLoading] = useState(false)
 
     async function handleDownload() {
@@ -147,9 +147,9 @@ function ProformaDownloadButton({ legalComplete, plan }: { legalComplete: boolea
         return (
             <span className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
                 Bitte{' '}
-                <a href="#org" className="underline" style={{ color: 'var(--color-pl-brand-light)' }}>
+                <button onClick={onGoToOrg} className="underline hover:brightness-125 transition-all" style={{ color: 'var(--color-pl-brand-light)' }}>
                     Rechtliche Angaben
-                </a>{' '}
+                </button>{' '}
                 ausfüllen
             </span>
         )
@@ -333,7 +333,7 @@ export default function SettingsClient({ user, org, role, memberCount, teamData,
                     {activeTab === 'org'      && <OrgTab      org={org} role={role} memberCount={memberCount} legalData={legalData} onInvite={() => { setOpenInvite(true); setActiveTab('team') }} />}
                     {activeTab === 'team'     && <TeamPanel   teamData={teamData} openInviteOnMount={openInvite} onInviteMounted={() => setOpenInvite(false)} />}
                     {activeTab === 'profile'  && <ProfileTab  user={user} profileData={profileData} />}
-                    {activeTab === 'billing'  && <BillingTab  org={org} plan={plan} subEnd={subEnd} isLicensed={isLicensed} legalComplete={!!(legalData.legal_representative && legalData.legal_address && legalData.legal_city)} />}
+                    {activeTab === 'billing'  && <BillingTab  org={org} plan={plan} subEnd={subEnd} isLicensed={isLicensed} legalComplete={!!(legalData.legal_representative && legalData.legal_address && legalData.legal_city)} onGoToOrg={() => setActiveTab('org')} />}
                     {activeTab === 'security' && <SecurityTab />}
                 </div>
             </div>
@@ -741,13 +741,14 @@ function ProfileTab({ user, profileData }: { user: User; profileData: { fullName
 // ─── Tab: Billing ─────────────────────────────────────────────
 
 function BillingTab({
-    org, plan, subEnd, isLicensed, legalComplete,
+    org, plan, subEnd, isLicensed, legalComplete, onGoToOrg
 }: {
     org: Org
     plan: ReturnType<typeof planInfo>
     subEnd: Date | null
     isLicensed: boolean
     legalComplete: boolean
+    onGoToOrg: () => void
 }) {
     const subStart = subEnd ? new Date(subEnd.getTime() - 365 * 24 * 60 * 60 * 1000) : null
     const fmtDate  = (d: Date | null) =>
@@ -910,7 +911,7 @@ function BillingTab({
                                 <FileDown size={12} /> Herunterladen
                             </a>
                         ) : isLicensed ? (
-                            <span className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>Rechltiche Angaben fehlen</span>
+                            <button onClick={onGoToOrg} className="text-xs hover:underline" style={{ color: 'var(--color-pl-brand-light)' }}>Bitte Rechtliche Angaben ausfüllen</button>
                         ) : (
                             <span className="text-xs px-2.5 py-1 rounded-lg" style={{ background: 'rgba(255,255,255,0.04)', color: 'var(--color-pl-text-tertiary)', border: '1px solid var(--color-pl-border)' }}>
                                 Nach Lizenzierung
@@ -937,7 +938,7 @@ function BillingTab({
                                 <FileDown size={12} /> Herunterladen
                             </a>
                         ) : isLicensed ? (
-                            <span className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>Rechtliche Angaben fehlen</span>
+                            <button onClick={onGoToOrg} className="text-xs hover:underline" style={{ color: 'var(--color-pl-brand-light)' }}>Bitte Rechtliche Angaben ausfüllen</button>
                         ) : (
                             <span className="text-xs px-2.5 py-1 rounded-lg" style={{ background: 'rgba(255,255,255,0.04)', color: 'var(--color-pl-text-tertiary)', border: '1px solid var(--color-pl-border)' }}>
                                 Nach Lizenzierung
@@ -950,7 +951,7 @@ function BillingTab({
                         icon={<FileDown size={14} style={{ color: legalComplete ? 'var(--color-pl-brand-light)' : 'var(--color-pl-text-tertiary)' }} />}
                         title="Proforma-Rechnung (PDF)"
                         subtitle="Für interne Budgetfreigabe oder Vorauszahlung — kein Steuerdokument"
-                        action={<ProformaDownloadButton legalComplete={legalComplete} plan={org?.plan ?? 'paylens'} />}
+                        action={<ProformaDownloadButton legalComplete={legalComplete} plan={org?.plan ?? 'paylens'} onGoToOrg={onGoToOrg} />}
                     />
                 </div>
 
@@ -960,10 +961,9 @@ function BillingTab({
                         <AlertTriangle size={12} style={{ color: '#f59e0b', flexShrink: 0, marginTop: 1 }} />
                         <span style={{ color: 'var(--color-pl-text-secondary)' }}>
                             Für Vertragsunterlagen und Proforma-Rechnung bitte zunächst{' '}
-                            <a href="#org" className="underline font-semibold" style={{ color: '#f59e0b' }}
-                                onClick={e => { e.preventDefault(); window.location.hash = 'org' }}>
+                            <button onClick={onGoToOrg} className="underline font-semibold" style={{ color: '#f59e0b' }}>
                                 Rechtliche Angaben
-                            </a>{' '}
+                            </button>{' '}
                             ausfüllen (Organisation-Tab).
                         </span>
                     </div>
