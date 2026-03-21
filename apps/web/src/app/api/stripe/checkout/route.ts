@@ -90,6 +90,7 @@ export async function POST(req: NextRequest) {
             line_items: lineItems,
             metadata:   { org_id: org.id, plan },
             automatic_tax: { enabled: true },
+            tax_id_collection: { enabled: true },
             customer_update: { name: 'auto', address: 'auto' },
             // ── Payment methods: Kreditkarte + SEPA-Lastschrift ──
             payment_method_types: ['card', 'sepa_debit'],

@@ -86,7 +86,7 @@ export async function signup(formData: FormData) {
             trial_ends_at:  trialEndsAt,
             ai_enabled:     true,  // full AI access during trial
             country:        'DE',
-            max_users:      3,     // allow small team during trial
+            max_users:      2,     // limit to 2 users even during trial
         })
         .select('id')
         .single()
