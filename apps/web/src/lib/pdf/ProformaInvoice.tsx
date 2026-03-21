@@ -20,6 +20,7 @@ export type ProformaInvoiceProps = {
     customerName:    string
     customerAddress: string   // full multi-line address
     customerVatId:   string
+    customerCountry: string
 
     // Line items
     lines: ProformaLine[]
@@ -51,11 +52,7 @@ const SELLER = {
     bic:          '___________',        // ← TODO: BIC eintragen
     email:        'hallo@complens.de',
     web:          'complens.de',
-    tax_note:     'Steuerschuldnerschaft des Leistungsempfängers (Reverse Charge) gilt nicht; Leistungsort: Deutschland.',
 }
-
-
-const VAT_RATE = 0.19  // 19 % Umsatzsteuer
 
 const s = StyleSheet.create({
     page: {
@@ -210,12 +207,20 @@ export function ProformaInvoice({
     customerName,
     customerAddress,
     customerVatId,
+    customerCountry,
     lines,
     paymentMethod,
 }: ProformaInvoiceProps) {
+    const isGerman = ['deutschland', 'germany', 'de'].includes((customerCountry || '').trim().toLowerCase())
+    const vatRate  = isGerman ? 0.19 : 0
+
     const totalNet = lines.reduce((sum, l) => sum + l.quantity * l.unitPrice, 0)
-    const vatAmt   = totalNet * VAT_RATE
+    const vatAmt   = totalNet * vatRate
     const totalGross = totalNet + vatAmt
+
+    const taxNote = isGerman 
+        ? 'Steuerschuldnerschaft des Leistungsempfängers (Reverse Charge) gilt nicht; Leistungsort: Deutschland.' 
+        : 'Übergang der Steuerschuldnerschaft (Reverse Charge) nach Art. 196 MwStSystRL Code / Export (Reverse-Charge / Nicht steuerbare Leistung im Inland).'
 
     const paymentLabel: Record<ProformaInvoiceProps['paymentMethod'], string> = {
         card:     'Kreditkarte (Stripe)',
@@ -315,7 +320,7 @@ export function ProformaInvoice({
                         <Text style={s.totalValue}>{eur(totalNet)}</Text>
                     </View>
                     <View style={s.totalRow}>
-                        <Text style={s.totalLabel}>Umsatzsteuer (19 %)</Text>
+                        <Text style={s.totalLabel}>{isGerman ? 'Umsatzsteuer (19 %)' : 'Umsatzsteuer (0 %)'}</Text>
                         <Text style={s.totalValue}>{eur(vatAmt)}</Text>
                     </View>
                     <View style={s.totalRowGross}>
@@ -364,8 +369,8 @@ export function ProformaInvoice({
                         Dies ist eine Proforma-Rechnung und kein steuerrechtliches Dokument im Sinne des § 14 UStG.
                         Sie dient ausschließlich zur Vorauszahlung und Dokumentation.
                         Die offizielle Mehrwertsteuerrechnung erhalten Sie nach Eingang der Zahlung automatisch per E-Mail von Stripe Payments Europe, Ltd.{'\n\n'}
-                        {SELLER.tax_note}{'\n\n'}
-                        Alle Preise verstehen sich in EUR zzgl. der gesetzlichen Umsatzsteuer (19 %).
+                        {taxNote}{'\n\n'}
+                        Alle Preise verstehen sich in EUR zzgl. der gesetzlichen Umsatzsteuer (sofern anwendbar).
                         Jahresabonnement, zahlbar jährlich im Voraus. Kündigung mit einer Frist von 3 Monaten zum Jahresende.
                     </Text>
                 </View>

@@ -135,6 +135,7 @@ export async function GET(req: NextRequest) {
             customerName:    org.name ?? 'Kunde',
             customerAddress,
             customerVatId:   org.vat_id ?? '',
+            customerCountry: org.country ?? 'Deutschland',
             lines,
             paymentMethod,
         })
