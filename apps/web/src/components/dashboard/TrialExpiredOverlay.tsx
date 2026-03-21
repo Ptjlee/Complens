@@ -39,7 +39,7 @@ export default function TrialExpiredOverlay({ trialEndedAt }: { trialEndedAt: st
             const res  = await fetch('/api/stripe/checkout', {
                 method:  'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body:    JSON.stringify({ plan: 'paylens' }),
+                body:    JSON.stringify({ plan: 'license' }),
             })
             const data = await res.json()
             if (!res.ok || !data.url) throw new Error(data.error ?? 'Stripe-Fehler')

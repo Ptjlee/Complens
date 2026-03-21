@@ -9,13 +9,12 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_dummy', {
 })
 
 const PRICE_IDS: Record<string, string | undefined> = {
-    paylens:            process.env.STRIPE_PRICE_PAYLENS,
-    paylens_ai:         process.env.STRIPE_PRICE_PAYLENS_AI,
-    additional_user:    process.env.STRIPE_PRICE_ADDITIONAL_USER,
+    license:            process.env.STRIPE_PRICE_LICENSE,
+    additional_access:  process.env.STRIPE_PRICE_ADDITIONAL_ACCESS,
 }
 
 const CheckoutSchema = z.object({
-    plan:            z.enum(['paylens', 'paylens_ai', 'additional_user']),
+    plan:            z.enum(['license', 'additional_access']),
     additionalUsers: z.number().int().min(0).max(100).optional().default(0),
 })
 
@@ -72,14 +71,13 @@ export async function POST(req: NextRequest) {
         }
 
         // Build line items
-        // For additional_user plan: just the add-on price x1 (quantity can be extended later)
-        const isAddon = plan === 'additional_user'
+        const isAddon = plan === 'additional_access'
         const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
             { price: priceId, quantity: 1 },
         ]
-        if (!isAddon && additionalUsers > 0 && PRICE_IDS.additional_user) {
+        if (!isAddon && additionalUsers > 0 && PRICE_IDS.additional_access) {
             lineItems.push({
-                price:    PRICE_IDS.additional_user,
+                price:    PRICE_IDS.additional_access,
                 quantity: additionalUsers,
             })
         }
@@ -91,10 +89,9 @@ export async function POST(req: NextRequest) {
             mode:       'subscription',
             line_items: lineItems,
             metadata:   { org_id: org.id, plan },
+            automatic_tax: { enabled: true },
+            customer_update: { name: 'auto', address: 'auto' },
             // ── Payment methods: SEPA-Lastschrift + Vorkasse (bank transfer) ──
-            // customer_balance enables Stripe bank transfer (Vorkasse):
-            // Stripe shows a virtual IBAN; when the transfer arrives Stripe
-            // auto-matches it and fires checkout.session.completed — same as SEPA.
             payment_method_types: ['sepa_debit', 'customer_balance'],
             payment_method_options: {
                 customer_balance: {

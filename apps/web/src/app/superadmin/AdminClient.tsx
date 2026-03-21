@@ -7,9 +7,9 @@ import {
     Calendar, Database, BarChart2, Zap, XCircle,
     ChevronDown, ChevronUp, Mail, ArrowUpRight, Send, X,
     Sparkles, Trash2, ChevronRight, UserMinus, MailCheck,
-    CheckSquare, Square, MessageSquare,
+    CheckSquare, Square, MessageSquare, LineChart, Globe,
 } from 'lucide-react'
-import type { AdminUser, AdminStats } from './page'
+import type { AdminUser, AdminStats, AdminLead, GAStats } from './page'
 import dynamic from 'next/dynamic'
 
 const SupportTab = dynamic(() => import('./SupportTab'), { ssr: false })
@@ -37,6 +37,12 @@ function planBadge(plan: string | null) {
     return { label: 'Lizenz', color: '#10b981', bg: 'rgba(16,185,129,0.12)' }
 }
 
+function urgencyBadge(urgency: string) {
+    if (urgency === 'critical') return { label: 'Kritisch', color: '#ef4444', bg: 'rgba(239,68,68,0.15)' }
+    if (urgency === 'soon')     return { label: 'Bald', color: '#f59e0b', bg: 'rgba(245,158,11,0.15)' }
+    return { label: 'Recherche', color: '#38bdf8', bg: 'rgba(56,189,248,0.15)' }
+}
+
 function trialStatus(user: AdminUser) {
     // Never show trial countdown for licensed users
     if (['licensed', 'paylens', 'paylens_ai'].includes(user.plan ?? '')) return null
@@ -56,21 +62,20 @@ function AdminLogo() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             {/* Same SVG as /components/ui/Logo.tsx, hardcoded for dark admin bg */}
             <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 32 32"
-                width={36}
-                height={36}
+                width="31"
+                height="31"
+                viewBox="0 0 31 31"
                 fill="none"
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 style={{ flexShrink: 0 }}
             >
-                <path d="M 23.5 13.5 A 10 10 0 1 1 17.5 6.5" stroke="#818cf8" strokeWidth="3.5" />
-                <path d="M 25 1.5 Q 25 6 29.5 6 Q 25 6 25 10.5 Q 25 6 20.5 6 Q 25 6 25 1.5 Z" fill="#818cf8" />
+                <path d="M 23.5 13.5 A 10 10 0 1 1 17.5 6.5" stroke="#38bdf8" strokeWidth="3.5" />
+                <path d="M 25 1.5 Q 25 6 29.5 6 Q 25 6 25 10.5 Q 25 6 20.5 6 Q 25 6 25 1.5 Z" fill="#38bdf8" />
             </svg>
             <div>
                 <div style={{ fontWeight: 800, fontSize: 15, color: '#ffffff', letterSpacing: '-0.3px', lineHeight: 1.1 }}>CompLens</div>
-                <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#818cf8', marginTop: 2 }}>Admin Panel</div>
+                <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#ffffff', marginTop: 2 }}>Admin Panel</div>
             </div>
         </div>
     )
@@ -583,8 +588,8 @@ function UserActions({
         <div ref={btnRef} style={{ position: 'relative' }}>
             <button
                 onClick={() => setExpanded(!expanded)}
-                className="flex items-center gap-1 text-xs px-2 py-1 rounded-lg"
-                style={{ background: 'rgba(91,97,255,0.1)', color: 'var(--color-pl-brand-light)', whiteSpace: 'nowrap' }}
+                className="flex items-center gap-1 text-xs px-2 py-1 rounded-lg transition-colors hover:brightness-110"
+                style={{ background: 'rgba(56,189,248,0.15)', color: '#38bdf8', whiteSpace: 'nowrap' }}
             >
                 Aktionen {expanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
             </button>
@@ -610,17 +615,13 @@ function UserActions({
     )
 }
 
-// ─── Main AdminClient ─────────────────────────────────────────
+// ─── Main Client Component ───────────────────────────────────────
 
 type FilterType = 'all' | 'never_activated' | 'trial_expiring' | 'licensed' | 'trial'
 
 export default function AdminClient({
-    users, stats, adminKey,
-}: {
-    users: AdminUser[]
-    stats: AdminStats
-    adminKey?: string
-}) {
+    users, stats, adminKey, leads = [], gaStats,
+}: { users: AdminUser[]; stats: AdminStats; adminKey?: string; leads?: AdminLead[]; gaStats?: GAStats | null }) {
     const [search,        setSearch]        = useState('')
     const [filter,        setFilter]        = useState<FilterType>('all')
     const [sortBy,        setSortBy]        = useState<'created_at' | 'last_active' | 'dataset_count'>('created_at')
@@ -629,7 +630,7 @@ export default function AdminClient({
     const [deleteTarget,  setDeleteTarget]  = useState<AdminUser | null>(null)
     const [massEmailOpen, setMassEmailOpen] = useState(false)
     const [localUsers,    setLocalUsers]    = useState<AdminUser[]>(users)
-    const [adminTab,      setAdminTab]      = useState<'users' | 'support'>('users')
+    const [adminTab,      setAdminTab]      = useState<'users' | 'support' | 'leads'>('users')
     const [, startTransition]               = useTransition()
 
     function handleDeleted(id: string) { setLocalUsers(prev => prev.filter(u => u.id !== id)) }
@@ -718,14 +719,14 @@ export default function AdminClient({
 
             {/* Tab Navigation */}
             <div className="flex items-center gap-1 p-1 rounded-xl" style={{ background: '#131318', border: '1px solid #1a1a24', alignSelf: 'flex-start' }}>
-                {([['users', Users, 'Nutzer'], ['support', MessageSquare, 'Support']] as const).map(([id, Icon, label]) => (
+                {([['users', Users, 'Nutzer'], ['support', MessageSquare, 'Support'], ['leads', Zap, 'Leads']] as const).map(([id, Icon, label]) => (
                     <button
                         key={id}
                         onClick={() => setAdminTab(id)}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
                         style={{
-                            background: adminTab === id ? (id === 'support' ? 'rgba(99,102,241,0.3)' : 'rgba(91,97,255,0.2)') : 'transparent',
-                            color: adminTab === id ? (id === 'support' ? '#c4b5fd' : '#a5b4fc') : '#aaa',
+                            background: adminTab === id ? (id === 'support' ? 'rgba(99,102,241,0.3)' : id === 'leads' ? 'rgba(245,158,11,0.2)' : 'rgba(91,97,255,0.2)') : 'transparent',
+                            color: adminTab === id ? (id === 'support' ? '#c4b5fd' : id === 'leads' ? '#fcd34d' : '#a5b4fc') : '#aaa',
                         }}
                     >
                         <Icon size={12} /> {label}
@@ -735,16 +736,78 @@ export default function AdminClient({
 
             {adminTab === 'support' ? (
                 <SupportTab />
+            ) : adminTab === 'leads' ? (
+                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="flex items-center gap-2 mb-2">
+                        <Zap size={14} style={{ color: '#f59e0b' }} />
+                        <h2 className="text-sm font-bold text-white">Leads ({leads.length})</h2>
+                    </div>
+                    {leads.length === 0 ? (
+                        <div className="text-center py-12 text-sm text-[#888]">Keine Leads vorhanden.</div>
+                    ) : (
+                        <div className="overflow-x-auto rounded-xl" style={{ border: '1px solid #1a1a24', background: '#0b0b0f' }}>
+                            <table className="w-full text-xs text-left" style={{ borderCollapse: 'collapse' }}>
+                                <thead>
+                                    <tr style={{ background: '#131318', borderBottom: '1px solid #1a1a24' }}>
+                                        {['Datum', 'Name', 'Email', 'Firma', 'Größe', 'HRIS', 'Dringlichkeit'].map(h => (
+                                            <th key={h} className="py-3 px-4 font-semibold text-[#888]">{h}</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {leads.map(lead => {
+                                        const ubadge = urgencyBadge(lead.urgency)
+                                        const hasAccount = users.some(u => u.email.toLowerCase() === lead.email.toLowerCase())
+                                        
+                                        return (
+                                        <tr key={lead.id} className="group hover:bg-[#1a1a24] transition-colors" style={{ borderBottom: '1px solid #1a1a24' }}>
+                                            <td className="py-3 px-4 text-[#aaa] whitespace-nowrap">{new Date(lead.created_at).toLocaleDateString('de-DE')}</td>
+                                            <td className="py-3 px-4 font-medium text-white">{lead.first_name} {lead.last_name}</td>
+                                            <td className="py-3 px-4">
+                                                <div className="flex flex-col items-start gap-1">
+                                                    <a href={`mailto:${lead.email}`} className="text-[#38bdf8] hover:underline leading-none">{lead.email}</a>
+                                                    {hasAccount ? (
+                                                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded inline-block" style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', lineHeight: 1 }}>
+                                                            Account erstellt
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-[10px] px-1.5 py-0.5 rounded inline-block" style={{ background: 'rgba(255,255,255,0.05)', color: '#888', lineHeight: 1 }}>
+                                                            Nur Lead
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className="py-3 px-4 text-white">{lead.company_name}</td>
+                                            <td className="py-3 px-4 text-[#aaa]">{lead.company_size}</td>
+                                            <td className="py-3 px-4 text-[#aaa]">{lead.hris}</td>
+                                            <td className="py-3 px-4">
+                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ background: ubadge.bg, color: ubadge.color }}>
+                                                    {ubadge.label}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    )})}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
             ) : (<>
 
             {/* KPI Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                <KpiCard icon={Users}         label="Nutzer gesamt"   value={stats.total_users}     color="#5b61ff" onClick={() => setFilter('all')}             active={filter === 'all'} />
-                <KpiCard icon={Calendar}      label="Diesen Monat"    value={stats.monthly_signups} color="#8b5cf6" />
-                <KpiCard icon={Clock}         label="Im Test"         value={stats.trial_users}     color="#f59e0b" onClick={() => setFilter('trial')}           active={filter === 'trial'} />
-                <KpiCard icon={CheckCircle2}  label="Lizenziert"      value={stats.licensed_users}  color="#10b981" onClick={() => setFilter('licensed')}        active={filter === 'licensed'} />
-                <KpiCard icon={AlertTriangle} label="Nie aktiviert"   value={stats.never_activated} color="#ef4444" onClick={() => setFilter('never_activated')} active={filter === 'never_activated'} />
-                <KpiCard icon={Zap}           label="Läuft in 48h ab" value={stats.trial_expiring}  color="#f97316" onClick={() => setFilter('trial_expiring')}  active={filter === 'trial_expiring'} />
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
+                <KpiCard icon={Globe}         label="Aktive Nutzer (GA4)" value={gaStats?.activeUsers ?? 0} color="#8b5cf6" />
+                <KpiCard icon={LineChart}     label="Sessions (GA4)"      value={gaStats?.sessions ?? 0}    color="#ec4899" />
+                <KpiCard icon={Users}         label="Nutzer gesamt"       value={stats.total_users}         color="#38bdf8" onClick={() => setFilter('all')}             active={filter === 'all'} />
+                <KpiCard icon={CheckCircle2}  label="Lizenziert"          value={stats.licensed_users}      color="#34d399" onClick={() => setFilter('licensed')}        active={filter === 'licensed'} />
+            </div>
+
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+                <KpiCard icon={Calendar}      label="Diesen Monat"    value={stats.monthly_signups} color="#a78bfa" />
+                <KpiCard icon={Clock}         label="Im Test"         value={stats.trial_users}     color="#fbbf24" onClick={() => setFilter('trial')}           active={filter === 'trial'} />
+                <KpiCard icon={AlertTriangle} label="Nie aktiviert"   value={stats.never_activated} color="#f87171" onClick={() => setFilter('never_activated')} active={filter === 'never_activated'} />
+                <KpiCard icon={Zap}           label="Läuft in 48h ab" value={stats.trial_expiring}  color="#fb923c" onClick={() => setFilter('trial_expiring')}  active={filter === 'trial_expiring'} />
+                <KpiCard icon={Database}      label="Datensätze"      value={stats.total_users - stats.never_activated} color="#6366f1" />
             </div>
 
             {/* Search + Filter */}
@@ -777,22 +840,26 @@ export default function AdminClient({
             <div className="rounded-2xl" style={{ background: '#0f0f14', border: '1px solid #1a1a24', overflow: 'visible', position: 'relative' }}>
                 {/* Header */}
                 <div
-                    className="grid gap-4 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider"
-                    style={{ gridTemplateColumns: 'minmax(0,2fr) minmax(0,1.2fr) minmax(0,0.8fr) minmax(0,0.7fr) minmax(0,0.7fr) minmax(0,0.7fr) minmax(0,0.8fr) auto', color: '#cbd5e1', borderBottom: '1px solid #1a1a24' }}
+                    className="grid gap-4 px-4 py-2.5 text-[11px] font-bold uppercase tracking-wider text-white"
+                    style={{ gridTemplateColumns: 'minmax(0,2fr) minmax(0,1.2fr) minmax(0,0.8fr) minmax(0,0.7fr) minmax(0,0.7fr) minmax(0,0.7fr) minmax(0,0.8fr) 90px', borderBottom: '1px solid #2e2e3f' }}
                 >
-                    <span className="truncate">E-Mail / Unternehmen</span>
-                    <span>Plan</span>
-                    <button className="flex items-center gap-1 text-left" onClick={() => toggleSort('dataset_count')}>
+                    <span className="truncate flex items-center">E-Mail / Unternehmen</span>
+                    <span className="flex items-center">Plan</span>
+                    <button className="flex items-center gap-1.5 text-left group hover:text-blue-300 transition-colors" onClick={() => toggleSort('dataset_count')}>
+                        <Database size={12} className="opacity-60 group-hover:opacity-100" />
                         Datensätze <SortIcon col="dataset_count" />
                     </button>
-                    <span>Analysen</span>
-                    <button className="flex items-center gap-1 text-left" onClick={() => toggleSort('created_at')}>
+                    <div className="flex items-center gap-1.5">
+                        <BarChart2 size={12} className="opacity-60" />
+                        <span>Analysen</span>
+                    </div>
+                    <button className="flex items-center gap-1 text-left group hover:text-blue-300 transition-colors" onClick={() => toggleSort('created_at')}>
                         Anmeldung <SortIcon col="created_at" />
                     </button>
-                    <button className="flex items-center gap-1 text-left" onClick={() => toggleSort('last_active')}>
+                    <button className="flex items-center gap-1 text-left group hover:text-blue-300 transition-colors" onClick={() => toggleSort('last_active')}>
                         Zuletzt aktiv <SortIcon col="last_active" />
                     </button>
-                    <span>Rolle</span>
+                    <span className="flex items-center">Rolle</span>
                     <span />
                 </div>
 
@@ -809,12 +876,12 @@ export default function AdminClient({
                         <div key={user.id}>
                             {/* Admin row */}
                             <div
-                                className="relative grid gap-4 px-4 py-3 items-center transition-colors hover:bg-white/[0.02]"
-                                style={{ gridTemplateColumns: 'minmax(0,2fr) minmax(0,1.2fr) minmax(0,0.8fr) minmax(0,0.7fr) minmax(0,0.7fr) minmax(0,0.7fr) minmax(0,0.8fr) auto', borderBottom: '1px solid #1a1a24' }}
+                                className="relative grid gap-4 px-4 py-3 items-center transition-colors hover:bg-white/[0.04]"
+                                style={{ gridTemplateColumns: 'minmax(0,2fr) minmax(0,1.2fr) minmax(0,0.8fr) minmax(0,0.7fr) minmax(0,0.7fr) minmax(0,0.7fr) minmax(0,0.8fr) 90px', borderBottom: '1px solid #1a1a24' }}
                             >
                                 <div className="min-w-0">
-                                    <p className="text-sm font-medium truncate text-white">{user.email}</p>
-                                    {user.org_name && <p className="text-xs truncate mt-0.5" style={{ color: '#94a3b8' }}>{user.org_name}</p>}
+                                    <p className="text-sm font-semibold truncate text-white">{user.email}</p>
+                                    {user.org_name && <p className="text-xs truncate mt-0.5" style={{ color: '#cbd5e1' }}>{user.org_name}</p>}
                                     <div className="flex flex-wrap gap-1 mt-0.5">
                                         {neverActive && (
                                             <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444' }}>
@@ -832,17 +899,17 @@ export default function AdminClient({
                                     <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: badge.bg, color: badge.color }}>{badge.label}</span>
                                     {tstat && <p className="text-[10px]" style={{ color: tstat.color }}>{tstat.label}</p>}
                                 </div>
-                                <div className="flex items-center gap-1.5">
-                                    <Database size={12} style={{ color: '#94a3b8' }} />
-                                    <span className="text-sm" style={{ color: user.dataset_count > 0 ? '#e2e8f0' : '#64748b' }}>{user.dataset_count}</span>
+                                <div className="flex items-center gap-1.5 text-white">
+                                    <Database size={12} style={{ color: '#cbd5e1' }} />
+                                    <span className="text-sm font-semibold text-white">{user.dataset_count}</span>
                                 </div>
-                                <div className="flex items-center gap-1.5">
-                                    <BarChart2 size={12} style={{ color: '#94a3b8' }} />
-                                    <span className="text-sm" style={{ color: user.analysis_count > 0 ? '#e2e8f0' : '#64748b' }}>{user.analysis_count}</span>
+                                <div className="flex items-center gap-1.5 text-white">
+                                    <BarChart2 size={12} style={{ color: '#cbd5e1' }} />
+                                    <span className="text-sm font-semibold text-white">{user.analysis_count}</span>
                                 </div>
-                                <span className="text-xs" style={{ color: '#94a3b8' }}>{fmt(user.created_at)}</span>
-                                <span className="text-xs" style={{ color: '#94a3b8' }}>{fmtRelative(user.last_active)}</span>
-                                <div><Crown size={13} style={{ color: '#5b61ff' }} /></div>
+                                <span className="text-xs text-white">{fmt(user.created_at)}</span>
+                                <span className="text-xs text-white">{fmtRelative(user.last_active)}</span>
+                                <div><Crown size={14} style={{ color: '#38bdf8' }} /></div>
                                 <UserActions user={user} adminKey={adminKey} onEmail={e => setEmailTarget(e)} onDelete={u => setDeleteTarget(u)} />
                             </div>
 
@@ -851,24 +918,24 @@ export default function AdminClient({
                                 <div
                                     key={member.id}
                                     className="relative grid gap-4 px-4 py-2.5 items-center transition-colors hover:bg-white/[0.015]"
-                                    style={{ gridTemplateColumns: 'minmax(0,2fr) minmax(0,1.2fr) minmax(0,0.8fr) minmax(0,0.7fr) minmax(0,0.7fr) minmax(0,0.7fr) minmax(0,0.8fr) auto', borderBottom: '1px solid #1a1a24', background: 'rgba(99,102,241,0.03)' }}
+                                    style={{ gridTemplateColumns: 'minmax(0,2fr) minmax(0,1.2fr) minmax(0,0.8fr) minmax(0,0.7fr) minmax(0,0.7fr) minmax(0,0.7fr) minmax(0,0.8fr) 90px', borderBottom: '1px solid #1a1a24', background: 'rgba(99,102,241,0.03)' }}
                                 >
                                     <div className="min-w-0 flex items-center gap-2">
-                                        <ChevronRight size={11} style={{ color: '#888', flexShrink: 0 }} />
+                                        <ChevronRight size={11} style={{ color: '#9ca3af', flexShrink: 0 }} />
                                         <div>
-                                            <p className="text-xs font-medium truncate" style={{ color: '#e2e8f0' }}>{member.email}</p>
-                                            <span className="text-[10px] font-semibold" style={{ color: member.member_role === 'viewer' ? '#10b981' : '#8b5cf6' }}>
+                                            <p className="text-xs font-semibold truncate text-white">{member.email}</p>
+                                            <span className="text-[10px] font-bold" style={{ color: member.member_role === 'viewer' ? '#34d399' : '#a78bfa' }}>
                                                 {member.member_role === 'viewer' ? 'Lesezugriff' : member.member_role}
                                             </span>
                                         </div>
                                     </div>
                                     <div /><div /><div />
-                                    <span className="text-xs" style={{ color: '#94a3b8' }}>{fmt(member.created_at)}</span>
-                                    <span className="text-xs" style={{ color: '#94a3b8' }}>{fmtRelative(member.last_active)}</span>
+                                    <span className="text-xs text-[#cbd5e1]">{fmt(member.created_at)}</span>
+                                    <span className="text-xs text-[#cbd5e1]">{fmtRelative(member.last_active)}</span>
                                     <div>
                                         {member.member_role === 'viewer'
-                                            ? <Eye size={12} style={{ color: '#10b981' }} />
-                                            : <UserMinus size={12} style={{ color: '#8b5cf6' }} />
+                                            ? <Eye size={12} style={{ color: '#34d399' }} />
+                                            : <UserMinus size={12} style={{ color: '#a78bfa' }} />
                                         }
                                     </div>
                                     <UserActions user={member} adminKey={adminKey} onEmail={e => setEmailTarget(e)} onDelete={u => setDeleteTarget(u)} />

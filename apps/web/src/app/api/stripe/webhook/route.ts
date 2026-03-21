@@ -39,11 +39,10 @@ export async function POST(req: NextRequest) {
 
     // ── Map Stripe product/price → CompLens plan ──────────────────────────────
 
-    async function planFromSubscription(sub: Stripe.Subscription): Promise<'paylens' | 'paylens_ai' | null> {
+    async function planFromSubscription(sub: Stripe.Subscription): Promise<'license' | null> {
         for (const item of sub.items.data) {
             const priceId = item.price.id
-            if (priceId === process.env.STRIPE_PRICE_PAYLENS)    return 'paylens'
-            if (priceId === process.env.STRIPE_PRICE_PAYLENS_AI) return 'paylens_ai'
+            if (priceId === process.env.STRIPE_PRICE_LICENSE) return 'license'
         }
         return null
     }
@@ -58,19 +57,25 @@ export async function POST(req: NextRequest) {
                 if (session.mode !== 'subscription') break
 
                 const orgId = session.metadata?.org_id
-                const plan  = session.metadata?.plan as 'paylens' | 'paylens_ai' | undefined
+                const plan  = session.metadata?.plan as 'license' | 'additional_access' | undefined
                 if (!orgId || !plan) break
 
-                const sub = await stripe.subscriptions.retrieve(session.subscription as string)
+                // If this is just an add-on purchase, don't overwrite the core subscription endDate 
+                // However, we want to update the DB depending on what the add-on implies (e.g., seating limits).
+                // Let's assume add-on purchases map to updating max_users (not done in this block, would need DB logic).
+                // For core licenses:
+                if (plan === 'license') {
+                    const sub = await stripe.subscriptions.retrieve(session.subscription as string)
 
-                await supabase.from('organisations').update({
-                    plan,
-                    stripe_customer_id:     session.customer as string,
-                    stripe_subscription_id: sub.id,
-                    subscription_ends_at:   new Date((sub as any).current_period_end * 1000).toISOString(),
-                    ai_enabled:             plan === 'paylens_ai',
-                    trial_ends_at:          null,   // Clear trial once paid
-                }).eq('id', orgId)
+                    await supabase.from('organisations').update({
+                        plan:                   'licensed',
+                        stripe_customer_id:     session.customer as string,
+                        stripe_subscription_id: sub.id,
+                        subscription_ends_at:   new Date((sub as any).current_period_end * 1000).toISOString(),
+                        ai_enabled:             true,
+                        trial_ends_at:          null,   // Clear trial once paid
+                    }).eq('id', orgId)
+                }
 
                 console.log(`[stripe/webhook] org ${orgId} → plan: ${plan}`)
                 break
@@ -90,10 +95,10 @@ export async function POST(req: NextRequest) {
                 if (!org) break
 
                 await supabase.from('organisations').update({
-                    plan,
+                    plan:                   'licensed',
                     stripe_subscription_id: sub.id,
                     subscription_ends_at:   new Date((sub as any).current_period_end * 1000).toISOString(),
-                    ai_enabled:             plan === 'paylens_ai',
+                    ai_enabled:             true,
                 }).eq('id', org.id)
 
                 console.log(`[stripe/webhook] sub updated → org ${org.id} plan: ${plan}`)

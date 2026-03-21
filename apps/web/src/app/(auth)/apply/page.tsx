@@ -3,8 +3,14 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowRight, Building2, CheckCircle2, ChevronLeft, Loader2, Users } from 'lucide-react'
+import { signup } from '../actions'
+import { ArrowRight, Building2, CheckCircle2, ChevronLeft, Loader2, Users, Eye, EyeOff, Check } from 'lucide-react'
 import { Logo } from '@/components/ui/Logo'
+
+const passwordRules = [
+    { label: 'Mindestens 8 Zeichen', test: (p: string) => p.length >= 8 },
+    { label: 'Zahl enthalten', test: (p: string) => /\d/.test(p) },
+]
 
 type Step = 1 | 2 | 3 | 4
 type FormData = {
@@ -15,12 +21,16 @@ type FormData = {
     companySize: string
     hris: string
     urgency: string
+    password?: string
+    confirmPassword?: string
 }
 
 export default function ApplyPage() {
     const router = useRouter()
     const [step, setStep] = useState<Step>(1)
     const [loading, setLoading] = useState(false)
+    const [error, setError] = useState<string | null>(null)
+    const [showPassword, setShowPassword] = useState(false)
     const [formData, setFormData] = useState<FormData>({
         firstName: '',
         lastName: '',
@@ -29,6 +39,8 @@ export default function ApplyPage() {
         companySize: '',
         hris: '',
         urgency: '',
+        password: '',
+        confirmPassword: '',
     })
 
     const updateForm = (data: Partial<FormData>) => {
@@ -46,13 +58,34 @@ export default function ApplyPage() {
         }
 
         setLoading(true)
-        // Simulate minor delay
-        await new Promise((resolve) => setTimeout(resolve, 800))
-        setLoading(false)
+        setError(null)
+        
+        try {
+            await fetch('/api/leads', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData),
+            })
+        } catch (e) {
+            console.error('Failed to submit lead', e)
+        }
+        
+        const fd = new window.FormData()
+        fd.append('email', formData.email)
+        fd.append('password', formData.password || '')
+        fd.append('confirmPassword', formData.confirmPassword || '')
+        fd.append('companyName', formData.companyName)
+        fd.append('firstName', formData.firstName)
+        fd.append('lastName', formData.lastName)
 
-        // For now, redirect ALL leads directly to the 7-day trial signup
-        // We will activate the Enterprise Trap (/booking) once the VSL is fully completed.
-        router.push('/signup?source=readiness-check')
+        const result = await signup(fd)
+        if (result?.error) {
+            setError(result.error)
+            setLoading(false)
+            return
+        }
+
+        // If it succeeds, signup() redirects automatically to /signup/check-email.
     }
 
     return (
@@ -91,6 +124,18 @@ export default function ApplyPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+                {error && (
+                    <div
+                        className="px-4 py-3 rounded-lg text-sm mb-4 animate-in fade-in"
+                        style={{
+                            background: 'rgba(239,68,68,0.1)',
+                            border: '1px solid rgba(239,68,68,0.25)',
+                            color: 'var(--color-pl-red)',
+                        }}
+                    >
+                        {error}
+                    </div>
+                )}
                 {/* Step 1: Contact */}
                 {step === 1 && (
                     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -257,6 +302,61 @@ export default function ApplyPage() {
                             </button>
                         ))}
                         
+                        {/* Password Creation */}
+                        <div className="pt-4 space-y-4">
+                            <div className="h-px w-full" style={{ background: 'var(--color-pl-border)' }} />
+                            <div>
+                                <h3 className="text-base font-bold mb-3 mt-1" style={{ color: 'var(--color-pl-text-primary)' }}>Konto erstellen</h3>
+                                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--color-pl-text-secondary)' }}>Passwort (Ihr Login-Schlüssel für das Dashboard)</label>
+                                <div className="relative">
+                                    <input
+                                        required
+                                        type={showPassword ? 'text' : 'password'}
+                                        value={formData.password}
+                                        onChange={(e) => updateForm({ password: e.target.value })}
+                                        className="input-base pr-10"
+                                        placeholder="••••••••"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2"
+                                        style={{ color: 'var(--color-pl-text-tertiary)' }}
+                                        tabIndex={-1}
+                                    >
+                                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                    </button>
+                                </div>
+                                {(formData.password || '').length > 0 && (
+                                    <ul className="mt-2 space-y-1 text-left">
+                                        {passwordRules.map(({ label, test }) => (
+                                            <li key={label} className="flex items-center gap-1.5 text-xs">
+                                                <Check
+                                                    size={11}
+                                                    strokeWidth={3}
+                                                    style={{ color: test(formData.password || '') ? 'var(--color-pl-green)' : 'var(--color-pl-text-tertiary)' }}
+                                                />
+                                                <span style={{ color: test(formData.password || '') ? 'var(--color-pl-green)' : 'var(--color-pl-text-tertiary)' }}>
+                                                    {label}
+                                                </span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--color-pl-text-secondary)' }}>Passwort bestätigen</label>
+                                <input
+                                    required
+                                    type={showPassword ? 'text' : 'password'}
+                                    value={formData.confirmPassword}
+                                    onChange={(e) => updateForm({ confirmPassword: e.target.value })}
+                                    className="input-base"
+                                    placeholder="••••••••"
+                                />
+                            </div>
+                        </div>
+
                         {/* Terms Opt-in */}
                         <div className="pt-2">
                             <label className="flex items-start gap-3 cursor-pointer">
@@ -299,7 +399,7 @@ export default function ApplyPage() {
                             (step === 1 && (!formData.firstName || !formData.lastName || !formData.email || !formData.companyName)) ||
                             (step === 2 && (!formData.companySize)) ||
                             (step === 3 && (!formData.hris)) ||
-                            (step === 4 && (!formData.urgency)) ||
+                            (step === 4 && (!formData.urgency || !formData.password || !formData.confirmPassword)) ||
                             loading
                         }
                         className="btn-primary w-full sm:w-auto mt-2 sm:mt-0"
@@ -308,7 +408,7 @@ export default function ApplyPage() {
                         {loading ? (
                             <><Loader2 size={15} className="animate-spin" /> Verarbeiten...</>
                         ) : step === 4 ? (
-                            'Kostenlos starten — 7 Tage'
+                            'Kostenlos starten'
                         ) : (
                             <>Weiter <ArrowRight size={16} /></>
                         )}

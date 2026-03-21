@@ -11,14 +11,11 @@ import TeamPanel from './TeamPanel'
 import { useTranslation } from '@/lib/i18n/LanguageContext'
 import type { Lang } from '@/lib/i18n/translations'
 
-// ─── Plan display helpers ─────────────────────────────────────
-
 const PLAN_LABELS: Record<string, { label: string; badge: string; color: string }> = {
     trial:      { label: '7-Tage Testversion', badge: 'TEST',   color: '#f59e0b' },
-    free:       { label: 'Testversion',         badge: 'TEST',   color: '#f59e0b' },
-    licensed:   { label: 'CompLens Lizenz',     badge: 'LIZENZ', color: 'var(--color-pl-brand)' },
-    paylens:    { label: 'CompLens Lizenz',     badge: 'LIZENZ', color: 'var(--color-pl-brand)' },
-    paylens_ai: { label: 'CompLens Lizenz',     badge: 'LIZENZ', color: 'var(--color-pl-brand)' },
+    free:       { label: 'Testversion',        badge: 'TEST',   color: '#f59e0b' },
+    licensed:   { label: 'CompLens Lizenz',    badge: 'LIZENZ', color: 'var(--color-pl-brand)' },
+    license:    { label: 'CompLens Lizenz',    badge: 'LIZENZ', color: 'var(--color-pl-brand)' },
 }
 
 function planInfo(plan: string | null) {
@@ -38,7 +35,7 @@ function UpgradeButton() {
             const res  = await fetch('/api/stripe/checkout', {
                 method:  'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body:    JSON.stringify({ plan: 'paylens' }),
+                body:    JSON.stringify({ plan: 'license' }),
             })
             const data = await res.json()
             if (!res.ok || !data.url) throw new Error(data.error ?? 'Stripe-Fehler')
@@ -84,7 +81,7 @@ function AddOnButton() {
             const res  = await fetch('/api/stripe/checkout', {
                 method:  'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body:    JSON.stringify({ plan: 'additional_user' }),
+                body:    JSON.stringify({ plan: 'additional_access' }),
             })
             const data = await res.json()
             if (!res.ok || !data.url) throw new Error(data.error ?? 'Stripe-Fehler')

@@ -3,6 +3,7 @@ import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import AdminClient from './AdminClient'
+import { BetaAnalyticsDataClient } from '@google-analytics/data'
 
 export const metadata: Metadata = {
     title: 'Admin — CompLens',
@@ -39,9 +40,26 @@ export type AdminStats = {
     monthly_signups: number  // this month
 }
 
+export type AdminLead = {
+    id:           string
+    first_name:   string
+    last_name:    string
+    email:        string
+    company_name: string
+    company_size: string
+    hris:         string
+    urgency:      string
+    created_at:   string
+}
+
+export type GAStats = {
+    activeUsers: number
+    sessions: number
+}
+
 // ─── Data fetching ────────────────────────────────────────────
 
-async function loadAdminData(): Promise<{ users: AdminUser[]; stats: AdminStats }> {
+async function loadAdminData(): Promise<{ users: AdminUser[]; stats: AdminStats; leads: AdminLead[]; gaStats: GAStats | null }> {
     const admin = createAdminClient()
 
     // Fetch all Supabase auth users
@@ -134,12 +152,53 @@ async function loadAdminData(): Promise<{ users: AdminUser[]; stats: AdminStats 
         monthly_signups: users.filter(u => u.created_at >= thisMonth).length,
     }
 
-    return { users, stats }
+    let leads: AdminLead[] = []
+    try {
+        const { data, error } = await admin.from('leads').select('*').order('created_at', { ascending: false })
+        if (data && !error) {
+            leads = data as AdminLead[]
+        }
+    } catch (e) {
+        // Migration might not be applied yet
+    }
+
+    let gaStats: GAStats | null = null
+    try {
+        const { GA_PROPERTY_ID, GA_CLIENT_EMAIL, GA_PRIVATE_KEY } = process.env
+        if (GA_PROPERTY_ID && GA_CLIENT_EMAIL && GA_PRIVATE_KEY) {
+            const client = new BetaAnalyticsDataClient({
+                credentials: {
+                    client_email: GA_CLIENT_EMAIL,
+                    private_key: GA_PRIVATE_KEY.replace(/\\n/g, '\n'),
+                }
+            })
+            
+            const [response] = await client.runReport({
+                 property: `properties/${GA_PROPERTY_ID}`,
+                 dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
+                 metrics: [{ name: 'activeUsers' }, { name: 'sessions' }],
+            })
+            
+            const row = response.rows?.[0]
+            if (row && row.metricValues) {
+                 gaStats = {
+                     activeUsers: parseInt(row.metricValues[0].value || '0', 10),
+                     sessions: parseInt(row.metricValues[1].value || '0', 10),
+                 }
+            } else {
+                 gaStats = { activeUsers: 0, sessions: 0 }
+            }
+        }
+    } catch (e) {
+        console.error("GA4 Fetch Error:", e)
+    }
+
+    return { users, stats, leads, gaStats }
 }
 
 // ─── Page ─────────────────────────────────────────────────────
 
 export default async function AdminPage() {
-    const { users, stats } = await loadAdminData()
-    return <AdminClient users={users} stats={stats} />
+    const { users, stats, leads, gaStats } = await loadAdminData()
+    return <AdminClient users={users} stats={stats} leads={leads} gaStats={gaStats} />
 }

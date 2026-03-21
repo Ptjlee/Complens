@@ -154,7 +154,7 @@ const MODULES: Module[] = [
             },
         ],
         faqs: [
-            { q: 'Wie lange dauert die Testphase?', a: 'Die Testphase beträgt 14 Tage ab Registrierung. In dieser Zeit haben Sie vollen Zugriff auf alle Funktionen. Nach Ablauf wird der Zugang automatisch gesperrt, bis eine Lizenz aktiviert wird. Berichte aus der Testphase sind mit einem MUSTER-Wasserzeichen versehen.' },
+            { q: 'Wie lange dauert die Testphase?', a: 'Die Testphase beträgt 7 Tage ab Registrierung. In dieser Zeit haben Sie vollen Zugriff auf alle Funktionen. Nach Ablauf wird der Zugang automatisch gesperrt, bis eine Lizenz aktiviert wird. Berichte aus der Testphase sind mit einem MUSTER-Wasserzeichen versehen.' },
             { q: 'Kann ich die Organisation nachträglich umbenennen?', a: 'Ja. Unter Einstellungen → Organisation können Administratoren den Organisationsnamen jederzeit ändern. Bereits erstellte PDF/PPT-Berichte werden nicht rückwirkend aktualisiert.' },
             { q: 'Was passiert nach dem Testzeitraum?', a: 'Nach Ablauf des Testzeitraums wird ein Overlay angezeigt, das alle Dashboard-Interaktionen blockiert. Daten und Analysen bleiben erhalten. Mit einem Klick auf „Jetzt upgraden" gelangen Sie zur sicheren Stripe-Zahlungsseite.' },
             { q: 'Welche Regionen werden unterstützt?', a: 'CompLens ist auf EU-Unternehmen ausgelegt, insbesondere auf den deutschen und europäischen Markt. Die Berechnungen orientieren sich an der EU-Richtlinie 2023/970 und dem deutschen EntgTranspG.' },

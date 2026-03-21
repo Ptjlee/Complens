@@ -31,6 +31,10 @@ export async function signup(formData: FormData) {
     const password        = formData.get('password') as string
     const confirmPassword = formData.get('confirmPassword') as string
     const companyName     = (formData.get('companyName') as string).trim()
+    const firstName       = (formData.get('firstName') as string | null) || ''
+    const lastName        = (formData.get('lastName') as string | null) || ''
+
+    const fullName = [firstName.trim(), lastName.trim()].filter(Boolean).join(' ')
 
     if (password !== confirmPassword) {
         return { error: 'Die Passwörter stimmen nicht überein.' }
@@ -49,7 +53,10 @@ export async function signup(formData: FormData) {
         email,
         password,
         options: {
-            data: { company_name: companyName },
+            data: { 
+                company_name: companyName,
+                full_name: fullName || undefined,
+            },
             emailRedirectTo: `${getURL()}auth/confirm`,
         },
     })
@@ -94,9 +101,10 @@ export async function signup(formData: FormData) {
     const { error: memberErr } = await admin
         .from('organisation_members')
         .insert({
-            org_id:  org.id,
-            user_id: userId,
-            role:    'admin',
+            org_id:    org.id,
+            user_id:   userId,
+            role:      'admin',
+            full_name: fullName || null,
         })
 
     if (memberErr) {

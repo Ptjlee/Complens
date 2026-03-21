@@ -36,7 +36,7 @@ Unter Import → Vorlage herunterladen. Vorlage enthält alle Pflichtfelder gem.
 Immer die aktuellste Vorlage verwenden.
 
 FAQ:
-- Testphase = 14 Tage, danach Sperre bis zur Lizenzaktivierung. Berichte mit MUSTER-Wasserzeichen.
+- Testphase = 7 Tage, danach Sperre bis zur Lizenzaktivierung. Berichte mit MUSTER-Wasserzeichen.
 - Organisationsname nachträglich änderbar unter Einstellungen → Organisation (nur Admins).
 - Nach Testzeitraum: Overlay blockiert Zugriff, Daten bleiben erhalten, Upgrade per Stripe.
 

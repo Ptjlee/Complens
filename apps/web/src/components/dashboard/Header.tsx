@@ -14,10 +14,14 @@ const SupportTicketModal = dynamic(() => import('@/components/support/SupportTic
 
 interface HeaderProps {
     user: User
+    fullName?: string | null
 }
 
-export default function Header({ user }: HeaderProps) {
-    const initials = user.email?.slice(0, 2).toUpperCase() ?? 'CL'
+export default function Header({ user, fullName }: HeaderProps) {
+    const rawInitials = fullName?.trim() 
+        ? fullName.trim().split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
+        : user.email?.slice(0, 2).toUpperCase()
+    const initials = rawInitials || 'CL'
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
     const [showSupport, setShowSupport] = useState(false)

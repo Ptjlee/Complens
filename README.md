@@ -97,7 +97,7 @@ CompLens covers the full EU Pay Transparency compliance lifecycle:
 
 ### Plan Gating in Code
 - `plan` column on `organisations` table: `trial`, `paylens`, `paylens_ai`
-- `trial_ends_at` timestamps the 14-day window
+- `trial_ends_at` timestamps the 7-day window
 - `lib/api/planGuard.ts` — centralised API middleware for plan checks
 - `lib/plans.ts` — feature matrix
 - Stripe webhook sets plan on payment, clears `trial_ends_at`
@@ -214,7 +214,7 @@ PayLens/
 ## Feature Reference
 
 ### Authentication & Onboarding
-- Email/password registration with 14-day trial activation
+- Email/password registration with 7-day trial activation
 - Email confirmation + organisation setup on first login
 - **Team invitations** — HR manager sends invite links; invited users can set their name and function on join
 - Guided **onboarding modal** (5 steps: upload → analyse → explain → remediate → report)
@@ -353,7 +353,9 @@ PayLens/
 | Superadmin suspend / delete | Account management from admin panel |
 | Viewer (read-only) roles | Strict enforcement of read-only access, hidden config menus |
 | Analysis Privacy | Individual employee data tab hidden from viewer roles |
-| Admin Panel UI/UX Polish | Enhanced dark mode text contrast and fixed table grid alignment |
+| Full-Stack Lead Capture | `/api/leads` endpoint + Supabase DB `leads` + Admin Panel integration |
+| Frictionless UI Onboarding | Pre-Check funnel natively integrated with 1-click password signup flow |
+| Admin Panel Polish | Urgency & Account Status badges, deep visual contrast improvements |
 
 ---
 
@@ -421,7 +423,7 @@ Start campaigns on these **after** landing page is live and GA4 conversion track
 
 ## Trial & Conversion Strategy
 
-- **14-day free trial** — full product access, no credit card required
+- **7-day free trial** — full product access, no credit card required
 - **During trial: PDF/PPT exports are watermarked (MUSTER) and locked** — visible but not extractable. Prevents using trial as a one-off free analysis.
 - **TrialExpiredOverlay** — full-screen block on all dashboard routes after expiry. Single Stripe CTA.
 - Reminder email sequence: D-3 and D-1 before trial end (wire via Resend + CRM)
@@ -443,7 +445,7 @@ Visitor → Lead → Trial → Customer → Retained → Expanded → Advocate
 | Lead | Contact form / content download | Nurture sequence (3 emails, 2 weeks) |
 | Trial start | Supabase signup | Onboarding email D0, D3, D7 |
 | Trial → customer | Stripe payment | Welcome + optional success call |
-| At-risk | No login in 14 days | Automated check-in email |
+| At-risk | No login in 7 days | Automated check-in email |
 | Renewal | 30/7 days before | Reminder + upgrade offer |
 | Advocate | Long-tenure | Request testimonial / case study |
 

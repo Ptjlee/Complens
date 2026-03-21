@@ -26,7 +26,7 @@ export default async function DashboardLayout({
     // Step 1: Resolve member row → guaranteed correct org_id + language preference
     const { data: member } = await adminClient
         .from('organisation_members')
-        .select('org_id, preferred_language, role')
+        .select('org_id, preferred_language, role, full_name')
         .eq('user_id', user.id)
         .single()
 
@@ -57,7 +57,7 @@ export default async function DashboardLayout({
             <div className="flex h-screen overflow-hidden" style={{ background: 'var(--color-pl-bg)' }}>
                 <Sidebar role={member?.role as 'admin' | 'viewer'} />
                 <div className="flex flex-col flex-1 overflow-hidden">
-                    <Header user={user} />
+                    <Header user={user} fullName={member?.full_name} />
                     {org && <TrialBanner org={org as any} />}
                     <main className="flex-1 overflow-y-auto p-6">
                         {children}

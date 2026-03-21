@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import { NextIntlClientProvider } from 'next-intl'
 import { getLocale, getMessages } from 'next-intl/server'
 import { ThemeProvider } from '@/components/ThemeProvider'
+import CookieBanner from '@/components/ui/CookieBanner'
 import { GoogleAnalytics } from '@next/third-parties/google'
 import './globals.css'
 
@@ -69,10 +70,30 @@ export default async function RootLayout({
 
   return (
     <html lang={locale} className={inter.variable} suppressHydrationWarning>
+      <head>
+        {/* Set Google Analytics Default Consent to DENIED immediately before gtag loads */}
+        {gaId && (
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('consent', 'default', {
+                  'analytics_storage': 'denied',
+                  'ad_storage': 'denied',
+                  'ad_user_data': 'denied',
+                  'ad_personalization': 'denied',
+                });
+              `,
+            }}
+          />
+        )}
+      </head>
       <body className="antialiased font-sans">
         <NextIntlClientProvider locale={locale} messages={messages}>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             {children}
+            <CookieBanner />
           </ThemeProvider>
         </NextIntlClientProvider>
       </body>
