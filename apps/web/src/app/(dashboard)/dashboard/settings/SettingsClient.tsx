@@ -873,7 +873,7 @@ function BillingTab({
                     </div>
                     <UpgradeButton />
                     <p className="text-xs mt-2" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                        Zahlung per SEPA-Lastschrift oder Überweisung (Vorkasse) — Sie wählen in Stripe.
+                        Zahlung per Kreditkarte oder SEPA-Lastschrift — Sie wählen in Stripe.
                     </p>
                 </div>
             )}

@@ -91,17 +91,8 @@ export async function POST(req: NextRequest) {
             metadata:   { org_id: org.id, plan },
             automatic_tax: { enabled: true },
             customer_update: { name: 'auto', address: 'auto' },
-            // ── Payment methods: SEPA-Lastschrift + Vorkasse (bank transfer) ──
-            payment_method_types: ['sepa_debit', 'customer_balance'],
-            payment_method_options: {
-                customer_balance: {
-                    funding_type: 'bank_transfer',
-                    bank_transfer: {
-                        type: 'eu_bank_transfer',
-                        eu_bank_transfer: { country: 'DE' },
-                    },
-                },
-            },
+            // ── Payment methods: Kreditkarte + SEPA-Lastschrift ──
+            payment_method_types: ['card', 'sepa_debit'],
             success_url: `${origin}/dashboard/settings#billing`,
             cancel_url:  `${origin}/dashboard/settings#billing`,
             allow_promotion_codes: true,
