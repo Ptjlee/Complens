@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
         // Fetch org to get/create Stripe customer
         const { data: org } = await supabase
             .from('organisations')
-            .select('id, name, stripe_customer_id, country, legal_address, legal_zip, legal_city')
+            .select('id, name, stripe_customer_id, country, legal_address, legal_zip, legal_city, vat_id')
             .single()
 
         if (!org) {
@@ -81,6 +81,22 @@ export async function POST(req: NextRequest) {
                 country: cc.toUpperCase().slice(0, 2),
             }
         })
+
+        // Pre-fill VAT ID on the Stripe Customer so checkout recognizes them as B2B
+        if (org.vat_id) {
+            try {
+                const existingTaxIds = await stripe.customers.listTaxIds(customerId)
+                const alreadyHasIt = existingTaxIds.data.some(t => t.value === org.vat_id)
+                if (!alreadyHasIt) {
+                    await stripe.customers.createTaxId(customerId, {
+                        type: 'eu_vat',
+                        value: org.vat_id,
+                    })
+                }
+            } catch (err) {
+                console.error('[stripe/checkout] Could not sync VAT ID:', err)
+            }
+        }
 
 
         // Build line items
