@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
         // Fetch org to get/create Stripe customer
         const { data: org } = await supabase
             .from('organisations')
-            .select('id, name, stripe_customer_id')
+            .select('id, name, stripe_customer_id, country, legal_address, legal_zip, legal_city')
             .single()
 
         if (!org) {
@@ -69,6 +69,19 @@ export async function POST(req: NextRequest) {
                 .update({ stripe_customer_id: customerId })
                 .eq('id', org.id)
         }
+
+        // Force Stripe Customer to have the latest address to ensure tax calculation works
+        const cc = org.country === 'Deutschland' ? 'DE' : (org.country || 'DE')
+        await stripe.customers.update(customerId, {
+            name: org.name,
+            address: {
+                line1: org.legal_address || undefined,
+                city: org.legal_city || undefined,
+                postal_code: org.legal_zip || undefined,
+                country: cc.toUpperCase().slice(0, 2),
+            }
+        })
+
 
         // Build line items
         const isAddon = plan === 'additional_access'
