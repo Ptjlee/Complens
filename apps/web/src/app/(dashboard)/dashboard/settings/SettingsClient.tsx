@@ -247,6 +247,7 @@ type Props = {
         legal_city:           string
         legal_zip:            string
         vat_id:               string
+        country:              string
     }
 }
 
@@ -349,6 +350,7 @@ type LegalData = {
     legal_city:           string
     legal_zip:            string
     vat_id:               string
+    country:              string
 }
 
 function OrgTab({ org, role, memberCount, legalData, onInvite }: { org: Org; role: string; memberCount: number; legalData: LegalData; onInvite: () => void }) {
@@ -374,11 +376,12 @@ function OrgTab({ org, role, memberCount, legalData, onInvite }: { org: Org; rol
     const [legalCity, setLegalCity] = useState(legalData.legal_city)
     const [legalZip,  setLegalZip]  = useState(legalData.legal_zip)
     const [vatId,     setVatId]     = useState(legalData.vat_id)
+    const [country,   setCountry]   = useState(legalData.country || 'Deutschland')
     const [legalSaved,   setLegalSaved]   = useState(false)
     const [legalError,   setLegalError]   = useState<string | null>(null)
     const [legalPending, startLegalTrans] = useTransition()
     const [legalEditing, setLegalEditing] = useState(
-        !legalData.legal_representative || !legalData.legal_address || !legalData.legal_city
+        !legalData.legal_representative || !legalData.legal_address || !legalData.legal_city || !legalData.country
     )
 
     async function handleLegalSave() {
@@ -391,6 +394,7 @@ function OrgTab({ org, role, memberCount, legalData, onInvite }: { org: Org; rol
                 legal_city:           legalCity,
                 legal_zip:            legalZip,
                 vat_id:               vatId,
+                country:              country,
             })
             if (result?.error) setLegalError(result.error)
             else {
@@ -407,11 +411,12 @@ function OrgTab({ org, role, memberCount, legalData, onInvite }: { org: Org; rol
         setLegalCity(legalData.legal_city)
         setLegalZip(legalData.legal_zip)
         setVatId(legalData.vat_id)
+        setCountry(legalData.country || 'Deutschland')
         setLegalError(null)
         setLegalEditing(false)
     }
 
-    const legalComplete = !!(legalRep.trim() && legalAddr.trim() && legalCity.trim())
+    const legalComplete = !!(legalRep.trim() && legalAddr.trim() && legalCity.trim() && country.trim())
     const isAdmin = role === 'admin'
 
     return (
@@ -495,6 +500,10 @@ function OrgTab({ org, role, memberCount, legalData, onInvite }: { org: Org; rol
                             <span style={{ color: 'var(--color-pl-text-tertiary)' }}>PLZ / Stadt</span>
                             <span className="col-span-2">{legalZip} {legalCity}</span>
                         </div>
+                        <div className="grid grid-cols-3 gap-1">
+                            <span style={{ color: 'var(--color-pl-text-tertiary)' }}>Land</span>
+                            <span className="col-span-2">{country}</span>
+                        </div>
                         {vatId && (
                             <div className="grid grid-cols-3 gap-1">
                                 <span style={{ color: 'var(--color-pl-text-tertiary)' }}>USt-IdNr.</span>
@@ -538,6 +547,11 @@ function OrgTab({ org, role, memberCount, legalData, onInvite }: { org: Org; rol
                                 <input value={legalCity} onChange={e => setLegalCity(e.target.value)}
                                     placeholder="München" className="input-base w-full" />
                             </div>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--color-pl-text-secondary)' }}>Land <span style={{ color: '#ef4444' }}>*</span></label>
+                            <input value={country} onChange={e => setCountry(e.target.value)}
+                                placeholder="Deutschland" className="input-base w-full" />
                         </div>
                         <div>
                             <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--color-pl-text-secondary)' }}>Umsatzsteuer-IdNr. (optional)</label>

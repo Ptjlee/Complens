@@ -49,6 +49,7 @@ export async function updateOrgLegal(fields: {
     legal_city:           string
     legal_zip:            string
     vat_id:               string
+    country:              string
 }): Promise<ActionResult> {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -71,6 +72,7 @@ export async function updateOrgLegal(fields: {
             legal_city:           fields.legal_city.trim()           || null,
             legal_zip:            fields.legal_zip.trim()            || null,
             vat_id:               fields.vat_id.trim()               || null,
+            country:              fields.country.trim()              || null,
         })
         .eq('id', member.org_id)
 

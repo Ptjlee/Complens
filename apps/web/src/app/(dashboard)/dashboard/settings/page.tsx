@@ -102,6 +102,7 @@ export default async function SettingsPage() {
                 legal_city:           org?.legal_city           ?? '',
                 legal_zip:            org?.legal_zip            ?? '',
                 vat_id:               org?.vat_id               ?? '',
+                country:              org?.country              ?? '',
             }}
         />
     )
