@@ -23,10 +23,7 @@ export default function ReadinessCheckPage() {
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-[#5b61ff]/20 blur-[120px] rounded-full pointer-events-none" />
                     
                     <div className="max-w-4xl mx-auto px-4 text-center relative z-10">
-                        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.25)] text-red-500 text-sm font-medium mb-8">
-                            <ShieldAlert size={16} />
-                            Stichtag: Beweislastumkehr
-                        </div>
+
                         
                         <h1 className="text-4xl md:text-6xl font-extrabold text-white tracking-tight mb-6 leading-tight">
                             Riskiert Ihr Gender Pay Gap eine <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-[#5b61ff]">gemeinsame Entgeltbewertung?</span>

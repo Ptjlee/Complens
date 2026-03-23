@@ -381,7 +381,7 @@ PayLens/
 | **Compliance dashboard** | Dynamic status per EU Art. 9 sub-requirement |
 | **Employee portal polish** | Art. 7 PDF letter final review + token auth |
 | **Landing page** | Astro site needs UI showcase + contact form + VSL wiring (see below) |
-| **Video Sales Letter (VSL)** | 90-sec screen recording (CSV → PPT download). Self-hosted, no YouTube. Must be embedded on landing page hero — **this is a key conversion asset, do not forget to wire it** |
+| **Hero Showcase Carousel** | Interactive, auto-playing carousel of 6 high-fidelity UI cards embedded on landing page hero. |
 
 ### 🟢 Low
 
@@ -502,12 +502,11 @@ Annotated screenshot carousel (6–8 screens):
 5. Remediation planner
 6. PDF / PPT report preview
 
-### Video Sales Letter (VSL) — ⚠️ Must be wired before launch
-- **Format**: ~90-second screen recording of the full workflow (CSV upload → PPT download)
-- **Hosting**: self-hosted (no YouTube — privacy; no third-party cookies)
-- **Placement**: landing page hero section, autoplay muted on scroll-into-view
-- **Status**: 🔲 Not yet recorded or embedded
-- **Action required**: record VSL with real data → upload to Vercel/CDN → embed in Astro hero
+### Hero Showcase Carousel (Replaces VSL)
+- **Format**: Interactive, auto-playing carousel of 6 high-fidelity UI cards (mockups + highlighted feature text blocks)
+- **Placement**: Landing page hero section
+- **Status**: 🔲 UI/UX component needs to be built in Astro/React
+- **Action required**: Build the animated interactive carousel with the screenshots defined in the "UI Showcase" step.
 
 ### Contact Form
 - Fields: Name, Company, Work Email, Message, preferred contact (Email / Phone)
