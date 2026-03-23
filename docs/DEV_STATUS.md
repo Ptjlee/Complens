@@ -74,6 +74,7 @@ All core product features are live.
 
 | Task | Notes |
 |------|-------|
+| **Remediation Budget Simulation** | `RemediationClient.tsx` — Add Budget Widget mapping actual incremental payroll costs across time horizons based purely on initial dataset fields. |
 | **Support email delivery** | Wire admin reply in Support tab to send actual Resend email to user |
 | **Add-on seat Stripe checkout** | `/api/stripe/checkout?product=addon-seat` route not yet implemented |
 | **Stripe customer portal** | Let licensed users manage/cancel subscription |

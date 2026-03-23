@@ -249,6 +249,7 @@ PayLens/
 - Create action plans per flagged employee
 - Action types: salary increase, bonus adjustment, regrading, process change
 - Plan steps with horizon (short / medium / long-term), deadline, description, target salary
+- **Budget Simulation Dashboard**: Real-time widget mapping incremental payroll costs across time horizons based purely on initial imported data to avoid recursive rounding errors.
 - Status tracking: open → in_progress → completed / dismissed
 - Feeds into PDF + PPT report sections
 
