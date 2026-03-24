@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import {
     FileText, Download, CheckCircle2, ShieldAlert,
-    BarChart3, Calendar, Users, ExternalLink,
+    Calendar, Users, ExternalLink,
     Archive, Trash2, Loader2, RotateCcw, X, Presentation,
 } from 'lucide-react'
 import PdfOptionsModal from './PdfOptionsModal'
@@ -131,13 +131,12 @@ function ReportCard({
 
                     <h2 className="text-base font-semibold mb-1 truncate"
                         style={{ color: 'var(--color-pl-text-primary)' }}>
-                        {a.name ?? `Entgeltbericht ${a.datasets?.reporting_year}`}
+                        {a.datasets?.name ?? a.name ?? `Entgeltbericht ${a.datasets?.reporting_year}`}
                     </h2>
 
                     <div className="flex flex-wrap items-center gap-4 text-xs"
                         style={{ color: 'var(--color-pl-text-tertiary)' }}>
                         <span className="flex items-center gap-1"><Calendar size={12} /> {date}</span>
-                        <span className="flex items-center gap-1"><BarChart3 size={12} /> {a.datasets?.name}</span>
                         <span className="flex items-center gap-1"><Users size={12} /> {a.datasets?.employee_count ?? '—'} MA</span>
                         <span style={{ color: 'var(--color-pl-text-tertiary)' }}>Berichtsjahr {a.datasets?.reporting_year}</span>
                     </div>
