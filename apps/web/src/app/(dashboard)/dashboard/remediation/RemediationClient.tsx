@@ -488,8 +488,8 @@ function PlanRow({
                            : <ChevronRight size={14} style={{ color: 'var(--color-pl-text-tertiary)' }} />}
                 </span>
 
-                {/* Schwere: w-44 */}
-                <span className="w-44 flex-shrink-0">
+                {/* Schwere: w-36 */}
+                <span className="w-36 flex-shrink-0">
                     <span
                         className="inline-flex items-center justify-center min-w-[100px] gap-1.5 text-[11px] font-bold uppercase tracking-wider px-2 py-1 rounded-full"
                         style={{ background: sev.bg, color: sev.color }}
@@ -498,8 +498,8 @@ function PlanRow({
                     </span>
                 </span>
 
-                {/* Name & ID: w-72 flex-shrink-0 */}
-                <span className="w-72 flex flex-col min-w-0 flex-shrink-0">
+                {/* Name & ID: w-56 flex-shrink-0 */}
+                <span className="w-56 flex flex-col min-w-0 flex-shrink-0">
                     <span className="font-medium text-sm truncate" style={{ color: 'var(--color-pl-text-primary)' }}>
                         {displayName(flag)}
                     </span>
@@ -508,22 +508,22 @@ function PlanRow({
                     </span>
                 </span>
 
-                {/* Abteilung: w-48 flex-shrink-0 hidden xl:flex */}
-                <span className="w-48 flex-col justify-center min-w-0 flex-shrink-0 hidden xl:flex">
+                {/* Abteilung: w-36 flex-shrink-0 hidden 2xl:flex */}
+                <span className="w-36 flex-col justify-center min-w-0 flex-shrink-0 hidden 2xl:flex">
                     <span className="text-sm truncate" style={{ color: 'var(--color-pl-text-primary)' }}>
                         {flag.department ?? 'Keine Abteilung'}
                     </span>
                 </span>
                 
-                {/* Gruppe: w-40 flex-shrink-0 hidden xl:flex */}
-                <span className="w-40 flex-col justify-center min-w-0 flex-shrink-0 hidden xl:flex">
+                {/* Gruppe: w-32 flex-shrink-0 hidden 2xl:flex */}
+                <span className="w-32 flex-col justify-center min-w-0 flex-shrink-0 hidden 2xl:flex">
                     <span className="text-sm truncate" style={{ color: 'var(--color-pl-text-tertiary)' }}>
                         {flag.job_grade ?? 'Keine Gruppe'}
                     </span>
                 </span>
 
-                {/* Gehalt: w-32 flex-shrink-0 hidden md:flex */}
-                <span className="w-32 flex flex-col text-right flex-shrink-0 hidden md:flex">
+                {/* Gehalt: w-28 flex-shrink-0 hidden md:flex */}
+                <span className="w-28 flex flex-col text-right flex-shrink-0 hidden md:flex">
                     <span className="text-sm font-medium" style={{ color: 'var(--color-pl-text-primary)' }}>
                         {eur(flag.hourly_rate, 2)} / h
                     </span>
@@ -532,8 +532,8 @@ function PlanRow({
                     </span>
                 </span>
 
-                {/* Kohorte: w-32 flex-shrink-0 hidden md:flex */}
-                <span className="w-32 flex flex-col text-right flex-shrink-0 hidden md:flex">
+                {/* Kohorte: w-28 flex-shrink-0 hidden md:flex */}
+                <span className="w-28 flex flex-col text-right flex-shrink-0 hidden md:flex">
                     <span className="text-sm font-medium" style={{ color: 'var(--color-pl-text-primary)' }}>
                         {eur(flag.cohort_median, 2)} / h
                     </span>
@@ -566,7 +566,7 @@ function PlanRow({
                 </span>
 
                 {/* Horizon indicators — short / mid / long term */}
-                <span className="w-48 hidden lg:flex items-center justify-around flex-shrink-0">
+                <span className="w-36 hidden xl:flex items-center justify-around flex-shrink-0">
                     {(['6m', '1y', '2-3y'] as const).map((horizon, i) => {
                         const horizons = horizon === '2-3y'
                             ? ['1.5y', '2-3y'] as const
@@ -1259,17 +1259,17 @@ export default function RemediationClient({
                                 <div className="flex items-center gap-5 px-5 py-1 text-xs font-semibold"
                                     style={{ color: 'var(--color-pl-text-tertiary)' }}>
                                     <span className="w-4 flex-shrink-0" />
-                                    <span className="w-44 flex-shrink-0">Schwere</span>
-                                    <span className="w-72 flex-shrink-0">Name & ID</span>
-                                    <span className="w-48 flex-shrink-0 hidden xl:block">Abteilung</span>
-                                    <span className="w-40 flex-shrink-0 hidden xl:block">Gruppe</span>
+                                    <span className="w-36 flex-shrink-0">Schwere</span>
+                                    <span className="w-56 flex-shrink-0">Name &amp; ID</span>
+                                    <span className="w-36 flex-shrink-0 hidden 2xl:block">Abteilung</span>
+                                    <span className="w-32 flex-shrink-0 hidden 2xl:block">Gruppe</span>
                                     
-                                    <span className="w-32 text-right flex-shrink-0 hidden md:block">Gehalt</span>
-                                    <span className="w-32 text-right flex-shrink-0 hidden md:block">Kohorte (Median)</span>
+                                    <span className="w-28 text-right flex-shrink-0 hidden md:block">Gehalt</span>
+                                    <span className="w-28 text-right flex-shrink-0 hidden md:block">Kohorte (Median)</span>
                                     <span className="w-24 text-right flex-shrink-0">Lücke</span>
                                     <span className="w-24 text-right flex-shrink-0 hidden md:block">Restlücke</span>
                                     
-                                    <span className="w-48 hidden lg:flex items-center justify-around flex-shrink-0">
+                                    <span className="w-36 hidden xl:flex items-center justify-around flex-shrink-0">
                                         <span className="w-12 text-center" title="Kurzfristig: 0–6 Monate">Kurz</span>
                                         <span className="w-12 text-center" title="Mittelfristig: 6–12 Monate">Mittel</span>
                                         <span className="w-12 text-center" title="Langfristig: 12+ Monate">Lang</span>
