@@ -68,7 +68,48 @@ function UpgradeButton() {
     )
 }
 
-// ─── Add-on seat checkout button ─────────────────────────────
+// ─── Manage subscription (Stripe Customer Portal) ─────────────
+
+function ManageSubscriptionButton() {
+    const [loading, setLoading] = useState(false)
+    const [err, setErr]         = useState<string | null>(null)
+
+    async function handleClick() {
+        setLoading(true)
+        setErr(null)
+        try {
+            const res  = await fetch('/api/stripe/portal', { method: 'POST' })
+            const data = await res.json()
+            if (!res.ok || !data.url) throw new Error(data.error ?? 'Stripe-Fehler')
+            window.location.href = data.url
+        } catch (e: unknown) {
+            setErr(e instanceof Error ? e.message : 'Fehler')
+            setLoading(false)
+        }
+    }
+
+    return (
+        <div>
+            <button
+                id="manage-subscription-btn"
+                onClick={handleClick}
+                disabled={loading}
+                className="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl transition-all disabled:opacity-60"
+                style={{
+                    background: 'var(--color-pl-surface-raised)',
+                    border:     '1px solid var(--color-pl-border)',
+                    color:      'var(--color-pl-text-primary)',
+                    cursor:     loading ? 'not-allowed' : 'pointer',
+                }}
+            >
+                <CreditCard size={14} />
+                {loading ? 'Weiterleitung…' : 'Abonnement verwalten'}
+            </button>
+            {err && <p className="text-xs mt-2" style={{ color: '#ef4444' }}>{err}</p>}
+        </div>
+    )
+}
+
 
 function AddOnButton() {
     const [loading, setLoading] = useState(false)
@@ -893,6 +934,19 @@ function BillingTab({
                         </div>
                         <AddOnButton />
                     </div>
+                </div>
+            )}
+
+            {/* ── 2c. Licensed → Manage subscription ────────────── */}
+            {isLicensed && (
+                <div className="glass-card p-5">
+                    <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>
+                        Abonnement & Rechnungen
+                    </p>
+                    <p className="text-xs mb-4" style={{ color: 'var(--color-pl-text-tertiary)' }}>
+                        Abonnement anpassen, kündigen oder Rechnungen herunterladen — direkt in Ihrem Stripe-Kundenkonto.
+                    </p>
+                    <ManageSubscriptionButton />
                 </div>
             )}
 
