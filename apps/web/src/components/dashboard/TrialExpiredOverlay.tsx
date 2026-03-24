@@ -203,7 +203,7 @@ export default function TrialExpiredOverlay({ trialEndedAt }: { trialEndedAt: st
                         fontSize: 11.5, color: '#4d5562',
                     }}>
                         Fragen zur Lizenz?{' '}
-                        <a href="mailto:hallo@complens.de" style={{ color: '#3b82f6', textDecoration: 'none' }}>
+                        <a href="/dashboard/help" style={{ color: '#3b82f6', textDecoration: 'none' }}>
                             Support kontaktieren
                         </a>
                     </p>
