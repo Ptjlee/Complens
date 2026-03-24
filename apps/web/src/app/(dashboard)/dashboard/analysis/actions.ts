@@ -1,5 +1,6 @@
 'use server'
 
+import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { runAnalysis } from '@/lib/calculations/payGap'
@@ -246,7 +247,16 @@ export async function deleteDataset(
         .delete()
         .eq('id', datasetId)
 
-    return error ? { error: error.message } : {}
+    if (error) return { error: error.message }
+
+    // Flush Next.js server-render cache so Overview & Analysis stop showing the deleted dataset
+    revalidatePath('/dashboard')
+    revalidatePath('/dashboard/analysis')
+    revalidatePath('/dashboard/datasets')
+    revalidatePath('/dashboard/reports')
+    revalidatePath('/dashboard/trends')
+
+    return {}
 }
 
 
@@ -275,7 +285,13 @@ export async function renameDataset(
         .update({ name: trimmed })
         .eq('id', datasetId)
 
-    return error ? { error: error.message } : {}
+    if (error) return { error: error.message }
+
+    revalidatePath('/dashboard')
+    revalidatePath('/dashboard/analysis')
+    revalidatePath('/dashboard/datasets')
+
+    return {}
 }
 
 // ============================================================
