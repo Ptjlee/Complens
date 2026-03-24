@@ -130,7 +130,15 @@ export async function POST(req: NextRequest) {
             allow_promotion_codes: true,
             billing_address_collection: 'required',
             locale: 'de',
-        })
+            // ── Apply German invoice template to all subscription invoices ──
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            subscription_data: {
+                invoice_settings: {
+                    issuer:    { type: 'self' },
+                    rendering: { template: 'inrtem_1TESkCEB4pWUyJsm80m4qk18' },
+                } as any,
+            },
+        } as any)
 
         return NextResponse.json({ url: session.url })
     } catch (err) {
