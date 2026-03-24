@@ -23,7 +23,7 @@ function pct(val: number | null, sign = true): string {
 function gapColor(val: number | null): string {
     if (val === null) return 'var(--color-pl-text-tertiary)'
     const abs = Math.abs(val * 100)
-    return abs >= 5 ? 'var(--color-pl-red)' : abs >= 2 ? 'var(--color-pl-amber)' : 'var(--color-pl-green)'
+    return abs >= 5 ? 'var(--color-pl-red)' : 'var(--color-pl-green)'
 }
 function hrFmt(val: number | null): string {
     if (!val) return '—'

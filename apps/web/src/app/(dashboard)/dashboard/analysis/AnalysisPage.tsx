@@ -25,7 +25,6 @@ function GapBadge({ value, suppressed = false }: { value: number | null; suppres
     }
     const pct = value * 100
     const color = Math.abs(pct) >= 5 ? 'var(--color-pl-red)'
-        : Math.abs(pct) >= 2 ? 'var(--color-pl-amber)'
         : 'var(--color-pl-green)'
     const Icon = pct >= 0 ? TrendingUp : TrendingDown
     return (
@@ -57,7 +56,6 @@ function DeptRow({ dept }: { dept: DepartmentResult }) {
                     <div className="w-2 h-2 rounded-full flex-shrink-0" style={{
                         background: dept.suppressed ? 'var(--color-pl-text-tertiary)'
                             : Math.abs(adjGap * 100) >= 5 ? 'var(--color-pl-red)'
-                            : Math.abs(adjGap * 100) >= 2 ? 'var(--color-pl-amber)'
                             : 'var(--color-pl-green)'
                     }} />
                     <div>

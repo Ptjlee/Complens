@@ -17,9 +17,7 @@ function GapBadge({ value, label }: { value: number | null; label: string }) {
     const abs = Math.abs((value ?? 0) * 100)
     const color = abs >= 5
         ? 'var(--color-pl-red)'
-        : abs >= 2
-            ? 'var(--color-pl-amber)'
-            : 'var(--color-pl-green)'
+        : 'var(--color-pl-green)'
     const sign      = (value ?? 0) >= 0 ? '+' : ''
     const formatted = value === null ? '—' : `${sign}${((value) * 100).toFixed(1)}%`
     return (

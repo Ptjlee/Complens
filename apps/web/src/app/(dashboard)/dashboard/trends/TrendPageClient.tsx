@@ -15,7 +15,6 @@ function gapColor(v: number | null): string {
     if (v == null) return 'var(--color-pl-text-tertiary)'
     const abs = Math.abs(v)
     if (abs >= 5)  return 'var(--color-pl-red)'
-    if (abs >= 2)  return 'var(--color-pl-amber)'
     return 'var(--color-pl-green)'
 }
 
@@ -119,7 +118,6 @@ function DeptHeatmap({ points }: { points: TrendPoint[] }) {
         const abs = Math.abs(v)
         if (abs >= 10) return 'rgba(239,68,68,0.25)'
         if (abs >= 5)  return 'rgba(239,68,68,0.12)'
-        if (abs >= 2)  return 'rgba(245,158,11,0.12)'
         return 'rgba(52,211,153,0.08)'
     }
 
@@ -446,7 +444,6 @@ export default function TrendPageClient({ points }: { points: TrendPoint[] }) {
                                             const bg = abs == null ? 'var(--theme-pl-action-ghost)'
                                                 : abs >= 10 ? 'rgba(239,68,68,0.25)'
                                                 : abs >= 5  ? 'rgba(239,68,68,0.12)'
-                                                : abs >= 2  ? 'rgba(245,158,11,0.12)'
                                                 : 'rgba(52,211,153,0.08)'
                                             return (
                                                 <td key={p.analysisId} className="px-2 py-1.5 text-center rounded"
