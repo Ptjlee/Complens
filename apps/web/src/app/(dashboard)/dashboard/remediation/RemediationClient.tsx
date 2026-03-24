@@ -115,6 +115,37 @@ function eur(v: number | null | undefined, decimals = 0) {
     return v.toLocaleString('de-DE', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) + ' €'
 }
 
+/**
+ * Compute a flag employee's total annual compensation directly from the raw
+ * imported fields — NOT from hourly_rate (which is a derived metric).
+ * This prevents double-counting or rounding errors in the budget baseline.
+ */
+function calcAnnualTotal(flag: IndividualFlag): number {
+    // Resolve annual base from the original import period
+    let annualBase: number
+    switch (flag.imported_salary_period) {
+        case 'monthly': annualBase = flag.imported_salary_base * 12;               break
+        case 'hourly':  annualBase = flag.imported_salary_base * flag.imported_annualised_hours; break
+        default:        annualBase = flag.imported_salary_base;                    break
+    }
+    // Add supplement components (all already EUR/year from the engine)
+    return annualBase
+        + flag.imported_variable_pay_eur
+        + flag.imported_overtime_pay
+        + flag.imported_benefits_in_kind
+}
+
+/**
+ * Annual base pay only (no variable/OT/benefits) — used for salary_increase delta.
+ */
+function calcAnnualBase(flag: IndividualFlag): number {
+    switch (flag.imported_salary_period) {
+        case 'monthly': return flag.imported_salary_base * 12
+        case 'hourly':  return flag.imported_salary_base * flag.imported_annualised_hours
+        default:        return flag.imported_salary_base
+    }
+}
+
 function selectStyle(): React.CSSProperties {
     return {
         background: 'var(--color-pl-surface-raised)',
@@ -137,6 +168,149 @@ function StatCard({ label, value, color }: { label: string; value: number; color
         <div className="glass-card p-4 flex flex-col gap-1">
             <span className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>{label}</span>
             <span className="text-2xl font-bold" style={{ color }}>{value}</span>
+        </div>
+    )
+}
+
+// ─── Budget Simulation Panel ─────────────────────────────────
+
+const HORIZON_BUCKETS: { key: PlanHorizon; label: string; shortLabel: string; color: string }[] = [
+    { key: '6m',   label: 'Kurzfristig (6 Mon.)',     shortLabel: '6 Mon.',     color: '#34d399' },
+    { key: '1y',   label: 'Mittelfristig (1 Jahr)',   shortLabel: '1 Jahr',     color: '#60a5fa' },
+    { key: '1.5y', label: 'Mittelfristig (18 Mon.)',  shortLabel: '18 Mon.',    color: '#f59e0b' },
+    { key: '2-3y', label: 'Langfristig (2–3 Jahre)',  shortLabel: '2–3 Jahre',  color: '#a78bfa' },
+]
+
+function BudgetSimPanel({
+    allFlags,
+    plans,
+    planIndex,
+}: {
+    allFlags: IndividualFlag[]
+    plans: RemediationPlan[]
+    planIndex: Map<string, RemediationPlan>
+}) {
+    // ── 1. Payroll baseline from raw import fields ──────────────
+    const totalPayroll = allFlags.reduce((sum, f) => sum + calcAnnualTotal(f), 0)
+
+    // ── 2. Incremental cost per horizon bucket ──────────────────
+    // We only count steps that have a financial impact (salary_increase / bonus_adjustment)
+    // and have a target_salary set.
+    const horizonCosts: Record<PlanHorizon, number> = { '6m': 0, '1y': 0, '1.5y': 0, '2-3y': 0 }
+    let totalMeasureCost = 0
+
+    for (const plan of plans) {
+        if (!plan.plan_steps?.length) continue
+        const flag = allFlags.find(f => f.employee_id === plan.employee_id)
+        if (!flag) continue
+
+        for (const step of plan.plan_steps) {
+            if (step.target_salary == null) continue
+
+            let delta = 0
+            if (step.action_type === 'salary_increase') {
+                // Delta = target annual salary MINUS current annual base (not total — avoids double-counting bonuses)
+                const currentBase = calcAnnualBase(flag)
+                delta = Math.max(0, step.target_salary - currentBase)
+            } else if (step.action_type === 'bonus_adjustment') {
+                // Delta = target bonus MINUS current bonus amount
+                delta = Math.max(0, step.target_salary - flag.imported_variable_pay_eur)
+            }
+
+            if (delta <= 0) continue
+            horizonCosts[step.horizon] = (horizonCosts[step.horizon] ?? 0) + delta
+            totalMeasureCost += delta
+        }
+    }
+
+    const impactPct = totalPayroll > 0 ? (totalMeasureCost / totalPayroll) * 100 : 0
+    const afterPayroll = totalPayroll + totalMeasureCost
+    const plannedEmployees = plans.filter(p => p.plan_steps?.some(s => s.target_salary != null)).length
+
+    return (
+        <div
+            className="rounded-2xl overflow-hidden"
+            style={{
+                background: 'linear-gradient(135deg, rgba(99,102,241,0.07) 0%, rgba(52,211,153,0.05) 100%)',
+                border: '1px solid rgba(99,102,241,0.2)',
+            }}
+        >
+            {/* Panel header */}
+            <div className="flex items-center gap-2 px-5 py-3 border-b" style={{ borderColor: 'rgba(99,102,241,0.15)' }}>
+                <span className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--color-pl-accent)' }}>
+                    💶 Budget-Simulation
+                </span>
+                <span className="text-xs ml-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>
+                    · Hochrechnung auf Basis {plannedEmployees} Maßnahmenplan{plannedEmployees !== 1 ? 'e' : ''} (Echtzeit)
+                </span>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-indigo-500/10">
+
+                {/* Status Quo */}
+                <div className="px-5 py-4">
+                    <p className="text-xs mb-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>Gesamtlohnkosten (Ist)</p>
+                    <p className="text-xl font-bold" style={{ color: 'var(--color-pl-text-primary)' }}>{eur(totalPayroll)}</p>
+                    <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>{allFlags.length} Mitarbeitende · Jahresbasis</p>
+                </div>
+
+                {/* Measure cost */}
+                <div className="px-5 py-4">
+                    <p className="text-xs mb-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>Kosten aller Maßnahmen</p>
+                    <p className="text-xl font-bold" style={{ color: totalMeasureCost > 0 ? '#f59e0b' : '#64748b' }}>
+                        {totalMeasureCost > 0 ? '+' : ''}{eur(totalMeasureCost)}
+                    </p>
+                    <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>
+                        {impactPct > 0 ? `+${impactPct.toFixed(2)}% der Gesamtlohnkosten` : 'Noch keine Zielgehälter gesetzt'}
+                    </p>
+                </div>
+
+                {/* After-measure total */}
+                <div className="px-5 py-4">
+                    <p className="text-xs mb-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>Lohnkosten nach Maßnahmen</p>
+                    <p className="text-xl font-bold" style={{ color: '#34d399' }}>{eur(afterPayroll)}</p>
+                    <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>Bei vollständiger Umsetzung</p>
+                </div>
+
+                {/* Timeline breakdown */}
+                <div className="px-5 py-4">
+                    <p className="text-xs mb-2" style={{ color: 'var(--color-pl-text-tertiary)' }}>Kosten nach Zeithorizont</p>
+                    <div className="space-y-1.5">
+                        {HORIZON_BUCKETS.map(b => (
+                            <div key={b.key} className="flex items-center justify-between gap-2">
+                                <span className="flex items-center gap-1.5">
+                                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: b.color }} />
+                                    <span className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>{b.shortLabel}</span>
+                                </span>
+                                <span className="text-xs font-semibold" style={{ color: horizonCosts[b.key] > 0 ? b.color : 'var(--color-pl-text-tertiary)' }}>
+                                    {horizonCosts[b.key] > 0 ? `+${eur(horizonCosts[b.key])}` : '—'}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            {/* Progress bar */}
+            {impactPct > 0 && (
+                <div className="px-5 py-3 border-t" style={{ borderColor: 'rgba(99,102,241,0.12)' }}>
+                    <div className="flex items-center gap-3">
+                        <span className="text-xs flex-shrink-0" style={{ color: 'var(--color-pl-text-tertiary)' }}>Maßnahmen-Impact</span>
+                        <div className="flex-1 rounded-full overflow-hidden h-1.5" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                            <div
+                                className="h-full rounded-full transition-all duration-500"
+                                style={{
+                                    width: `${Math.min(impactPct * 10, 100)}%`,
+                                    background: impactPct < 2 ? '#34d399' : impactPct < 5 ? '#f59e0b' : '#ef4444',
+                                }}
+                            />
+                        </div>
+                        <span className="text-xs font-semibold flex-shrink-0" style={{ color: impactPct < 2 ? '#34d399' : impactPct < 5 ? '#f59e0b' : '#ef4444' }}>
+                            +{impactPct.toFixed(2)}%
+                        </span>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
@@ -1039,6 +1213,13 @@ export default function RemediationClient({
                             <StatCard label="Lohnvorteil (≥+5%)"           value={overpaidCount} color="#8b5cf6" />
                             <StatCard label="Pläne erstellt"               value={plannedCount}  color="var(--color-pl-brand)" />
                         </div>
+
+                        {/* Budget Simulation Panel */}
+                        <BudgetSimPanel
+                            allFlags={flags}
+                            plans={plans}
+                            planIndex={planIndex}
+                        />
 
                         {/* Filter tabs */}
                         <div className="flex items-center gap-2 flex-wrap">
