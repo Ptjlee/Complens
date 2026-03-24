@@ -218,33 +218,56 @@ function ProformaDownloadButton({ legalComplete, plan, onGoToOrg }: { legalCompl
 
 function LanguageSelector() {
     const { lang, setLang } = useTranslation()
+    const [showHint, setShowHint] = useState(false)
 
     const LANGS: { code: Lang; label: string; flag: string }[] = [
         { code: 'de', label: 'Deutsch',  flag: '🇩🇪' },
         { code: 'en', label: 'English',  flag: '🇬🇧' },
     ]
 
+    function handleClick(code: Lang) {
+        if (code === 'en') {
+            setShowHint(true)
+            setTimeout(() => setShowHint(false), 3500)
+            return
+        }
+        setLang(code)
+    }
+
     return (
-        <div className="flex gap-2">
-            {LANGS.map(l => (
-                <button
-                    key={l.code}
-                    onClick={() => setLang(l.code)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all"
+        <div className="space-y-2">
+            <div className="flex gap-2">
+                {LANGS.map(l => (
+                    <button
+                        key={l.code}
+                        onClick={() => handleClick(l.code)}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all"
+                        style={{
+                            background: lang === l.code ? 'var(--color-pl-brand)' : 'rgba(255,255,255,0.05)',
+                            border:     `1px solid ${lang === l.code ? 'var(--color-pl-brand)' : 'var(--color-pl-border)'}`,
+                            color:      lang === l.code ? '#fff' : 'var(--color-pl-text-secondary)',
+                        }}
+                    >
+                        <span className="text-base leading-none">{l.flag}</span>
+                        {l.label}
+                        {lang === l.code && <Check size={11} />}
+                    </button>
+                ))}
+            </div>
+            {showHint && (
+                <p className="text-xs flex items-center gap-1.5 px-3 py-2 rounded-lg"
                     style={{
-                        background: lang === l.code ? 'var(--color-pl-brand)' : 'rgba(255,255,255,0.05)',
-                        border:     `1px solid ${lang === l.code ? 'var(--color-pl-brand)' : 'var(--color-pl-border)'}`,
-                        color:      lang === l.code ? '#fff' : 'var(--color-pl-text-secondary)',
-                    }}
-                >
-                    <span className="text-base leading-none">{l.flag}</span>
-                    {l.label}
-                    {lang === l.code && <Check size={11} />}
-                </button>
-            ))}
+                        background: 'rgba(99,102,241,0.08)',
+                        border: '1px solid rgba(99,102,241,0.2)',
+                        color: 'var(--color-pl-accent)',
+                    }}>
+                    🚧 English version is coming soon — we're working on it!
+                </p>
+            )}
         </div>
     )
 }
+
 
 // ─── Types ────────────────────────────────────────────────────
 
