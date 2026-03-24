@@ -59,6 +59,7 @@ export async function POST(req: NextRequest) {
             const customer = await stripe.customers.create({
                 email: user.email,
                 name:  org.name,
+                preferred_locales: ['de'],
                 metadata: { org_id: org.id, user_id: user.id },
             })
             customerId = customer.id
@@ -70,10 +71,11 @@ export async function POST(req: NextRequest) {
                 .eq('id', org.id)
         }
 
-        // Force Stripe Customer to have the latest address to ensure tax calculation works
+        // Force Stripe Customer to have the latest address + German locale for invoices
         const cc = org.country === 'Deutschland' ? 'DE' : (org.country || 'DE')
         await stripe.customers.update(customerId, {
             name: org.name,
+            preferred_locales: ['de'],
             address: {
                 line1: org.legal_address || undefined,
                 city: org.legal_city || undefined,
