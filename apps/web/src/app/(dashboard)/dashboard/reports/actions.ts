@@ -215,7 +215,7 @@ export async function unarchiveAnalysis(
 }
 
 // ============================================================
-// Hard-delete a report (and its explanations via CASCADE)
+// Hard-delete a report + its dataset (if no other analyses use it)
 // ============================================================
 
 export async function deleteAnalysis(
@@ -225,10 +225,46 @@ export async function deleteAnalysis(
     if ('error' in authCheck) return { error: authCheck.error }
 
     const admin = createAdminClient()
-    const { error } = await admin
+
+    // 1. Fetch the analysis to get its dataset_id before deletion
+    const { data: analysis, error: fetchErr } = await admin
+        .from('analyses')
+        .select('id, dataset_id')
+        .eq('id', analysisId)
+        .single()
+
+    if (fetchErr || !analysis) return { error: fetchErr?.message ?? 'Analysis not found' }
+
+    const datasetId: string | null = (analysis as Record<string, unknown>).dataset_id as string | null
+
+    // 2. Delete the analysis (cascade removes explanations, remediation_plans, etc.)
+    const { error: delAnalysisErr } = await admin
         .from('analyses')
         .delete()
         .eq('id', analysisId)
 
-    return error ? { error: error.message } : {}
+    if (delAnalysisErr) return { error: delAnalysisErr.message }
+
+    // 3. Delete the dataset ONLY if no other analysis still references it
+    if (datasetId) {
+        const { count } = await admin
+            .from('analyses')
+            .select('id', { count: 'exact', head: true })
+            .eq('dataset_id', datasetId)
+
+        if ((count ?? 0) === 0) {
+            // Safe to delete — no other analysis uses this dataset
+            const { error: delDatasetErr } = await admin
+                .from('datasets')
+                .delete()
+                .eq('id', datasetId)
+
+            if (delDatasetErr) {
+                // Non-fatal — analysis is already gone; log and continue
+                console.error('[deleteAnalysis] Could not delete dataset:', delDatasetErr.message)
+            }
+        }
+    }
+
+    return {}
 }
