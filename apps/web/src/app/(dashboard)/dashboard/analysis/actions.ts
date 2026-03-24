@@ -216,7 +216,8 @@ export async function getAllDatasets() {
 }
 
 // ============================================================
-// Soft-delete a dataset
+// Hard-delete a dataset + all linked employee records (GDPR Art. 17)
+// employees table has ON DELETE CASCADE so they are removed automatically
 // ============================================================
 
 export async function deleteDataset(
@@ -231,13 +232,23 @@ export async function deleteDataset(
     if (!user) return { error: 'Nicht angemeldet.' }
 
     const admin = createAdminClient()
+
+    // Also hard-delete any analyses that reference this dataset
+    // (analysis results contain aggregated data, not personal data, but clean up anyway)
+    await admin
+        .from('analyses')
+        .delete()
+        .eq('dataset_id', datasetId)
+
+    // Hard-delete the dataset — employees cascade-deleted automatically
     const { error } = await admin
         .from('datasets')
-        .update({ deleted_at: new Date().toISOString() })
+        .delete()
         .eq('id', datasetId)
 
     return error ? { error: error.message } : {}
 }
+
 
 // ============================================================
 // Rename a dataset

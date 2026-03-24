@@ -76,10 +76,11 @@ async function loadAdminData(): Promise<{ users: AdminUser[]; stats: AdminStats;
         .from('organisation_members')
         .select('user_id, org_id, role, joined_at')
 
-    // Fetch dataset counts per org
+    // Fetch dataset counts per org (exclude soft-deleted)
     const { data: datasets } = await admin
         .from('datasets')
         .select('org_id, created_at')
+        .is('deleted_at', null)
 
     // Fetch analysis counts per org
     const { data: analyses } = await admin
