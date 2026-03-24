@@ -168,7 +168,7 @@ export async function runAiColumnMapping(
     if (!user) return { mapping: {}, confidence: {}, sampleRows: [], error: 'Nicht angemeldet.' }
 
     if (!process.env.GEMINI_API_KEY) {
-        return { mapping: {}, confidence: {}, sampleRows, error: 'KI nicht konfiguriert.' }
+        return { mapping: {}, confidence: {}, sampleRows, error: 'Automatische Zuordnung nicht konfiguriert.' }
     }
 
     // Build the minimal prompt — headers + small sample only (never full payroll data)
@@ -247,8 +247,8 @@ Antworte NUR mit validem JSON in diesem Format:
         console.error('[import] Gemini mapping error:', err)
         const isRateLimit = String(err).includes('429') || String(err).includes('Resource exhausted')
         const errorMsg = isRateLimit
-            ? 'KI-Limit erreicht (API-Kontingent). Bitte manuell zuordnen oder in wenigen Minuten erneut versuchen.'
-            : 'KI-Zuordnung fehlgeschlagen. Bitte ordnen Sie die Spalten manuell zu.'
+            ? 'Zuordnungs-Limit erreicht (API-Kontingent). Bitte manuell zuordnen oder in wenigen Minuten erneut versuchen.'
+            : 'Automatische Zuordnung fehlgeschlagen. Bitte ordnen Sie die Spalten manuell zu.'
         return {
             mapping: Object.fromEntries(headers.map(h => [h, null])),
             confidence: Object.fromEntries(headers.map(h => [h, 0])),

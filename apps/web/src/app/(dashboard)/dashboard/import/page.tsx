@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation'
 
 export const metadata = {
     title: 'Daten importieren — CompLens',
-    description: 'Laden Sie Ihre Gehaltsdaten hoch und lassen Sie die KI die Spaltenzuordnung automatisch erkennen.',
+    description: 'Laden Sie Ihre Gehaltsdaten hoch. CompLens erkennt die Spaltenzuordnung automatisch.',
 }
 
 export default async function ImportPage() {

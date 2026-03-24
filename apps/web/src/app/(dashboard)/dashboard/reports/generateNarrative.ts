@@ -63,6 +63,6 @@ Richtlinien:
     } catch (err) {
         const msg = err instanceof Error ? err.message : String(err)
         console.error('[generateNarrative]', msg)
-        return { error: `KI-Fehler: ${msg}` }
+        return { error: `Fehler: ${msg}` }
     }
 }

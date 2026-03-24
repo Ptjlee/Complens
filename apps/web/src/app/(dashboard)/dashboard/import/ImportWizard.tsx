@@ -441,9 +441,9 @@ function StepGdpr({ state, onAiConsent, onManual, onBack, aiError, onRetry, isRe
             <div className="rounded-xl p-5 space-y-4"
                 style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.2)' }}>
                 <div className="flex items-center gap-2">
-                    <span className="ai-badge"><Sparkles size={10} /> KI</span>
+                    <span className="ai-badge"><Sparkles size={10} /> Auto</span>
                     <h3 className="font-semibold text-sm" style={{ color: 'var(--color-pl-text-primary)' }}>
-                        Automatische KI-Zuordnung verwenden (empfohlen)
+                        Automatische Spaltenzuordnung verwenden (empfohlen)
                     </h3>
                 </div>
 
@@ -473,8 +473,8 @@ function StepGdpr({ state, onAiConsent, onManual, onBack, aiError, onRetry, isRe
                 <button onClick={onAiConsent} disabled={isRetrying} className="btn-primary w-full"
                     style={isRetrying ? { opacity: 0.7, cursor: 'not-allowed' } : {}}>
                     {isRetrying
-                        ? <><Loader2 size={15} className="animate-spin" /> KI analysiert…</>
-                        : <><Sparkles size={15} /> KI-Zuordnung verwenden & fortfahren</>
+                        ? <><Loader2 size={15} className="animate-spin" /> CompLens analysiert…</>
+                        : <><Sparkles size={15} /> Automatische Zuordnung verwenden & fortfahren</>
                     }
                 </button>
             </div>
@@ -559,11 +559,11 @@ function StepMapping({ state, onNext, onBack }: {
         <div className="space-y-6">
             <div>
                 <h2 className="text-lg font-semibold mb-1" style={{ color: 'var(--color-pl-text-primary)' }}>
-                    Spaltenzuordnung {state.usedAi && <span className="ai-badge ml-2"><Sparkles size={10} /> KI</span>}
+                    Spaltenzuordnung {state.usedAi && <span className="ai-badge ml-2"><Sparkles size={10} /> Auto</span>}
                 </h2>
                 <p className="text-sm" style={{ color: 'var(--color-pl-text-secondary)' }}>
                     {state.usedAi
-                        ? 'Die KI hat folgende Zuordnung vorgeschlagen. Bitte prüfen und ggf. korrigieren.'
+                        ? 'CompLens hat folgende Zuordnung vorgeschlagen. Bitte prüfen und ggf. korrigieren.'
                         : 'Ordnen Sie jede Spalte Ihrer Datei einem PayLens-Feld zu.'}
                     {state.includeNames && (
                         <span className="ml-2 inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
@@ -843,7 +843,7 @@ function StepConfirm({ state, onBack, onReset }: {
                     ['Datensatz', state.datasetId.slice(0, 8) + '…'],
                     ['Mitarbeitende', state.rowCount.toLocaleString('de-DE')],
                     ['Zugeordnete Felder', `${mappedCount} von ${state.headers.length}`],
-                    ['Spaltenzuordnung', state.usedAi ? 'KI-automatisch' : 'Manuell'],
+                    ['Spaltenzuordnung', state.usedAi ? 'Automatisch' : 'Manuell'],
                     ['Namen einbezogen', hasNames ? 'Ja (Vor- und Nachname)' : 'Nein (anonym)'],
                     ['Vollzeit-Referenz', `${state.standardWeeklyHours}h/Woche`],
                     ['Gehaltsangabe', state.defaultSalaryPeriod === 'monthly' ? 'Monatlich' : state.defaultSalaryPeriod === 'hourly' ? 'Stündlich' : 'Jährlich'],
@@ -962,7 +962,7 @@ function AiLoadingScreen() {
             </div>
             <div>
                 <p className="font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>
-                    KI analysiert Ihre Spalten…
+                    CompLens analysiert Ihre Spalten…
                 </p>
                 <p className="text-sm mt-1" style={{ color: 'var(--color-pl-text-secondary)' }}>
                     Nur Spaltenköpfe werden verarbeitet — keine Gehaltsdaten

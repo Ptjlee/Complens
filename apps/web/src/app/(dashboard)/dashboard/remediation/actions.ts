@@ -371,6 +371,6 @@ Max. 320 Wörter. Keine Marketing-Sprache. Direkt und professionell.`
     } catch (err) {
         const msg = err instanceof Error ? err.message : String(err)
         console.error('[generateRemediationAiPlan]', msg)
-        return { error: `KI-Fehler: ${msg}` }
+        return { error: `Fehler: ${msg}` }
     }
 }

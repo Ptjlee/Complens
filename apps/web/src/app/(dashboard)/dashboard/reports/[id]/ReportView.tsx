@@ -392,11 +392,11 @@ export default function ReportView({
                                                     border: '1px solid rgba(99,102,241,0.3)',
                                                     color: 'var(--color-pl-accent)',
                                                 }}
-                                                title="KI-Zusammenfassung generieren (Gemini)"
+                                                title="Zusammenfassung generieren"
                                             >
                                                 {aiLoading
                                                     ? <><Loader2 size={11} className="animate-spin" /> Generiert…</>
-                                                    : <><Sparkles size={11} /> KI generieren</>}
+                                                    : <><Sparkles size={11} /> Zusammenfassung generieren</>}
                                             </button>
                                             <button onClick={() => setEditingNotes(true)} className="flex items-center gap-1 text-xs"
                                                 style={{ color: 'var(--color-pl-text-tertiary)' }}>
