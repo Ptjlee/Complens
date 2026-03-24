@@ -1,5 +1,5 @@
 # PayLens / CompLens — Development Status
-*Last updated: 2026-03-19 22:19 CET*
+*Last updated: 2026-03-24 12:30 CET*
 
 ---
 
@@ -49,6 +49,7 @@ All core product features are live.
 | **AI ticket triage** | On ticket creation, Gemini classifies category, priority, writes one-line summary + draft reply |
 | **Superadmin Support tab** | Full ticket management UI: KPI row, status/priority/search filters, multi-turn thread view, AI draft loading, polish button |
 | **AI reply polish** | `/api/support/ai-polish-reply` — admin can refine draft before sending, bilingual (DE / EN toggle) |
+| **Support email delivery** | Admin reply in Support tab fires Resend email to user with branded HTML template. Fire-and-forget after DB update. |
 | **Internationalisation (DE/EN)** | `LanguageContext` + `translations.ts`; preference stored in `organisation_members.preferred_language` (migration 017) |
 | **Contract generation** | `/api/contracts/avv` + `/api/contracts/license` — auto-generated from org legal fields |
 | **Org legal fields** | Migration 018 — `legal_representative`, `legal_address`, `legal_city`, `legal_zip`, `vat_id` on `organisations` |
@@ -57,6 +58,11 @@ All core product features are live.
 | **planGuard helper** | `src/lib/api/planGuard.ts` — shared plan-check middleware for API routes |
 | **Superadmin suspend / delete** | Admin can suspend or hard-delete user accounts |
 | **Public pages** | `/(public)/` — readiness check, booking pages |
+| **Remediation Budget Simulation** | `BudgetSimPanel` in `RemediationClient.tsx` — real-time payroll baseline + incremental cost projection per time horizon (6m / 1y / 18m / 2-3y) using raw import fields. |
+| **Stripe Customer Portal** | `POST /api/stripe/portal` — licensed users can manage/cancel subscription via Stripe-hosted portal. Button in Settings → Abonnement tab. |
+| **Trial expired overlay → support ticket** | "Support kontaktieren" link now routes to `/dashboard/help` instead of `mailto:`. |
+| **Stripe German invoice setup** | Template "CompLens Standardrechnung DE" (`inrtem_1TESkCEB4pWUyJsm80m4qk18`) wired to all subscription checkouts. `preferred_locales: ['de']` set on all customers. Products renamed to German Leistungsbeschreibung (§14 UStG). |
+| **Trends module** | SVG line chart, department heatmap, grade heatmap, delta KPIs, year-over-year table — fully implemented. |
 
 ---
 
@@ -74,14 +80,10 @@ All core product features are live.
 
 | Task | Notes |
 |------|-------|
-| **Remediation Budget Simulation** | `RemediationClient.tsx` — Add Budget Widget mapping actual incremental payroll costs across time horizons based purely on initial dataset fields. |
-| **Support email delivery** | Wire admin reply in Support tab to send actual Resend email to user |
-| **Add-on seat Stripe checkout** | `/api/stripe/checkout?product=addon-seat` route not yet implemented |
-| **Stripe customer portal** | Let licensed users manage/cancel subscription |
-| **Trends module** | UI scaffolded; needs multi-year comparison logic wired to real data |
+| **Add-on seat Stripe checkout** | `/api/stripe/checkout?product=addon-seat` route implemented but needs testing with real payment |
 | **Compliance dashboard** | Dynamic status per EU Art. 9 sub-requirement |
 | **Employee portal polish** | Art. 7 PDF letter final review + token auth |
-| **Landing page** | Astro site needs UI showcase section + contact form CTA |
+| **Landing page Hero Carousel** | Astro site — interactive screenshot carousel. Awaiting 6 dashboard screenshots from live server. |
 
 ### 🟢 Low (post-launch / nice-to-have)
 

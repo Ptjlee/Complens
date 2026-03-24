@@ -357,6 +357,13 @@ PayLens/
 | Full-Stack Lead Capture | `/api/leads` endpoint + Supabase DB `leads` + Admin Panel integration |
 | Frictionless UI Onboarding | Pre-Check funnel natively integrated with 1-click password signup flow |
 | Admin Panel Polish | Urgency & Account Status badges, deep visual contrast improvements |
+| **Remediation Budget Simulation** | `BudgetSimPanel` — real-time payroll baseline + incremental cost projection per horizon (6m/1y/18m/2-3y) using raw import fields |
+| **Support email delivery** | Admin reply fires branded Resend email to user; fire-and-forget after DB update |
+| **Stripe Customer Portal** | `POST /api/stripe/portal` — licensed orgs redirect to Stripe-hosted billing management |
+| **Manage Subscription button** | Settings → Abonnement tab shows "Abonnement verwalten" for licensed orgs |
+| **Trial overlay → ticket link** | "Support kontaktieren" routes to `/dashboard/help` instead of `mailto:` |
+| **Stripe German invoicing** | Template wired to checkouts; `preferred_locales: ['de']`; German product names per §14 UStG |
+| **Trends module** | Full SVG line chart, department & grade heatmaps, delta KPIs, year-over-year table |
 
 ---
 
@@ -375,14 +382,10 @@ PayLens/
 
 | Task | Notes |
 |------|-------|
-| **Support email delivery** | Wire admin reply to send Resend email to user |
-| **Add-on seat Stripe checkout** | `/api/stripe/checkout?product=addon-seat` not yet handled |
-| **Stripe customer portal** | Let licensed users manage/cancel subscription |
-| **Trends module** | UI scaffolded; needs real multi-year comparison logic |
+| **Add-on seat testing** | Implemented; needs end-to-end test with real SEPA/card payment |
 | **Compliance dashboard** | Dynamic status per EU Art. 9 sub-requirement |
 | **Employee portal polish** | Art. 7 PDF letter final review + token auth |
-| **Landing page** | Astro site needs UI showcase + contact form + VSL wiring (see below) |
-| **Hero Showcase Carousel** | Interactive, auto-playing carousel of 6 high-fidelity UI cards embedded on landing page hero. |
+| **Hero Showcase Carousel** | Astro landing page — awaiting 6 dashboard screenshots from live server |
 
 ### 🟢 Low
 
