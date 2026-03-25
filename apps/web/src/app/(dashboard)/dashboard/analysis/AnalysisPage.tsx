@@ -232,15 +232,39 @@ export default function AnalysisPageClient({
                 getAnalysisForDataset(datasetId) as Promise<AnalysisData | null>,
                 getRecommendedWifFactors(datasetId),
             ])
-            setAnalysis(data)
             setWifStats(wifRec.stats)
             setSelectedWif(wifRec.recommended)
+
+            // Auto-rerun if existing analysis used different WIF than recommended —
+            // replaces the old result so user sees the correct view on first load.
+            const existingWif = data?.results?.wif_factors_used
+            const recSorted   = [...wifRec.recommended].sort().join(',')
+            const existSorted = existingWif ? [...existingWif].sort().join(',') : null
+
+            if (data && existSorted !== null && existSorted !== recSorted) {
+                const ds   = datasets.find(d => d.id === datasetId)
+                const name = ds?.name ?? `Analyse ${ds?.reporting_year ?? new Date().getFullYear()}`
+                const result = await runDatasetAnalysis(datasetId, name, 'replace', data.id, wifRec.recommended)
+                if (!result.error) {
+                    const newData = await getAnalysisForDataset(datasetId) as AnalysisData | null
+                    setAnalysis(newData)
+                    if (newData?.id) {
+                        const expl = await getExplanationsForAnalysis(newData.id) as Explanation[]
+                        setExplanations(expl)
+                    }
+                    setLoadingAnalysis(false)
+                    return
+                }
+                // On auto-run error: fall through and show original data with warning
+            }
+
+            setAnalysis(data)
             if (data?.id) {
                 const expl = await getExplanationsForAnalysis(data.id) as Explanation[]
                 setExplanations(expl)
             }
         } else {
-            // After a re-run: reload results only, keep user's WIF selection intact
+            // After a manual re-run: reload results only, keep user's WIF selection intact
             const data = await getAnalysisForDataset(datasetId) as AnalysisData | null
             setAnalysis(data)
             if (data?.id) {
@@ -250,7 +274,7 @@ export default function AnalysisPageClient({
         }
 
         setLoadingAnalysis(false)
-    }, [])
+    }, [datasets])
 
     // Auto-load the first (selected) dataset's latest analysis on mount
     useEffect(() => {
@@ -509,7 +533,7 @@ export default function AnalysisPageClient({
                                 WIF-Faktoren für bereinigten Gender Pay Gap
                             </p>
                             <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                                Faktoren zur Bildung der Vergleichszelle (EU Art. 9). Wirksam beim nächsten Analyselauf.
+                                Merkmale, die gleiche Arbeit definieren (EU Art. 9). Aktiv-/Deaktivieren Sie Faktoren – Änderungen werden mit „Neue Analyse" übernommen.
                             </p>
                         </div>
                         {selectedWif.length < ALL_WIF.length && (
@@ -615,7 +639,7 @@ export default function AnalysisPageClient({
                                     if (used === sel) return null
                                     return (
                                         <p className="mt-1 flex items-start gap-1" style={{ color: 'var(--color-pl-amber)' }}>
-                                            ⚠ WIF-Auswahl geändert – neue Analyse starten, um sie anzuwenden.
+                                            ⚠ WIF-Auswahl geändert – klicken Sie auf „Neue Analyse" (oben rechts), um das bereinigte Ergebnis zu aktualisieren.
                                         </p>
                                     )
                                 })()}
