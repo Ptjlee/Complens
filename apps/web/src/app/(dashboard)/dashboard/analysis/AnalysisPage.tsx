@@ -4,7 +4,7 @@ import { useState, useTransition, useCallback, useEffect, useRef } from 'react'
 import {
     Play, CheckCircle2, AlertTriangle, ChevronDown,
     BarChart3, Loader2, AlertCircle, TrendingDown, TrendingUp,
-    ShieldAlert, ChevronDown as ChevronDownIcon, RefreshCw, Database,
+    ShieldAlert, ChevronDown as ChevronDownIcon, RefreshCw, Database, Landmark,
 } from 'lucide-react'
 import {
     runDatasetAnalysis,
@@ -14,8 +14,11 @@ import {
 import type { WifRecommendation } from './actions'
 import { getExplanationsForAnalysis } from './explanations/actions'
 import type { AnalysisResult, DepartmentResult } from '@/lib/calculations/types'
+import type { BandContext } from '@/lib/band/getBandContext'
 import EmployeesTab from './EmployeesTab'
 import { PayGapChartGrid } from '@/components/dashboard/PayGapChartGrid'
+import BandVisualizationChart from '@/components/dashboard/BandVisualizationChart'
+import ComplianceHeatmap     from '@/components/dashboard/ComplianceHeatmap'
 
 // ============================================================
 // Gap badge
@@ -194,15 +197,17 @@ const WIF_LABELS: Record<string, string> = {
 export default function AnalysisPageClient({
     datasets,
     isAdmin,
+    bandContext,
 }: {
-    datasets: Dataset[]
-    isAdmin: boolean
+    datasets:    Dataset[]
+    isAdmin:     boolean
+    bandContext?: BandContext
 }) {
     const [selectedId, setSelectedId]             = useState(datasets[0]?.id ?? '')
     const [analysis, setAnalysis]                 = useState<AnalysisData | null>(null)
     const [existingExplanations, setExplanations]  = useState<Explanation[]>([])
     const [loadingAnalysis, setLoadingAnalysis]   = useState(true)   // true = loading on mount
-    const [activeTab, setActiveTab]               = useState<'overview' | 'employees'>('overview')
+    const [activeTab, setActiveTab] = useState<'overview' | 'employees' | 'bands'>('overview')
     const [runPending, startRunTransition]        = useTransition()
     const [runError, setRunError]                 = useState('')
     const [showRerunConfirm, setShowRerunConfirm] = useState(false)
@@ -587,12 +592,14 @@ export default function AnalysisPageClient({
                             ? [
                                 { id: 'overview',  label: 'Übersicht' },
                                 { id: 'employees', label: `Mitarbeitende (${results.individual_flags?.length ?? 0})` },
+                                ...(bandContext?.has_bands ? [{ id: 'bands', label: `Entgeltbänder (Art. 9)` }] : []),
                               ]
                             : [
                                 { id: 'overview',  label: 'Übersicht' },
+                                ...(bandContext?.has_bands ? [{ id: 'bands', label: 'Entgeltbänder (Art. 9)' }] : []),
                               ]
                     ).map(tab => (
-                        <button key={tab.id} onClick={() => setActiveTab(tab.id as 'overview' | 'employees')}
+                        <button key={tab.id} onClick={() => setActiveTab(tab.id as 'overview' | 'employees' | 'bands')}
                             className="px-4 py-1.5 rounded-lg text-xs font-medium transition-all"
                             style={{
                                 background: activeTab === tab.id ? 'var(--color-pl-brand)' : 'transparent',
@@ -747,6 +754,34 @@ export default function AnalysisPageClient({
                     adjustedMedian={results.overall.adjusted_median ?? 0}
                     wifFactors={selectedWif}
                 />
+            )}
+
+            {/* ── Band tab (EU Art. 9) ── */}
+            {activeTab === 'bands' && bandContext?.has_bands && (
+                <div className="space-y-5">
+                    <div className="glass-card p-5">
+                        <div className="flex items-center gap-2 mb-4">
+                            <Landmark size={16} style={{ color: 'var(--color-pl-brand-light)' }} />
+                            <h2 className="text-sm font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>
+                                Interne Entgeltbänder
+                            </h2>
+                            <span className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
+                                · {bandContext.grades[0]?.band_name}
+                            </span>
+                        </div>
+                        <BandVisualizationChart grades={bandContext.grades} />
+                    </div>
+
+                    <div className="glass-card p-5">
+                        <div className="flex items-center gap-2 mb-4">
+                            <Landmark size={16} style={{ color: 'var(--color-pl-brand-light)' }} />
+                            <h2 className="text-sm font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>
+                                EU Art. 9 Compliance — Intra-Gruppen-Entgeltlücke
+                            </h2>
+                        </div>
+                        <ComplianceHeatmap grades={bandContext.grades} />
+                    </div>
+                </div>
             )}
         </div>
         </>

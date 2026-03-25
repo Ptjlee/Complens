@@ -277,7 +277,6 @@ function PayGapBreakdownCard({ results }: { results: AnalysisResult }) {
     const gapColor = (pct: number, sup: boolean) =>
         sup ? 'var(--color-pl-text-tertiary)'
         : Math.abs(pct) >= 5 ? 'var(--color-pl-red)'
-        : Math.abs(pct) >= 2 ? 'var(--color-pl-amber)'
         : 'var(--color-pl-green)'
 
     return (

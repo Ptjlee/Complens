@@ -100,7 +100,10 @@ function normalise(
         const vtype = e.variable_pay_type ?? 'auto'
         if (vtype === 'pct') {
             // stored as a percent value (e.g. 10 means 10%) — divide by 100 to get fraction
-            variablePayEur = (rawVar / 100) * annualBase
+            // Guard: if raw value is < 2 it's already a decimal fraction (0.15 = 15%) — treat same as auto
+            variablePayEur = rawVar < 2
+                ? rawVar * annualBase
+                : (rawVar / 100) * annualBase
         } else if (vtype === 'eur') {
             variablePayEur = rawVar
         } else {
@@ -337,29 +340,21 @@ function computeByGrade(
 function computeIndividualFlags(
     employees: NormalisedEmployee[],
     threshold = 0.10,
+    wifFactors: string[] = DEFAULT_WIF_FACTORS,
 ): IndividualFlag[] {
-    // Build cohort map using the SAME 4-factor key as groupByWifCell so that
-    // every employee's cohort_median aligns exactly with the structural WIF cells.
-    // EU Art. 9: grade × employment_type × department × location
+    // Build cohort map using the SAME factor key as the adjusted gap (groupByWifCell)
+    // so that every employee's cohort_median aligns exactly with the structural WIF cells
+    // chosen by the analyst. EU Art. 9: cohort definition must match the WIF model used.
+    const activeFactors = wifFactors.filter(f => WIF_FIELD_MAP[f])
     const cohorts = new Map<string, NormalisedEmployee[]>()
     for (const e of employees) {
-        const key = [
-            e.job_grade       ?? '_',
-            e.employment_type ?? '_',
-            e.department      ?? '_',
-            e.location        ?? '_',
-        ].join('|')
+        const key = activeFactors.map(f => WIF_FIELD_MAP[f](e)).join('|')
         if (!cohorts.has(key)) cohorts.set(key, [])
         cohorts.get(key)!.push(e)
     }
 
     return employees.map(e => {
-        const key = [
-            e.job_grade       ?? '_',
-            e.employment_type ?? '_',
-            e.department      ?? '_',
-            e.location        ?? '_',
-        ].join('|')
+        const key = activeFactors.map(f => WIF_FIELD_MAP[f](e)).join('|')
         const cohort = cohorts.get(key) ?? [e]
         const cohortRates = cohort.map(c => c.hourly_rate)
         const cohortMedian = median(cohortRates)
@@ -560,7 +555,7 @@ export function runAnalysis(
     const byGrade         = computeByGrade(normalised, wifCells)
     const variablePay     = computeVariablePayGap(normalised)
     const THRESHOLD       = 0.10
-    const individualFlags = computeIndividualFlags(normalised, THRESHOLD)
+    const individualFlags = computeIndividualFlags(normalised, THRESHOLD, wifFactors)
 
     // Track 1 — dispersion + gender distribution
     const dispersionPoints   = computeDispersionPoints(normalised)

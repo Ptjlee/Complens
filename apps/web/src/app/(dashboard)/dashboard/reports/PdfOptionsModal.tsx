@@ -16,23 +16,25 @@ export type PdfOptions = {
         quartiles:        boolean
         explanations:     boolean
         remediation:      boolean
+        salaryBands:      boolean
         declaration:      boolean
     }
     // Signature lines (up to 3)
     signatories: [string, string, string]
 }
 
-function defaultOptions(orgName: string, year: number): PdfOptions {
+function defaultOptions(orgName: string, year: number, reportName?: string): PdfOptions {
     return {
         companyName:    orgName,
-        reportTitle:    `Entgeltgleichheitsbericht ${year}`,
+        reportTitle:    reportName ?? `Entgeltgleichheitsbericht ${year}`,
         includeSections: {
             executiveSummary: true,
-            departments:      true,
+            departments:      false,   // Not mandated by EU Art. 9 — off by default
             grades:           true,
             quartiles:        true,
             explanations:     true,
             remediation:      true,
+            salaryBands:      true,
             declaration:      true,
         },
         signatories: ['HR-Leitung', 'Geschäftsführung', 'Arbeitnehmervertretung'],
@@ -60,8 +62,9 @@ export function buildPdfUrl(analysisId: string, opts: PdfOptions): string {
 
 const SECTIONS = [
     { key: 'executiveSummary', label: 'Executive Summary' },
-    { key: 'departments',      label: 'Bereiche' },
-    { key: 'grades',           label: 'Entgeltgruppen' },
+    { key: 'departments',      label: 'Bereiche (nicht EU-Pflicht)' },
+    { key: 'salaryBands',      label: 'Entgeltbänder & Compa-Ratio (Art. 9)' },
+    { key: 'grades',           label: 'Entgeltgruppen (WIF-Analyse)' },
     { key: 'quartiles',        label: 'Quartilsanalyse' },
     { key: 'explanations',     label: 'Begründungen (Art. 10)' },
     { key: 'remediation',      label: 'Maßnahmenplan (Art. 11)' },
@@ -72,14 +75,16 @@ export default function PdfOptionsModal({
     analysisId,
     orgName,
     reportYear,
+    reportName,
     onClose,
 }: {
     analysisId: string
     orgName:    string
     reportYear: number
+    reportName?: string
     onClose:    () => void
 }) {
-    const [opts, setOpts] = useState<PdfOptions>(() => defaultOptions(orgName, reportYear))
+    const [opts, setOpts] = useState<PdfOptions>(() => defaultOptions(orgName, reportYear, reportName))
 
     function toggleSection(key: keyof PdfOptions['includeSections']) {
         setOpts(prev => ({

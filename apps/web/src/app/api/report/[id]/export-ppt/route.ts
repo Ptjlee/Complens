@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import type { AnalysisResult } from '@/lib/calculations/types'
 import { generateReportPptx } from '@/lib/ppt/ReportPresentation'
+import { getBandContext } from '@/lib/band/getBandContext'
 
 export async function GET(
     _req: NextRequest,
@@ -17,7 +18,7 @@ export async function GET(
     }
 
     // ── Fetch analysis, org, plans, explanations in parallel ──────────────────
-    const [analysisRes, orgRes, plansRes, explRes] = await Promise.all([
+    const [analysisRes, orgRes, plansRes, explRes, bandCtx] = await Promise.all([
         supabase
             .from('analyses')
             .select('id, name, created_at, report_notes, results, datasets(name, reporting_year, employee_count)')
@@ -36,6 +37,7 @@ export async function GET(
             .from('pay_gap_explanations')
             .select('employee_id, categories_json, max_justifiable_pct, status')
             .eq('analysis_id', id),
+        getBandContext(),
     ])
 
     if (analysisRes.error || !analysisRes.data) {
@@ -94,10 +96,14 @@ export async function GET(
     }
 
     // ── Generate PPTX ─────────────────────────────────────────────────────────
+    const ds = Array.isArray(rawAnalysis.datasets) ? rawAnalysis.datasets[0] ?? null : rawAnalysis.datasets
+    const datasetName = (ds as Record<string, unknown> | null)?.name as string | undefined
+    const displayName = datasetName ?? (rawAnalysis.name as string)   // user-given name preferred
+
     try {
         const buf = await generateReportPptx(results, {
             orgName,
-            analysisName:          rawAnalysis.name as string,
+            analysisName:          displayName,
             analysisDate:          rawAnalysis.created_at as string,
             reportNotes:           (rawAnalysis.report_notes as string | null) ?? null,
             plans,
@@ -106,11 +112,12 @@ export async function GET(
             explClaimedMap,
             isSample:   sampleMode !== null,
             sampleMode,
+            bandGrades: bandCtx.grades.length > 0 ? bandCtx.grades : undefined,
         })
 
         const arrayBuffer = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer
         const prefix      = sampleMode ? 'MUSTER_' : ''
-        const safeName    = prefix + ((rawAnalysis.name as string) ?? 'report')
+        const safeName    = prefix + displayName
             .replace(/[^a-z0-9_\-]/gi, '_')
             .slice(0, 60)
 

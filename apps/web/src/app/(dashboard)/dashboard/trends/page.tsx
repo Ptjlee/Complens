@@ -8,6 +8,7 @@ export interface TrendPoint {
     year:              number
     analysisId:        string
     analysisName:      string
+    datasetId:         string | null   // for grouping comparison series
     createdAt:         string
     unadjustedMedian:  number
     unadjustedMean:    number
@@ -30,18 +31,20 @@ export default async function TrendsPage() {
     // Fetch all completed analyses with their dataset info
     const { data: analyses } = await supabase
         .from('analyses')
-        .select('id, name, created_at, results, datasets(name, reporting_year)')
+        .select('id, name, created_at, results, datasets(id, name, reporting_year)')
         .eq('status', 'complete')
+        .is('archived_at', null)
         .order('created_at', { ascending: true })
 
     const points: TrendPoint[] = (analyses ?? []).map(a => {
         const r  = a.results as AnalysisResult
         const o  = r.overall
-        const ds = a.datasets as unknown as { name: string; reporting_year: number } | null
+        const ds = a.datasets as unknown as { id: string; name: string; reporting_year: number } | null
         return {
             year:              r.reporting_year ?? ds?.reporting_year ?? new Date(a.created_at).getFullYear(),
             analysisId:        a.id,
             analysisName:      ds?.name ?? a.name ?? 'Analyse',
+            datasetId:         ds?.id ?? null,
             createdAt:         a.created_at,
             unadjustedMedian:  (o.unadjusted_median ?? 0) * 100,
             unadjustedMean:    (o.unadjusted_mean   ?? 0) * 100,

@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { ReportDocument } from '@/lib/pdf/ReportDocument'
 import type { AnalysisResult } from '@/lib/calculations/types'
 import { MAX_JUSTIFIABLE_CAP } from '@/app/(dashboard)/dashboard/import/constants'
+import { getBandContext } from '@/lib/band/getBandContext'
 import React from 'react'
 
 export async function GET(
@@ -50,7 +51,7 @@ export async function GET(
     const sampleMode: 'trial' | 'expired' | null =
         trialExpired ? 'expired' : trialActive ? 'trial' : null
 
-    const [explRes, plansRes] = await Promise.all([
+    const [explRes, plansRes, bandCtx] = await Promise.all([
         supabase
             .from('pay_gap_explanations')
             .select('id, employee_id, category, categories_json, action_plan, max_justifiable_pct, status, created_at')
@@ -59,6 +60,7 @@ export async function GET(
             .from('remediation_plans')
             .select('id, employee_id, action_type, status, deadline_months, plan_steps')
             .eq('analysis_id', id),
+        getBandContext(),
     ])
 
     const result      = analysis.results as AnalysisResult
@@ -103,8 +105,9 @@ export async function GET(
         sections,
         signatories,
         explanationAdjustedGap,
-        isSample:             sampleMode !== null,
+        isSample:                 sampleMode !== null,
         sampleMode,
+        bandGrades:               sections === null || sections.has('salaryBands') ? bandCtx.grades : [],
     })
 
     const pdfBuffer = await renderToBuffer(doc as React.ReactElement<import('@react-pdf/renderer').DocumentProps>)

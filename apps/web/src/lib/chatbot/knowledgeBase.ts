@@ -240,6 +240,40 @@ Kündigung:
 Per Support-Ticket in CompLens oder schriftlich, 3 Monate Frist zum Jahresende.
 Nach Vertragsende: 30 Tage Datenexport möglich, dann vollständige Löschung.
 
+── MODUL 11: ENTGELTBÄNDER (EU ART. 9) ──
+
+Was sind Entgeltbänder?
+Entgeltbänder definieren Min-/Maximalvergütung pro Stelle/Entgeltgruppe.
+EU Art. 9 verpflichtet zur Veröffentlichung von Entgeltinformationen nach Kategorie und Geschlecht.
+Intra-Gruppen-Lücke ≥ 5% → Begründungspflicht nach Art. 10.
+Compa-Ratio = (Median-Gehalt ÷ Bandmitte) × 100.
+
+Automatische Banderkennung:
+CompLens erkennt job_grade-Werte aus importierten Daten und schlägt Benennungsschema vor
+(G1/G2, L1/L2, TVöD, TV-L, ERA, E-Skala usw.). 1-Klick: alle Gruppen anlegen + Statistiken berechnen.
+
+Interne Statistiken (pro Entgeltgruppe):
+- Min, P25, Median, P75, Max (Grundgehalt)
+- ♀/♂ Mediane getrennt, n, Intra-Gap, Gesamtvergütungs-Median
+
+EU Art. 9 Heatmap: Binäre Bewertung — Grün (< 5%, konform) oder Rot (≥ 5%, Handlungsbedarf).
+
+Markt-Benchmark (optional): Quelle, Jahr, P25/P50/P75 extern eintragen → erscheint im Diagramm.
+
+Visualisierung: Horizontales Box-Plot (Grundgehalt oder Gesamtvergütung), mit Zielband + Marktdaten.
+
+Dashboard: 7. KPI-Karte zeigt EU-konforme Gruppen X/Y + Hinweis-Banner bei Überschreitung.
+Analyse: 3. Tab "Entgeltbänder (Art. 9)" mit Banddiagramm und Heatmap.
+PDF: Optionale Seite "Entgeltbänder & Compa-Ratio" (in PDF-Optionen aktivierbar).
+
+Tarifsysteme: TVöD, TV-L, ERA und ähnliche werden automatisch erkannt.
+
+FAQ:
+- Intra-Gruppen-Lücke vs. Gesamt-Gap: Intra-Lücke = innerhalb einer Gruppe (Art. 9);
+  Gesamt-Gap = unternehmensweiter Gender Pay Gap. Beides meldepflichtig.
+- Gruppen < 5 Personen werden anonymisiert.
+- Compa-Ratio < 87%: typisches Warnsignal für Unterbezahlung im C&B-Management.
+
 ══ NAVIGATIONSÜBERSICHT ══
 - Dashboard: Übersicht der letzten Analysen und Schnellzugriff
 - Import: CSV-Datensätze hochladen und verwalten
@@ -247,6 +281,7 @@ Nach Vertragsende: 30 Tage Datenexport möglich, dann vollständige Löschung.
 - Begründungen (via Analyse): Entgeltunterschiede dokumentieren
 - Maßnahmen: Entgeltlücken mit strukturierten Plänen schließen
 - Trendanalyse: Jahresüberschreitende Entwicklung der Lücken
+- Entgeltbänder: Interne Gehaltsbänder + EU Art. 9 Intra-Gruppen-Compliance
 - Berichte: PDF/PPT-Exporte generieren
 - Auskunftsrecht: Mitarbeiterauskunft Art. 7 EU-RL 2023/970
 - DSGVO & Compliance: Datenschutz und Rechtsnachweise

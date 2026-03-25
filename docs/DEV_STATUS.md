@@ -1,9 +1,9 @@
-# PayLens / CompLens — Development Status
-*Last updated: 2026-03-24 12:30 CET*
+# CompLens — Development Status
+*Last updated: 2026-03-25 23:20 CET*
 
 ---
 
-## Current State: Phase 3 — In Progress
+## Current State: Phase 3 — Feature Complete ✅
 
 ### Dev Server
 - Next.js 16 (Turbopack) on **http://localhost:3001**
@@ -61,37 +61,54 @@ All core product features are live.
 | **Remediation Budget Simulation** | `BudgetSimPanel` in `RemediationClient.tsx` — real-time payroll baseline + incremental cost projection per time horizon (6m / 1y / 18m / 2-3y) using raw import fields. |
 | **Stripe Customer Portal** | `POST /api/stripe/portal` — licensed users can manage/cancel subscription via Stripe-hosted portal. Button in Settings → Abonnement tab. |
 | **Trial expired overlay → support ticket** | "Support kontaktieren" link now routes to `/dashboard/help` instead of `mailto:`. |
-| **Stripe German invoice setup** | Template "CompLens Standardrechnung DE" (`inrtem_1TESkCEB4pWUyJsm80m4qk18`) wired to all subscription checkouts. `preferred_locales: ['de']` set on all customers. Products renamed to German Leistungsbeschreibung (§14 UStG). |
+| **Stripe German invoice setup** | Template wired to all subscription checkouts. `preferred_locales: ['de']` set on all customers. Products renamed to German Leistungsbeschreibung (§14 UStG). |
 | **Trends module** | SVG line chart, department heatmap, grade heatmap, delta KPIs, year-over-year table — fully implemented. |
+| **Salary Bands module** | Auto-detect grades, compute P25/median/P75/gender medians, EU Art. 9 compliance heatmap, market benchmarks, compa-ratio. Dashboard KPI card + Analysis tab + PDF section + Sidebar route. |
+| **Stripe price IDs** | Real price IDs set via `STRIPE_PRICE_LICENSE` + `STRIPE_PRICE_ADDITIONAL_ACCESS` env vars — wired in checkout + webhook routes. |
+| **Stripe webhook** | `/api/stripe/webhook` live; `STRIPE_WEBHOOK_SECRET` in env. |
+| **Resend email** | `RESEND_API_KEY` + `RESEND_FROM_EMAIL` configured. Welcome, invite, support reply, bulk email all functional. |
+| **All critical env vars** | Supabase, Gemini, Resend, Stripe (secret + webhook + price IDs), `SUPERADMIN_EMAILS`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_APP_URL` all set in `.env.local`. |
 
 ---
 
-## 🔲 Remaining — Phase 3 / Launch
+## ✅ Completed — Report Module Polish (2026-03-25)
 
-### 🔴 High (blockers for production)
+| Change | Detail |
+|--------|--------|
+| **EU compliance clarity** | "Bereiche" section tagged "Nicht EU-Pflicht (Art. 9)" in web report |
+| **PDF: Bereiche default off** | PdfOptionsModal defaults departments to `false`; label updated to "(nicht EU-Pflicht)" |
+| **PDF page order** | Entgeltbänder & Compa-Ratio placed immediately after Bereiche; legacy grade table conditional |
+| **PPT: dept slide removed** | `addSlide3` no longer called; replaced by 2 band slides |
+| **PPT: IQR chart slide** | New `addSalaryBandChartSlide` — horizontal range bars per grade with P25/median/P75 markers |
+| **PPT: EU column labels** | `✓ Nein` → `✓ ok`, `⚠ Ja` → `⚠ n.k.` (consistent with PDF) |
+| **PPT: table full width** | Columns redistributed from 6.69" to 9.0" (full slide); `n` col widened from 0.34" to 0.60" |
+| **PPT: footer fixed** | "Erstellt mit CompLens" centered; no overlap with page number |
+| **PPT: EUR labels** | P25/Median/P75 anchored to fixed track bounds (not IQR position) |
+| **Title consistency** | All outputs (web H1, PDF title, PPT slide title + filename) use user-given dataset name |
+| **Grundgehalt badge** | Chart slide clearly labelled as Grundgehalt; subtitle updated |
+| **TypeScript** | `tsc --noEmit` → 0 errors across entire codebase |
 
+---
+
+## 🔲 Remaining — Post-Launch / Nice-to-Have
+
+### 🟡 Medium
 | Task | Notes |
 |------|-------|
-| **Stripe price IDs** | `STRIPE_PRICE_PAYLENS` must use real price ID from Stripe dashboard |
-| **Stripe webhook on Vercel** | Register endpoint + set `STRIPE_WEBHOOK_SECRET` in Vercel env |
-| **All env vars on Vercel** | Gemini, Resend, Supabase, Stripe, `SUPERADMIN_EMAILS`, `NEXT_PUBLIC_SITE_URL` |
+| **Add-on seat end-to-end test** | Route implemented; needs real SEPA/card payment test |
+| **Compliance dashboard** | Dynamic Art. 9 sub-requirement status per org (planned) |
+| **Employee portal polish** | Art. 7 PDF letter — final UX review |
+| **Hero Showcase Carousel** | Astro landing page — awaiting 6 dashboard screenshots from live server |
+| **GA4 activation** | Set `NEXT_PUBLIC_GA_MEASUREMENT_ID` — code already wired, needs Measurement ID |
 
-### 🟡 Medium (important before launch)
-
-| Task | Notes |
-|------|-------|
-| **Add-on seat Stripe checkout** | `/api/stripe/checkout?product=addon-seat` route implemented but needs testing with real payment |
-| **Compliance dashboard** | Dynamic status per EU Art. 9 sub-requirement |
-| **Employee portal polish** | Art. 7 PDF letter final review + token auth |
-| **Landing page Hero Carousel** | Astro site — interactive screenshot carousel. Awaiting 6 dashboard screenshots from live server. |
-
-### 🟢 Low (post-launch / nice-to-have)
-
+### 🟢 Low
 | Task | Notes |
 |------|-------|
 | **Custom email domain** | Verify `hallo@complens.de` in Resend dashboard |
-| **Dataset side-by-side comparison** | Year-over-year diff view |
-| **GDPR / AVV end-to-end test** | Confirm contract PDF download flow with real org legal fields |
+| **Dataset comparison** | Side-by-side year-over-year diff view |
+| **GDPR / AVV end-to-end test** | Confirm contract PDF download with real org legal fields |
+| **Plausible Analytics** | Cookie-free GDPR stats for landing site |
+| **Dead code cleanup** | `addSlide3` in `ReportPresentation.ts` — unused, harmless |
 | **Desktop app** | Electron wrapper — not priority before June 2026 |
 
 ---
@@ -103,12 +120,15 @@ All core product features are live.
 | Web app root | `/Users/peter/Documents/DexterBee/PayLens/apps/web/` |
 | Env file | `/Users/peter/Documents/DexterBee/PayLens/apps/web/.env.local` |
 | DB migrations | `/Users/peter/Documents/DexterBee/PayLens/database/migrations/` |
-| Pay gap engine | `/Users/peter/Documents/DexterBee/PayLens/apps/web/src/lib/calculations/payGap.ts` |
-| Superadmin auth helper | `/Users/peter/Documents/DexterBee/PayLens/apps/web/src/lib/api/superadminAuth.ts` |
-| Plan guard helper | `/Users/peter/Documents/DexterBee/PayLens/apps/web/src/lib/api/planGuard.ts` |
-| i18n translations | `/Users/peter/Documents/DexterBee/PayLens/apps/web/src/lib/i18n/translations.ts` |
-| PDF report | `/Users/peter/Documents/DexterBee/PayLens/apps/web/src/lib/pdf/ReportDocument.tsx` |
-| PPT report | `/Users/peter/Documents/DexterBee/PayLens/apps/web/src/lib/ppt/ReportPresentation.ts` |
+| Pay gap engine | `apps/web/src/lib/calculations/payGap.ts` |
+| Superadmin auth helper | `apps/web/src/lib/api/superadminAuth.ts` |
+| Plan guard helper | `apps/web/src/lib/api/planGuard.ts` |
+| i18n translations | `apps/web/src/lib/i18n/translations.ts` |
+| PDF report | `apps/web/src/lib/pdf/ReportDocument.tsx` |
+| PPT report | `apps/web/src/lib/ppt/ReportPresentation.ts` |
+| Band context | `apps/web/src/lib/band/getBandContext.ts` |
+| Stripe checkout | `apps/web/src/app/api/stripe/checkout/route.ts` |
+| Stripe webhook | `apps/web/src/app/api/stripe/webhook/route.ts` |
 
 ## How to Resume Dev Server
 ```bash

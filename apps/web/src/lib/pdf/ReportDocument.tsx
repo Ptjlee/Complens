@@ -3,6 +3,7 @@ import {
     Document, Page, Text, View, StyleSheet, Font,
 } from '@react-pdf/renderer'
 import type { AnalysisResult } from '@/lib/calculations/types'
+import type { BandGradeSummary } from '@/lib/band/getBandContext'
 import { EXPLANATION_CATEGORIES } from '@/app/(dashboard)/dashboard/import/constants'
 
 // ============================================================
@@ -351,10 +352,11 @@ export type ReportDocumentProps = {
     reportNotes?:            string | null
     sections?:               Set<string> | null
     signatories?:            [string, string, string]
-    explanationAdjustedGap?: number | null   // Tier 3, computed by caller
+    explanationAdjustedGap?: number | null
     remediationPlans?:       RemPlan[]
     isSample?:               boolean
     sampleMode?:             'trial' | 'expired' | null
+    bandGrades?:             BandGradeSummary[]   // EU Art. 9 salary band data
     explanations: Array<{
         id:                  string
         employee_id:         string
@@ -369,7 +371,8 @@ export type ReportDocumentProps = {
 
 export function ReportDocument({
     result, orgName, reportName, createdAt, reportNotes, explanations,
-    sections, signatories, explanationAdjustedGap, remediationPlans = [], isSample, sampleMode,
+    sections, signatories, explanationAdjustedGap, remediationPlans = [],
+    isSample, sampleMode, bandGrades = [],
 }: ReportDocumentProps) {
     // Helper: is a section enabled? (null/undefined = all enabled)
     const show = (key: string) => !sections || sections.has(key)
@@ -677,6 +680,96 @@ export function ReportDocument({
             </InnerPage>
             )}
 
+            {/* ── SALARY BANDS & COMPA-RATIO — EU Art. 9 ──── */}
+            {show('salaryBands') && bandGrades.length > 0 && (
+            <InnerPage orgName={orgName} reportYear={year} isSample={isSample}>
+                <Text style={s.sectionTitle}>Entgeltbänder & Compa-Ratio</Text>
+                <Text style={s.sectionSubtitle}>
+                    EU-Richtlinie 2023/970 Art. 9 — Entgeltberichterstattung nach Entgeltkategorie und Geschlecht
+                </Text>
+                <View style={s.divider} />
+
+                {/* KPI summary row */}
+                {(() => {
+                    const nonCompliant = bandGrades.filter(g => g.exceeds_5pct).length
+                    const totalWithData = bandGrades.filter(g => g.internal_n != null && g.internal_n > 0).length
+                    const compliant = totalWithData - nonCompliant
+                    return (
+                        <View style={s.kpiRow}>
+                            <View style={s.kpiCard}>
+                                <Text style={s.kpiLabel}>ENTGELTGRUPPEN GESAMT</Text>
+                                <Text style={{ ...s.kpiValue, color: NAVY }}>{bandGrades.length}</Text>
+                                <Text style={s.kpiDesc}>{bandGrades[0]?.band_name ?? ''}</Text>
+                            </View>
+                            <View style={s.kpiCard}>
+                                <Text style={s.kpiLabel}>EU-KONFORM (&lt; 5%)</Text>
+                                <Text style={{ ...s.kpiValue, color: compliant === totalWithData ? GREEN : AMBER }}>{compliant}</Text>
+                                <Text style={s.kpiDesc}>Intra-Gruppen-Lücke unter Schwellenwert</Text>
+                            </View>
+                            <View style={s.kpiCard}>
+                                <Text style={s.kpiLabel}>HANDLUNGSBEDARF (≥ 5%)</Text>
+                                <Text style={{ ...s.kpiValue, color: nonCompliant > 0 ? RED : GREEN }}>{nonCompliant}</Text>
+                                <Text style={s.kpiDesc}>Art. 10 Begründungspflicht</Text>
+                            </View>
+                        </View>
+                    )
+                })()}
+
+                {/* Art. 9 compliance table */}
+                <Text style={{ fontSize: 9.5, fontFamily: 'Helvetica-Bold', color: NAVY, marginBottom: 8, marginTop: 4 }}>
+                    Entgelt nach Kategorie und Geschlecht (Art. 9 EU-RL 2023/970)
+                </Text>
+                <View style={s.tableHeader}>
+                    <Text style={{ ...s.tableHeaderTxt, flex: 1 }}>Gruppe</Text>
+                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>n</Text>
+                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>Median F.</Text>
+                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>Median M.</Text>
+                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>Intra-Luecke</Text>
+                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>Compa F</Text>
+                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>Compa M</Text>
+                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right', flex: 0.8 }}>EU</Text>
+                </View>
+                {bandGrades.map((g, i) => {
+                    const gap    = g.intra_grade_gap_pct
+                    const gapStr = gap == null ? '—' : `${gap > 0 ? '+' : ''}${gap.toFixed(1)}%`
+                    const gapCol = gap == null ? MUTED : Math.abs(gap) >= 5 ? RED : GREEN
+                    const compaF = g.internal_female_median && g.mid_salary && g.mid_salary > 0
+                        ? Math.round(g.internal_female_median / g.mid_salary * 100) : null
+                    const compaM = g.internal_male_median && g.mid_salary && g.mid_salary > 0
+                        ? Math.round(g.internal_male_median  / g.mid_salary * 100) : null
+                    const toEur = (v: number | null) => v == null ? '—'
+                        : v.toLocaleString('de-DE', { maximumFractionDigits: 0 }) + ' €'
+                    return (
+                        <View key={g.id} style={{ ...s.tableRow, backgroundColor: i % 2 === 0 ? WHITE : SURFACE }}>
+                            <Text style={{ ...s.tableCellBold, flex: 1 }}>{g.job_grade}</Text>
+                            <Text style={s.tableCellR}>{g.internal_n ?? '—'}</Text>
+                            <Text style={{ ...s.tableCellR, color: '#7c3aed' }}>{toEur(g.internal_female_median)}</Text>
+                            <Text style={{ ...s.tableCellR, color: BRAND }}>{toEur(g.internal_male_median)}</Text>
+                            <Text style={{ ...s.tableCellR, fontFamily: 'Helvetica-Bold', color: gapCol }}>{gapStr}</Text>
+                            <Text style={{ ...s.tableCellR, color: compaF != null && compaF < 87 ? RED : TEXT }}>
+                                {compaF != null ? `${compaF}%` : '—'}
+                            </Text>
+                            <Text style={{ ...s.tableCellR, color: compaM != null && compaM < 87 ? RED : TEXT }}>
+                                {compaM != null ? `${compaM}%` : '—'}
+                            </Text>
+                            <Text style={{ ...s.tableCellR, flex: 0.8, fontFamily: 'Helvetica-Bold',
+                                color: g.internal_n == null ? MUTED : g.exceeds_5pct ? RED : GREEN }}>
+                                {g.internal_n == null ? '—' : g.exceeds_5pct ? 'n.k.' : 'ok'}
+                            </Text>
+                        </View>
+                    )
+                })}
+
+                <Text style={{ fontSize: 7.5, color: MUTED, marginTop: 14, lineHeight: 1.5 }}>
+                    Gemäß Art. 9 EU-RL 2023/970 müssen Arbeitgeber mit ≥ 100 Beschäftigten Entgeltinformationen nach
+                    Entgeltkategorie und Geschlecht veröffentlichen. Eine Intra-Gruppen-Lücke ≥ 5% löst nach Art. 10
+                    eine Begründungspflicht aus. Compa-Ratio = Median ÷ Bandmitte × 100.
+                    Alle Werte: Bruttogehalt jährlich in EUR. Quelle: importierte Mitarbeiterdaten.
+                </Text>
+            </InnerPage>
+            )}
+
+
             {/* ── PAGE 5+ LOCKED FOR TRIAL ──────────────────── */}
             {isSample ? (
                 <LockedPage orgName={orgName} reportYear={year} sampleMode={sampleMode ?? 'trial'} />
@@ -686,8 +779,8 @@ export function ReportDocument({
             {/* ── GRADE & QUARTILE ───────────────────────────── */}
             {(show('grades') || show('quartiles')) && (
             <InnerPage orgName={orgName} reportYear={year} isSample={isSample}>
-                {/* Grade breakdown */}
-                {show('grades') && result.by_grade.length > 0 && (
+                {/* Grade breakdown — only show old gap table if no band data exists */}
+                {show('grades') && result.by_grade.length > 0 && bandGrades.length === 0 && (
                     <>
                         <Text style={s.sectionTitle}>Entgeltlücken nach Entgeltgruppe</Text>
                         <View style={s.divider} />

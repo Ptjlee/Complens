@@ -491,7 +491,10 @@ function PlanRow({
     const adjustedTarget = flag.severity === 'overpaid'
         ? flag.hourly_rate       // overpaid: no increase target
         : residualPct > 0
-            ? flag.hourly_rate * (1 + residualPct / 100)
+            // Raise by exactly the residual gap expressed in cohort-median units:
+            // target = currentRate + cohortMedian × residualPct/100
+            // → gap-at-target = (target - median)/median = -(explainedPct/100) ✓
+            ? flag.hourly_rate + flag.cohort_median * (residualPct / 100)
             : flag.cohort_median
 
     async function handleGenerate() {
@@ -639,7 +642,12 @@ function PlanRow({
                     title={cachedResidual != null ? 'Verbleibende Restlücke nach Begründung' : 'Expandieren um Begründung zu laden'}
                 >
                     <span className="text-sm font-semibold truncate" style={{ color: cachedResidual == null ? 'var(--color-pl-text-tertiary)' : cachedResidual < 5 ? '#34d399' : '#ef4444' }}>
-                        {cachedResidual != null ? `${cachedResidual.toFixed(1)}%` : '—'}
+                        {cachedResidual != null
+                            // Show with minus sign for consistency with Lücke column:
+                            // Lücke = -39.8% · Restlücke = -27.8% (both indicate underpayment)
+                            ? cachedResidual > 0 ? `-${cachedResidual.toFixed(1)}%` : '0%'
+                            : '—'
+                        }
                     </span>
                     <span className="text-[11px] font-medium" style={{ color: 'var(--color-pl-text-tertiary)', marginTop: 2 }}>
                         Restlücke

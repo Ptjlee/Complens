@@ -94,30 +94,58 @@ export async function runDatasetAnalysis(
             return { error: 'Keine Mitarbeiterdaten für diesen Datensatz gefunden.' }
         }
 
-        // Map DB rows → engine types (all fields)
+        // C3 — Fetch any manual pay overrides for this analysis run and merge
+        // them into the raw employee rows (NULL override field = keep imported value)
+        const { data: overrides } = await admin
+            .from('employee_pay_overrides')
+            .select('employee_id, salary_base, salary_period, salary_variable_eur, salary_variable_pct, variable_pay_mode, overtime_pay, benefits_in_kind, weekly_hours, monthly_hours')
+            .eq('analysis_id', analysisId)
+
+        const overrideMap = new Map<string, typeof overrides extends (infer T)[] | null ? T : never>()
+        for (const ov of overrides ?? []) overrideMap.set(ov.employee_id, ov)
+
+        // Map DB rows → engine types, applying overrides where present
         const defaultPeriod = (datasetMeta?.default_salary_period ?? 'annual') as 'annual' | 'monthly' | 'hourly'
-        const employees: EmployeeRecord[] = rawEmployees.map(e => ({
-            id:               e.id,
-            employee_ref:     e.employee_ref ?? null,
-            first_name:       e.first_name ?? null,
-            last_name:        e.last_name ?? null,
-            gender:           e.gender as EmployeeRecord['gender'],
-            salary_base:      Number(e.salary_base),
-            salary_variable:     Number(e.salary_variable ?? 0),
-            variable_pay_type:   (e.variable_pay_type as 'eur' | 'pct' | 'auto') ?? 'auto',
-            overtime_pay:        Number(e.overtime_pay ?? 0),
-            benefits_in_kind: Number(e.benefits_in_kind ?? 0),
-            salary_period:    (e.salary_period as 'annual' | 'monthly' | 'hourly') ?? defaultPeriod,
-            weekly_hours:     e.weekly_hours  != null ? Number(e.weekly_hours)  : null,
-            monthly_hours:    e.monthly_hours != null ? Number(e.monthly_hours) : null,
-            fte_ratio:        Number(e.fte_ratio ?? 1),
-            job_title:        e.job_title,
-            department:       e.department,
-            job_grade:        e.job_grade,
-            employment_type:  e.employment_type ?? 'full_time',
-            seniority_years:  e.seniority_years ? Number(e.seniority_years) : null,
-            location:         e.location,
-        }))
+        const employees: EmployeeRecord[] = rawEmployees.map(e => {
+            const ov = overrideMap.get(e.id)
+
+            // Resolve variable pay from override
+            let salary_variable  = Number(e.salary_variable ?? 0)
+            let variable_pay_type: 'eur' | 'pct' | 'auto' = (e.variable_pay_type as 'eur' | 'pct' | 'auto') ?? 'auto'
+            if (ov) {
+                const mode = ov.variable_pay_mode ?? 'eur'
+                if (mode === 'pct' && ov.salary_variable_pct != null) {
+                    salary_variable  = Number(ov.salary_variable_pct)
+                    variable_pay_type = 'pct'
+                } else if (ov.salary_variable_eur != null) {
+                    salary_variable  = Number(ov.salary_variable_eur)
+                    variable_pay_type = 'eur'
+                }
+            }
+
+            return {
+                id:               e.id,
+                employee_ref:     e.employee_ref ?? null,
+                first_name:       e.first_name ?? null,
+                last_name:        e.last_name ?? null,
+                gender:           e.gender as EmployeeRecord['gender'],
+                salary_base:      ov?.salary_base       != null ? Number(ov.salary_base)   : Number(e.salary_base),
+                salary_variable,
+                variable_pay_type,
+                overtime_pay:     ov?.overtime_pay      != null ? Number(ov.overtime_pay)   : Number(e.overtime_pay ?? 0),
+                benefits_in_kind: ov?.benefits_in_kind  != null ? Number(ov.benefits_in_kind): Number(e.benefits_in_kind ?? 0),
+                salary_period:    (ov?.salary_period ?? e.salary_period ?? defaultPeriod) as 'annual' | 'monthly' | 'hourly',
+                weekly_hours:     (ov?.weekly_hours  ?? e.weekly_hours)  != null ? Number(ov?.weekly_hours  ?? e.weekly_hours)  : null,
+                monthly_hours:    (ov?.monthly_hours ?? e.monthly_hours) != null ? Number(ov?.monthly_hours ?? e.monthly_hours) : null,
+                fte_ratio:        Number(e.fte_ratio ?? 1),
+                job_title:        e.job_title,
+                department:       e.department,
+                job_grade:        e.job_grade,
+                employment_type:  e.employment_type ?? 'full_time',
+                seniority_years:  e.seniority_years ? Number(e.seniority_years) : null,
+                location:         e.location,
+            }
+        })
 
         // Run the calculation engine
         const result = runAnalysis(employees, {
@@ -173,6 +201,7 @@ export async function getLatestAnalysis() {
             datasets(name, reporting_year, employee_count)
         `)
         .eq('status', 'complete')
+        .is('archived_at', null)            // C1: exclude archived runs from dashboard KPIs
         .order('created_at', { ascending: false })
         .limit(1)
         .single()

@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useCallback, useEffect } from 'react'
-import { TrendingDown, TrendingUp, AlertTriangle, BarChart2, ChevronRight, ChevronDown, Database } from 'lucide-react'
+import { TrendingDown, TrendingUp, AlertTriangle, BarChart2, ChevronRight, ChevronDown, Database, Landmark, CheckCircle2 } from 'lucide-react'
 import { getAnalysisForDataset } from './analysis/actions'
 import type { AnalysisResult } from '@/lib/calculations/types'
 import type { TrendPoint } from './analysis/actions'
+import type { BandContext } from '@/lib/band/getBandContext'
 import { PayGapChartGrid } from '@/components/dashboard/PayGapChartGrid'
 import { useTranslations } from 'next-intl'
 
@@ -33,9 +34,8 @@ function KpiCard({ label, value, unit = '%', threshold, description, trend }: {
 }) {
     const numVal = typeof value === 'number' ? value : 0
     const color = threshold !== undefined
-        ? numVal > threshold       ? 'var(--color-pl-red)'
-        : numVal > threshold * 0.6 ? 'var(--color-pl-amber)'
-        :                            'var(--color-pl-green)'
+        ? numVal > threshold ? 'var(--color-pl-red)'
+        :                      'var(--color-pl-green)'
         : 'var(--color-pl-brand-light)'
     return (
         <div className="glass-card p-5">
@@ -52,6 +52,31 @@ function KpiCard({ label, value, unit = '%', threshold, description, trend }: {
             </div>
             {description && <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>{description}</p>}
         </div>
+    )
+}
+
+// Band KPI card — links to /dashboard/salary-bands
+function BandKpiCard({ bandCtx }: { bandCtx: BandContext }) {
+    if (!bandCtx.has_bands) return null
+    const compliant = bandCtx.total_grades - bandCtx.total_non_compliant
+    const allOk     = bandCtx.total_non_compliant === 0
+    const color     = allOk ? 'var(--color-pl-green)' : 'var(--color-pl-red)'
+    return (
+        <a href="/dashboard/salary-bands" className="glass-card p-5 block transition-all hover:ring-1 hover:ring-[var(--color-pl-brand)] cursor-pointer">
+            <div className="flex items-start justify-between mb-3">
+                <p className="text-sm font-medium" style={{ color: 'var(--color-pl-text-secondary)' }}>Entgeltbänder</p>
+                {allOk
+                    ? <CheckCircle2 size={16} style={{ color: 'var(--color-pl-green)' }} />
+                    : <AlertTriangle size={16} style={{ color: 'var(--color-pl-red)' }} />}
+            </div>
+            <div className="flex items-baseline gap-1 mb-1">
+                <span className="text-3xl font-bold" style={{ color }}>{compliant}</span>
+                <span className="text-sm font-semibold" style={{ color: 'var(--color-pl-text-secondary)' }}>/{bandCtx.total_grades}</span>
+            </div>
+            <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
+                EU-konforme Gruppen (Art. 9)
+            </p>
+        </a>
     )
 }
 
@@ -173,7 +198,12 @@ function TrendChart({ data }: { data: TrendPoint[] }) {
     )
 }
 
-export default function DashboardOverview({ datasets, trend, role = 'admin' }: { datasets: Dataset[]; trend: TrendPoint[]; role?: string }) {
+export default function DashboardOverview({ datasets, trend, role = 'admin', bandContext }: {
+    datasets:    Dataset[]
+    trend:       TrendPoint[]
+    role?:       string
+    bandContext?: BandContext
+}) {
     const t = useTranslations('dashboard')
     const [selectedId, setSelectedId] = useState(datasets[0]?.id ?? '')
     const [analysis, setAnalysis]     = useState<AnalysisData | null>(null)
@@ -275,8 +305,8 @@ export default function DashboardOverview({ datasets, trend, role = 'admin' }: {
 
             {!loading && results ? (
                 <>
-                    {/* ── KPI strip: 6 cards ── */}
-                    <div className="grid grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6 gap-4">
+                    {/* ── KPI strip ── */}
+                    <div className="grid grid-cols-2 xl:grid-cols-3 2xl:grid-cols-7 gap-4">
                         <KpiCard label={t('kpi.unadjustedMedian')} value={unadjGap} unit="%" threshold={5}
                             description={t('kpi.medianGapWomenVsMen')} trend={unadjGap > 5 ? 'up' : 'down'} />
                         <KpiCard label={t('kpi.adjustedMedian')} value={adjGap} unit="%" threshold={5}
@@ -290,6 +320,7 @@ export default function DashboardOverview({ datasets, trend, role = 'admin' }: {
                         <KpiCard label={t('kpi.employees')} value={empCount} unit="" description={t('kpi.currentDataBasis')} />
                         <KpiCard label={t('kpi.departmentsExceeding')} value={atRisk} unit="" threshold={1}
                             description={t('kpi.jointAssessmentNeeded')} />
+                        {bandContext && <BandKpiCard bandCtx={bandContext} />}
                     </div>
 
                     {/* ── WIF / hours footnote ── */}
@@ -300,7 +331,6 @@ export default function DashboardOverview({ datasets, trend, role = 'admin' }: {
                         </span>
                     </p>
 
-                    {/* ── Alert ── */}
                     {results.overall.exceeds_5pct && (
                         <div className="flex items-start gap-3 p-4 rounded-xl"
                             style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)' }}>
@@ -314,6 +344,28 @@ export default function DashboardOverview({ datasets, trend, role = 'admin' }: {
                                 </p>
                             </div>
                         </div>
+                    )}
+
+                    {/* ── Band alert ── */}
+                    {bandContext?.has_bands && bandContext.total_non_compliant > 0 && (
+                        <a href="/dashboard/salary-bands"
+                            className="flex items-start gap-3 p-4 rounded-xl transition-all hover:ring-1 hover:ring-[var(--color-pl-brand)]"
+                            style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)' }}>
+                            <Landmark size={18} style={{ color: 'var(--color-pl-red)', flexShrink: 0, marginTop: 2 }} />
+                            <div className="flex-1">
+                                <p className="text-sm font-semibold" style={{ color: 'var(--color-pl-red)' }}>
+                                    {bandContext.total_non_compliant} Entgeltgruppe{bandContext.total_non_compliant !== 1 ? 'n' : ''} übersteigen
+                                    den EU-Schwellenwert von 5% (Art. 9)
+                                </p>
+                                <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-secondary)' }}>
+                                    {bandContext.grades.filter(g => g.exceeds_5pct)
+                                        .map(g => `${g.job_grade}: ${g.intra_grade_gap_pct != null ? (g.intra_grade_gap_pct > 0 ? '+' : '') + g.intra_grade_gap_pct.toFixed(1) + '%' : '?'}`)
+                                        .join(' · ')}
+                                    {' '}&rarr; Maßnahmen empfohlen
+                                </p>
+                            </div>
+                            <ChevronRight size={16} style={{ color: 'var(--color-pl-text-tertiary)', flexShrink: 0, marginTop: 2 }} />
+                        </a>
                     )}
 
                     {/* ── 2×2 + 1 full-width chart grid (shared component) ── */}

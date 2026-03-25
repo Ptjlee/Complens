@@ -5,13 +5,15 @@ import Link from 'next/link'
 import {
     ArrowLeft, Download, CheckCircle2, ShieldAlert,
     TrendingDown, FileText, Users, BarChart3,
-    PenLine, Save, X, ChevronRight, Presentation, Sparkles, Loader2,
+    PenLine, Save, X, ChevronRight, Presentation, Sparkles, Loader2, Info,
 } from 'lucide-react'
 import type { AnalysisResult } from '@/lib/calculations/types'
+import type { BandGradeSummary } from '@/lib/band/getBandContext'
 import { EXPLANATION_CATEGORIES, MAX_JUSTIFIABLE_CAP } from '@/app/(dashboard)/dashboard/import/constants'
 import { saveReportNotes } from '../actions'
 import { generateAndSaveNarrative } from '../generateNarrative'
 import PdfOptionsModal from '../PdfOptionsModal'
+import ComplianceHeatmap from '@/components/dashboard/ComplianceHeatmap'
 
 // ── helpers ─────────────────────────────────────────────────
 
@@ -49,6 +51,7 @@ export default function ReportView({
     explanations,
     remediationPlans = [],
     orgName,
+    bandGrades = [],
 }: {
     analysis: {
         id: string
@@ -77,6 +80,7 @@ export default function ReportView({
         plan_steps: Array<{ horizon: string; description: string }>
     }>
     orgName: string
+    bandGrades?: BandGradeSummary[]
 }) {
     const r       = analysis.results
     const over    = r.overall
@@ -210,13 +214,13 @@ export default function ReportView({
                     </Link>
                     <div>
                         <h1 className="text-xl font-bold" style={{ color: 'var(--color-pl-text-primary)' }}>
-                            {analysis.name}
+                            {analysis.datasets?.name ?? analysis.name}
                         </h1>
                         <p className="text-xs mt-1 flex items-center gap-2" style={{ color: 'var(--color-pl-text-tertiary)' }}>
                             <span className="flex items-center gap-1"><FileText size={11} /> {date}</span>
+                            <span style={{ color: 'var(--color-pl-text-tertiary)' }}>·</span>
+                            <span className="flex items-center gap-1"><BarChart3 size={11} /> {analysis.name}</span>
                             {analysis.datasets && <>
-                                <span style={{ color: 'var(--color-pl-text-tertiary)' }}>·</span>
-                                <span className="flex items-center gap-1"><BarChart3 size={11} /> {analysis.datasets.name}</span>
                                 <span style={{ color: 'var(--color-pl-text-tertiary)' }}>·</span>
                                 <span className="flex items-center gap-1"><Users size={11} /> {analysis.datasets.employee_count ?? '?'} MA</span>
                                 <span style={{ color: 'var(--color-pl-text-tertiary)' }}>·</span>
@@ -254,6 +258,7 @@ export default function ReportView({
                     analysisId={analysis.id}
                     orgName={orgName}
                     reportYear={r.reporting_year}
+                    reportName={analysis.datasets?.name ?? analysis.name}
                     onClose={() => setShowPdfModal(false)}
                 />
             )}
@@ -438,9 +443,15 @@ export default function ReportView({
                     {activeSection === 'departments' && (
                         <div className="glass-card">
                             <div className="px-5 py-4 border-b" style={{ borderColor: 'var(--color-pl-border)' }}>
-                                <p className="text-sm font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>Entgeltlücken nach Bereich</p>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <p className="text-sm font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>Entgeltlücken nach Bereich</p>
+                                    <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+                                        style={{ background: 'rgba(245,158,11,0.12)', color: '#d97706', border: '1px solid rgba(245,158,11,0.3)' }}>
+                                        Nicht EU-Pflicht (Art. 9)
+                                    </span>
+                                </div>
                                 <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                                    Bereiche mit &lt; 5 Mitarbeitenden werden anonymisiert
+                                    Ergänzende Managementansicht · Bereiche mit &lt; 5 MA anonymisiert · Nicht durch EU-RL 2023/970 Art. 9 vorgeschrieben
                                 </p>
                             </div>
                             <table className="w-full text-xs">
@@ -481,46 +492,84 @@ export default function ReportView({
 
                     {/* ── Grade breakdown ── */}
                     {activeSection === 'grades' && (
-                        <div className="glass-card">
-                            <div className="px-5 py-4 border-b" style={{ borderColor: 'var(--color-pl-border)' }}>
-                                <p className="text-sm font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>Entgeltlücken nach Entgeltgruppe</p>
+                        <div className="space-y-4">
+
+                            {/* EU Art.9 Header */}
+                            <div className="glass-card px-5 py-4">
+                                <div className="flex items-start justify-between gap-4">
+                                    <div>
+                                        <p className="text-sm font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>
+                                            EU Art. 9 Compliance — Entgelt nach Kategorie &amp; Geschlecht
+                                        </p>
+                                        <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>
+                                            Diese Tabelle entspricht der gesetzlich vorgeschriebenen Berichtspflicht für Arbeitgeber mit ≥ 100 Beschäftigten.
+                                        </p>
+                                    </div>
+                                    {bandGrades.length > 0 && !bandGrades.some(g => g.mid_salary != null) && (
+                                        <div className="flex items-start gap-1.5 text-xs px-3 py-2 rounded-lg flex-shrink-0"
+                                            style={{ background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.25)', color: '#fbbf24', maxWidth: 300 }}>
+                                            <Info size={13} className="flex-shrink-0 mt-0.5" />
+                                            <span>
+                                                <strong>Compa-Ratio</strong> zeigt &quot;—&quot; weil keine Bandmitte (Midpoint) gesetzt ist.
+                                                Öffnen Sie das <strong>Entgeltband-Modul</strong> und klicken Sie <em>„Interne Bänder berechnen“</em>.
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                            {r.by_grade.length === 0 ? (
-                                <p className="px-5 py-8 text-sm text-center" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                                    Keine Entgeltgruppen im Datensatz.
-                                </p>
+
+                            {/* ComplianceHeatmap when band data exists */}
+                            {bandGrades.length > 0 ? (
+                                <div className="glass-card p-5">
+                                    <ComplianceHeatmap grades={bandGrades} />
+                                </div>
                             ) : (
-                                <table className="w-full text-xs">
-                                    <thead>
-                                        <tr style={{ background: 'var(--theme-pl-action-ghost)' }}>
-                                            {['Entgeltgruppe', 'MA', 'Unbereinigt', 'Bereinigt', 'Nach Begründungen', '> 5%'].map(h => (
-                                                <th key={h} className="px-4 py-3 text-left font-semibold" style={{ color: 'var(--color-pl-text-tertiary)' }}>{h}</th>
-                                            ))}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {r.by_grade.map((g, i) => (
-                                            <tr key={g.grade} className="border-t" style={{ borderColor: 'var(--color-pl-border)', background: i % 2 === 0 ? 'transparent' : 'var(--theme-pl-action-ghost)' }}>
-                                                <td className="px-4 py-3 font-medium" style={{ color: 'var(--color-pl-text-primary)' }}>{g.grade}</td>
-                                                <td className="px-4 py-3" style={{ color: 'var(--color-pl-text-secondary)' }}>{g.employee_count}</td>
-                                                <td className="px-4 py-3" style={{ color: g.suppressed ? 'var(--color-pl-text-tertiary)' : gapColor(g.gap.unadjusted_median) }}>
-                                                    {g.suppressed ? 'anon.' : pct(g.gap.unadjusted_median)}
-                                                </td>
-                                                <td className="px-4 py-3 font-semibold" style={{ color: g.suppressed ? 'var(--color-pl-text-tertiary)' : gapColor(g.gap.adjusted_median) }}>
-                                                    {g.suppressed ? '—' : pct(g.gap.adjusted_median)}
-                                                </td>
-                                                <td className="px-4 py-3" style={{ color: g.suppressed || groupNachBegrn.byGrade[g.grade] == null ? 'var(--color-pl-text-tertiary)' : gapColor(groupNachBegrn.byGrade[g.grade]!) }}>
-                                                    {g.suppressed ? '—' : groupNachBegrn.byGrade[g.grade] == null ? '—' : pct(groupNachBegrn.byGrade[g.grade]!)}
-                                                </td>
-                                                <td className="px-4 py-3">
-                                                    {g.suppressed ? '—' : g.gap.exceeds_5pct
-                                                        ? <span style={{ color: 'var(--color-pl-red)' }}>Ja</span>
-                                                        : <span style={{ color: 'var(--color-pl-green)' }}>Nein</span>}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                /* Fallback: plain pay-gap table */
+                                <div className="glass-card">
+                                    <div className="px-5 py-3 border-b" style={{ borderColor: 'var(--color-pl-border)' }}>
+                                        <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
+                                            Noch keine Entgeltbänder berechnet.
+                                            Navigieren Sie zum <strong>Entgeltband-Modul</strong> und klicken Sie <em>„Interne Bänder berechnen“</em> um Compa-Ratios anzuzeigen.
+                                        </p>
+                                    </div>
+                                    {r.by_grade.length === 0 ? (
+                                        <p className="px-5 py-8 text-sm text-center" style={{ color: 'var(--color-pl-text-tertiary)' }}>
+                                            Keine Entgeltgruppen im Datensatz.
+                                        </p>
+                                    ) : (
+                                        <table className="w-full text-xs">
+                                            <thead>
+                                                <tr style={{ background: 'var(--theme-pl-action-ghost)' }}>
+                                                    {['Entgeltgruppe', 'MA', 'Unbereinigt', 'Bereinigt', 'Nach Begründungen', '> 5%'].map(h => (
+                                                        <th key={h} className="px-4 py-3 text-left font-semibold" style={{ color: 'var(--color-pl-text-tertiary)' }}>{h}</th>
+                                                    ))}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {r.by_grade.map((g, i) => (
+                                                    <tr key={g.grade} className="border-t" style={{ borderColor: 'var(--color-pl-border)', background: i % 2 === 0 ? 'transparent' : 'var(--theme-pl-action-ghost)' }}>
+                                                        <td className="px-4 py-3 font-medium" style={{ color: 'var(--color-pl-text-primary)' }}>{g.grade}</td>
+                                                        <td className="px-4 py-3" style={{ color: 'var(--color-pl-text-secondary)' }}>{g.employee_count}</td>
+                                                        <td className="px-4 py-3" style={{ color: g.suppressed ? 'var(--color-pl-text-tertiary)' : gapColor(g.gap.unadjusted_median) }}>
+                                                            {g.suppressed ? 'anon.' : pct(g.gap.unadjusted_median)}
+                                                        </td>
+                                                        <td className="px-4 py-3 font-semibold" style={{ color: g.suppressed ? 'var(--color-pl-text-tertiary)' : gapColor(g.gap.adjusted_median) }}>
+                                                            {g.suppressed ? '—' : pct(g.gap.adjusted_median)}
+                                                        </td>
+                                                        <td className="px-4 py-3" style={{ color: g.suppressed || groupNachBegrn.byGrade[g.grade] == null ? 'var(--color-pl-text-tertiary)' : gapColor(groupNachBegrn.byGrade[g.grade]!) }}>
+                                                            {g.suppressed ? '—' : groupNachBegrn.byGrade[g.grade] == null ? '—' : pct(groupNachBegrn.byGrade[g.grade]!)}
+                                                        </td>
+                                                        <td className="px-4 py-3">
+                                                            {g.suppressed ? '—' : g.gap.exceeds_5pct
+                                                                ? <span style={{ color: 'var(--color-pl-red)' }}>Ja</span>
+                                                                : <span style={{ color: 'var(--color-pl-green)' }}>Nein</span>}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    )}
+                                </div>
                             )}
                         </div>
                     )}

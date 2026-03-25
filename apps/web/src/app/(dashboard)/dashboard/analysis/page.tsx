@@ -2,6 +2,7 @@ import { getReadyDatasets } from './actions'
 import AnalysisPageClient from './AnalysisPage'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getBandContext } from '@/lib/band/getBandContext'
 
 export const metadata = {
     title: 'Analyse — CompLens',
@@ -9,9 +10,6 @@ export const metadata = {
 }
 
 export default async function AnalysisPage() {
-    const datasets = await getReadyDatasets()
-
-    // Fetch role using admin client (bypasses RLS so viewer rows are always visible)
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     let isAdmin = false
@@ -25,7 +23,12 @@ export default async function AnalysisPage() {
         isAdmin = m?.role === 'admin'
     }
 
+    const [datasets, bandContext] = await Promise.all([
+        getReadyDatasets(),
+        getBandContext(),
+    ])
+
     return (
-        <AnalysisPageClient datasets={datasets} isAdmin={isAdmin} />
+        <AnalysisPageClient datasets={datasets} isAdmin={isAdmin} bandContext={bandContext} />
     )
 }

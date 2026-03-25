@@ -40,8 +40,9 @@ CompLens covers the full EU Pay Transparency compliance lifecycle:
 | **2. Analyse** | Compute unadjusted & adjusted pay gaps with WIF (Wage Influencing Factors) |
 | **3. Explain** | Per-employee explanations with EU Art. 10 objective justification |
 | **4. Remediate** | Structured action plans to close gaps (Art. 11) |
-| **5. Report** | Generate legally compliant PDF + PowerPoint reports |
-| **6. Portal** | Employee right-to-information self-service (Art. 7) |
+| **5. Salary Bands** | Internal pay bands auto-computed from employee data; EU Art. 9 intra-grade compliance; market benchmarks |
+| **6. Report** | Generate legally compliant PDF + PowerPoint reports |
+| **7. Portal** | Employee right-to-information self-service (Art. 7) |
 
 ---
 
@@ -115,50 +116,53 @@ PayLens/
 │       │   │   ├── (auth)/           Login, register, invite, join flows
 │       │   │   ├── (dashboard)/      All authenticated dashboard pages
 │       │   │   │   └── dashboard/
-│       │   │   │       ├── analysis/     Pay gap analysis + chatbot + pay overrides
-│       │   │   │       ├── compliance/   Trends & compliance overview
-│       │   │   │       ├── datasets/     Dataset management
-│       │   │   │       ├── help/         In-app support ticket submission
-│       │   │   │       ├── import/       CSV/Excel import + AI mapping
-│       │   │   │       ├── onboarding/   Guided first-use flow
-│       │   │   │       ├── portal/       Employee right-to-info portal
-│       │   │   │       ├── remediation/  Action plan management
-│       │   │   │       ├── reports/      Report viewer + export
-│       │   │   │       ├── settings/     Org settings, team, plan, legal, security
-│       │   │   │       └── trends/       Historical pay gap trends
-│       │   │   ├── (public)/         Public-facing pages (readiness check, booking)
-│       │   │   ├── agb/              AGB (Terms) legal page
-│       │   │   ├── datenschutz/      Datenschutzerklärung legal page
-│       │   │   ├── impressum/        Impressum legal page
+│       │   │   │       ├── analysis/      Pay gap analysis + chatbot + pay overrides (+ Band tab)
+│       │   │   │       ├── compliance/    Trends & compliance overview
+│       │   │   │       ├── datasets/      Dataset management
+│       │   │   │       ├── help/          In-app support ticket submission
+│       │   │   │       ├── import/        CSV/Excel import + AI mapping
+│       │   │   │       ├── onboarding/    Guided first-use flow
+│       │   │   │       ├── portal/        Employee right-to-info portal
+│       │   │   │       ├── remediation/   Action plan management
+│       │   │   │       ├── reports/       Report viewer + export
+│       │   │   │       ├── salary-bands/  🆕 Internal pay bands + EU Art. 9 compliance
+│       │   │   │       ├── settings/      Org settings, team, plan, legal, security
+│       │   │   │       └── trends/        Historical pay gap trends
+│       │   │   ├── (public)/          Public-facing pages (readiness check, booking)
+│       │   │   ├── agb/               AGB (Terms) legal page
+│       │   │   ├── datenschutz/       Datenschutzerklärung legal page
+│       │   │   ├── impressum/         Impressum legal page
 │       │   │   ├── api/
-│       │   │   │   ├── analysis/         Run pay gap calculations
-│       │   │   │   ├── chat/             AI chatbot (Gemini 2.5 Pro)
-│       │   │   │   ├── contact/          Contact form (Resend)
-│       │   │   │   ├── contracts/        AVV + license contract generation
-│       │   │   │   ├── portal/           Employee portal API
-│       │   │   │   ├── profile/          User profile updates
-│       │   │   │   ├── report/           PPT export
-│       │   │   │   ├── reports/          PDF export
-│       │   │   │   ├── stripe/           Stripe checkout + webhook
-│       │   │   │   └── support/          Support ticket CRUD + AI triage + polish
-│       │   │   └── superadmin/           Internal admin panel (email-allowlist gated)
+│       │   │   │   ├── analysis/          Run pay gap calculations
+│       │   │   │   ├── chat/              AI chatbot (Gemini 2.5 Pro)
+│       │   │   │   ├── contact/           Contact form (Resend)
+│       │   │   │   ├── contracts/         AVV + license contract generation
+│       │   │   │   ├── portal/            Employee portal API
+│       │   │   │   ├── profile/           User profile updates
+│       │   │   │   ├── report/            PPT export
+│       │   │   │   ├── reports/           PDF export (incl. salary band section)
+│       │   │   │   ├── stripe/            Stripe checkout + webhook
+│       │   │   │   └── support/           Support ticket CRUD + AI triage + polish
+│       │   │   └── superadmin/            Internal admin panel (email-allowlist gated)
 │       │   ├── components/
-│       │   │   ├── dashboard/            Layout, sidebar, header, banners, overlays
-│       │   │   └── ui/                   Shared UI primitives
+│       │   │   ├── dashboard/             Layout, sidebar, header, banners, overlays +
+│       │   │   │                          BandVisualizationChart.tsx, ComplianceHeatmap.tsx
+│       │   │   └── ui/                    Shared UI primitives
 │       │   └── lib/
-│       │       ├── api/                  planGuard, superadminAuth, parseBody helpers
-│       │       ├── calculations/         Core pay gap engine (WIF, quartiles, flags)
-│       │       ├── chatbot/              Chatbot context builder
-│       │       ├── i18n/                 LanguageContext + translations (DE/EN)
-│       │       ├── pdf/                  ReportDocument.tsx (react-pdf)
-│       │       ├── ppt/                  ReportPresentation.ts (pptxgenjs)
-│       │       ├── plans.ts              Plan gating + feature matrix
-│       │       └── supabase/             Client + server + admin Supabase helpers
+│       │       ├── api/                   planGuard, superadminAuth, parseBody helpers
+│       │       ├── band/                  🆕 getBandContext.ts — unified salary band data layer
+│       │       ├── calculations/          Core pay gap engine (WIF, quartiles, flags)
+│       │       ├── chatbot/               Chatbot context builder
+│       │       ├── i18n/                  LanguageContext + translations (DE/EN)
+│       │       ├── pdf/                   ReportDocument.tsx (react-pdf, incl. band section)
+│       │       ├── ppt/                   ReportPresentation.ts (pptxgenjs)
+│       │       ├── plans.ts               Plan gating + feature matrix
+│       │       └── supabase/              Client + server + admin Supabase helpers
 ├── database/
-│   └── migrations/           19 sequential SQL migrations (Supabase)
-├── landing/                  Astro static marketing site
-├── docs/                     Dev status, legal reference docs
-└── .agent/                   AI assistant workflows and skills
+│   └── migrations/              23 sequential SQL migrations (Supabase)
+├── landing/                     Astro static marketing site
+├── docs/                        Dev status, legal reference docs
+└── .agent/                      AI assistant workflows and skills
 ```
 
 ---
@@ -185,7 +189,7 @@ PayLens/
 
 ## Database Schema
 
-19 migrations in order:
+23 migrations in order:
 
 | # | Migration | Purpose |
 |---|-----------|---------| 
@@ -208,6 +212,10 @@ PayLens/
 | 017 | `preferred_language` | DE/EN language preference per user |
 | 018 | `org_legal_fields` | Legal rep, address, city, ZIP, VAT ID for contracts |
 | 019 | `support_tickets` | Internal support ticket system with AI triage |
+| 020 | `leads` | Lead capture table |
+| 021 | `pay_overrides_delete_rls` | RLS fix for pay overrides deletion |
+| 022 | `salary_bands` | `salary_bands`, `salary_band_grades` + auto-computed stats + market data |
+| 023 | `salary_band_summary_view` | `salary_band_summary` view — EU compliance flags, intra-grade gap, compa-ratio |
 
 ---
 
@@ -263,7 +271,22 @@ PayLens/
   - Trial/expired mode: MUSTER watermark on every slide; slides 3+ replaced by locked upgrade slide
 - Both exports detect `sampleMode: 'trial' | 'expired'`
 
-### Compliance & Trends
+### Salary Bands Module (EU Art. 9 — NEW ✅)
+- **Auto-detection** of grade naming schemes from employee data (G-scale, L-scale, TVöD, TV-L, ERA, etc.)
+- **One-click band generation**: `createBandFromDetectedGrades` creates `salary_bands` + `salary_band_grades` rows and immediately computes statistics
+- **Internal statistics** (P25/Median/P75, min/max, ♀/♂ medians, n) computed from actual employee salaries
+- **Compa-ratio**: internal median ÷ band midpoint × 100 (EU Art. 9 transparency)
+- **EU Art. 9 compliant heatmap**: binary red/green compliance per grade (< 5% = compliant)
+- **BandVisualizationChart**: horizontal box-plot SVG; base pay vs. total compensation toggle; market benchmark overlay
+- **ComplianceHeatmap**: Art. 9 reporting table with intra-grade gap, gender medians, compa-ratio
+- **Market benchmarks**: optional per-grade entry (Kienbaum, Radford, StepStone, etc.) stored in `salary_band_market_data`
+- **Unified data layer**: `getBandContext()` server action — single source of truth for Dashboard, Analysis, Remediation, Reports
+- **Dashboard integration**: 7th KPI card (EU-konforme Gruppen X/Y) + clickable alert when non-compliant
+- **Analysis integration**: 3rd tab 'Entgeltbänder (Art. 9)' showing band chart + compliance heatmap
+- **PDF export**: new 'Entgeltbänder & Compa-Ratio' section (togglable in PdfOptionsModal)
+- **Sidebar**: dedicated `/dashboard/salary-bands` route with unique **Landmark** icon
+
+### Analysis Module
 - **Compliance dashboard** — at-a-glance status against EU Art. 9 requirements
 - **Trends module** — year-over-year comparison when multiple analyses exist
 
@@ -364,37 +387,47 @@ PayLens/
 | **Trial overlay → ticket link** | "Support kontaktieren" routes to `/dashboard/help` instead of `mailto:` |
 | **Stripe German invoicing** | Template wired to checkouts; `preferred_locales: ['de']`; German product names per §14 UStG |
 | **Trends module** | Full SVG line chart, department & grade heatmaps, delta KPIs, year-over-year table |
+| **Salary Band module** | Auto-detect, compute, visualize, market-benchmark, EU Art. 9 compliance per grade |
+| **Band in PDF export** | New ‘Entgeltbänder & Compa-Ratio’ section in ReportDocument (togglable) |
+| **Band in Analysis** | 3rd tab ‘Entgeltbänder (Art. 9)’ in AnalysisPage |
+| **Band on Dashboard** | 7th KPI card + linked alert when any grade fails Art. 9 |
+| **Stripe real price IDs** | `STRIPE_PRICE_LICENSE` + `STRIPE_PRICE_ADDITIONAL_ACCESS` set and wired in checkout + webhook |
+| **Stripe webhook live** | `/api/stripe/webhook` active; `STRIPE_WEBHOOK_SECRET` configured |
+| **Resend email** | `RESEND_API_KEY` + `RESEND_FROM_EMAIL` configured; all email flows functional |
+| **All env vars set** | Supabase, Gemini, Resend, Stripe, `SUPERADMIN_EMAILS`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_APP_URL` |
+| **PPT: IQR chart slide** | New `addSalaryBandChartSlide` — horizontal range bars with P25/median F./median M./P75 per grade |
+| **PPT: EU compliance labels** | `✓ ok` / `⚠ n.k.` (was `Nein` / `Ja`) — consistent with PDF |
+| **PPT: Dept slide removed** | Department drilldown slide removed; replaced by 2 EU-mandatory band slides |
+| **PPT/PDF/Web: title consistency** | All outputs use user-given dataset name, not internal “Analyse YYYY” |
+| **PDF: Bereiche optional** | Departments section off by default in PDF modal (not EU Art. 9 mandatory) |
+| **Web: compliance clarity** | “Nicht EU-Pflicht” badge on Bereiche section in interactive report |
+| **TypeScript** | `tsc --noEmit` → 0 errors |
 
 ---
 
 ## Remaining Work
 
-### 🔴 High — Blockers for Production
+### 🟡 Medium — Important Before Launch
 
 | Task | Notes |
 |------|-------|
-| **Stripe price IDs** | `STRIPE_PRICE_PAYLENS` must use real price ID from Stripe dashboard |
-| **Stripe webhook on Vercel** | Register endpoint; set `STRIPE_WEBHOOK_SECRET` in Vercel env |
-| **GA4 Measurement ID** | Set `NEXT_PUBLIC_GA_MEASUREMENT_ID` — code is already wired, just needs the ID |
-| **All env vars on Vercel** | Gemini, Resend, Supabase, Stripe, `SUPERADMIN_EMAILS`, `NEXT_PUBLIC_SITE_URL` |
-
-### 🟡 Medium
-
-| Task | Notes |
-|------|-------|
-| **Add-on seat testing** | Implemented; needs end-to-end test with real SEPA/card payment |
-| **Compliance dashboard** | Dynamic status per EU Art. 9 sub-requirement |
-| **Employee portal polish** | Art. 7 PDF letter final review + token auth |
+| **GA4 Measurement ID** | Set `NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX` — code already wired, just needs ID |
+| **Add-on seat E2E test** | Route implemented; needs real SEPA/card payment end-to-end test |
+| **Compliance dashboard** | Dynamic Art. 9 sub-requirement status per org |
+| **Employee portal polish** | Art. 7 PDF letter final UX review |
 | **Hero Showcase Carousel** | Astro landing page — awaiting 6 dashboard screenshots from live server |
 
-### 🟢 Low
+### 🟢 Low — Post-Launch / Nice-to-Have
 
 | Task | Notes |
 |------|-------|
 | **Custom email domain** | Verify `hallo@complens.de` in Resend dashboard |
 | **Dataset comparison** | Side-by-side year-over-year diff view |
-| **GDPR / AVV PDFs** | Confirm end-to-end contract download flow |
-| **Plausible Analytics** | Cookie-free GDPR traffic stats — opt. add `<script>` to layout |
+| **GDPR / AVV end-to-end test** | Confirm contract PDF download with real org legal fields |
+| **Plausible Analytics** | Cookie-free GDPR stats — add `<script>` to Astro layout |
+| **Dead code cleanup** | `addSlide3` in `ReportPresentation.ts` — unused, harmless |
+| **TOMs document** | Technical + organisational measures PDF — needed before go-live |
+| **Lawyer review** | AGB + AVV review — budget ~€3,000–5,000 |
 
 ---
 
@@ -640,8 +673,8 @@ npm run dev
 | `RESEND_FROM_EMAIL` | `hallo@complens.de` |
 | `STRIPE_SECRET_KEY` | Stripe secret key |
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret |
-| `STRIPE_PRICE_PAYLENS` | Stripe price ID for CompLens Lizenz |
-| `STRIPE_PRICE_ADDITIONAL_USER` | Stripe price ID for add-on seat |
+| `STRIPE_PRICE_LICENSE` | Stripe price ID for CompLens Lizenz |
+| `STRIPE_PRICE_ADDITIONAL_ACCESS` | Stripe price ID for add-on seat |
 | `SUPERADMIN_EMAILS` | Comma-separated list of superadmin emails |
 | `NEXT_PUBLIC_APP_URL` | App base URL (`https://complens.de`) |
 | `NEXT_PUBLIC_SITE_URL` | Same as above (used in invite links) |

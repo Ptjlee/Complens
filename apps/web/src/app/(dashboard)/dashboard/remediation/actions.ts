@@ -71,20 +71,34 @@ export async function getRemediationAnalyses() {
     const { data } = await supabase
         .from('analyses')
         .select(`
-            id, name, created_at,
+            id, name, created_at, dataset_id,
             datasets(reporting_year, name, employee_count)
         `)
         .eq('status', 'complete')
         .is('archived_at', null)
         .order('created_at', { ascending: false })
 
-    return (data ?? []) as unknown as Array<{
+    if (!data) return []
+
+    // Keep only the latest analysis per dataset — mirrors the behaviour of
+    // getAnalysisForDataset() in the Analysis page so both views are always
+    // in sync when the same org has multiple datasets or re-runs.
+    const seen = new Set<string>()
+    const deduped = data.filter(a => {
+        const key = a.dataset_id as string
+        if (!key || seen.has(key)) return false
+        seen.add(key)
+        return true
+    })
+
+    return deduped as unknown as Array<{
         id: string
         name: string
         created_at: string
         datasets: { reporting_year: number; name: string; employee_count: number } | null
     }>
 }
+
 
 // ============================================================
 // Fetch remediation plans for an analysis

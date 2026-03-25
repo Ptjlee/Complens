@@ -6,6 +6,7 @@
 
 import PptxGenJS from 'pptxgenjs'
 import type { AnalysisResult } from '@/lib/calculations/types'
+import type { BandGradeSummary } from '@/lib/band/getBandContext'
 
 // ── Brand colours ───────────────────────────────────────────────────────────
 const C = {
@@ -95,16 +96,19 @@ function addHeader(slide: PptxGenJS.Slide, title: string, subtitle?: string, org
 
 function addFooter(slide: PptxGenJS.Slide, pageNum: number, total: number, orgName = '') {
     slide.addShape('rect', { x: 0, y: FOOTER_Y, w: W, h: 0.38, fill: { color: C.footer } })
+    // Left: org name / directive
     slide.addText(orgName ? `${orgName} · EU-Entgelttransparenzrichtlinie 2023/970` : 'EU-Entgelttransparenzrichtlinie 2023/970', {
-        x: ML, y: FOOTER_Y + 0.05, w: CW - 1.8, h: 0.25,
+        x: ML, y: FOOTER_Y + 0.05, w: 3.8, h: 0.25,
         fontSize: 8, color: C.textSub, fontFace: 'Calibri',
     })
+    // Center: CompLens branding
     slide.addText('Erstellt mit CompLens', {
-        x: W - 2.3, y: FOOTER_Y + 0.05, w: 1.8, h: 0.25,
-        fontSize: 7, color: '4d5562', align: 'right', fontFace: 'Calibri',
+        x: 3.5, y: FOOTER_Y + 0.05, w: 3.0, h: 0.25,
+        fontSize: 7, color: '4d5562', align: 'center', fontFace: 'Calibri',
     })
+    // Right: page number
     slide.addText(`${pageNum} / ${total}`, {
-        x: W - MR - 0.65, y: FOOTER_Y + 0.05, w: 0.6, h: 0.25,
+        x: W - MR - 0.7, y: FOOTER_Y + 0.05, w: 0.65, h: 0.25,
         fontSize: 8, color: C.textSub, align: 'right', fontFace: 'Calibri',
     })
 }
@@ -937,6 +941,286 @@ function addMaßnahmenSlide(pptx: PptxGenJS, plans: PptRemPlan[], total: number,
     addFooter(slide, total - 1, total)
 }
 
+// ── Slide: Salary Bands & Compa-Ratio (EU Art. 9) ────────────────────────────
+
+function addSalaryBandSlide(
+    pptx:     PptxGenJS,
+    grades:   BandGradeSummary[],
+    total:    number,
+    slideNum: number,
+    isSample = false,
+) {
+    const slide = pptx.addSlide()
+    addBackground(slide, isSample)
+    addHeader(
+        slide,
+        'Entgeltbänder & Compa-Ratio',
+        'EU-RL 2023/970 Art. 9 — Entgelt nach Entgeltkategorie und Geschlecht',
+    )
+
+    const gradesWithData = grades.filter(g => g.internal_n != null && g.internal_n > 0)
+    const nonCompliant   = grades.filter(g => g.exceeds_5pct).length
+    const compliant      = gradesWithData.length - nonCompliant
+
+    // ── KPI strip ──
+    const kw = (CW - 0.2) / 3
+    const ky = 1.62
+    const kh = 0.72
+    ;[
+        { label: 'Entgeltgruppen',    value: String(grades.length),  color: C.brandLight },
+        { label: 'EU-konform (< 5%)', value: String(compliant),      color: compliant === gradesWithData.length ? C.green : C.amber },
+        { label: 'Handlungsbedarf',   value: String(nonCompliant),   color: nonCompliant > 0 ? C.red : C.green },
+    ].forEach((k, i) => kpiBox(slide, ML + i * (kw + 0.1), ky, kw, kh, k.label, k.value, k.color))
+
+    // ── Table ──
+    const tY   = ky + kh + 0.18
+    // Columns span full CW (9.0"): Gruppe 1.3 + n 0.6 + MedF 1.5 + MedM 1.5 + Intra 1.2 + CompaF 0.95 + CompaM 0.95 + EU 0.86 = 9.0
+    const COLS = [
+        { label: 'Gruppe',       x: ML,        w: 1.30 },
+        { label: 'n',            x: ML + 1.32, w: 0.60 },
+        { label: 'Median F.',    x: ML + 1.94, w: 1.50 },
+        { label: 'Median M.',    x: ML + 3.46, w: 1.50 },
+        { label: 'Intra-Luecke',x: ML + 4.98, w: 1.20 },
+        { label: 'Compa F',      x: ML + 6.20, w: 0.95 },
+        { label: 'Compa M',      x: ML + 7.17, w: 0.95 },
+        { label: 'EU Art. 9',    x: ML + 8.14, w: 0.86 },
+    ]
+
+    slide.addShape('rect', { x: ML, y: tY, w: CW, h: 0.26, fill: { color: C.surface } })
+    COLS.forEach(col => {
+        slide.addText(col.label, {
+            x: col.x + 0.04, y: tY + 0.05, w: col.w - 0.06, h: 0.18,
+            fontSize: 7, bold: true, color: C.brandLight, fontFace: 'Calibri',
+        })
+    })
+
+    const eur = (v: number | null) =>
+        v == null ? '—' : v.toLocaleString('de-DE', { maximumFractionDigits: 0 }) + ' €'
+
+    const maxRows = 9
+    const ROW_H   = 0.28
+    grades.slice(0, maxRows).forEach((g, i) => {
+        const y      = tY + 0.26 + i * ROW_H
+        const gap    = g.intra_grade_gap_pct
+        const gapStr = gap == null ? '—' : `${gap > 0 ? '+' : ''}${gap.toFixed(1)}%`
+        const gapCol = gap == null ? C.textSub : Math.abs(gap) >= 5 ? C.red : C.green
+        const compaF = g.internal_female_median && g.mid_salary && g.mid_salary > 0
+            ? Math.round(g.internal_female_median / g.mid_salary * 100) : null
+        const compaM = g.internal_male_median && g.mid_salary && g.mid_salary > 0
+            ? Math.round(g.internal_male_median  / g.mid_salary * 100) : null
+        const euStr  = g.internal_n == null ? '—' : g.exceeds_5pct ? '\u26a0 n.k.' : '\u2713 ok'
+        const euCol  = g.internal_n == null ? C.textSub : g.exceeds_5pct ? C.red : C.green
+
+        slide.addShape('rect', { x: ML, y, w: CW, h: ROW_H, fill: { color: i % 2 === 0 ? C.bg : C.surface } })
+
+        const cells: Array<{ x: number; w: number; val: string; color?: string; bold?: boolean }> = [
+            { x: COLS[0].x + 0.04, w: COLS[0].w - 0.06, val: g.job_grade, bold: true },
+            { x: COLS[1].x + 0.04, w: COLS[1].w - 0.06, val: g.internal_n != null ? String(g.internal_n) : '—', color: C.textSub },
+            { x: COLS[2].x + 0.04, w: COLS[2].w - 0.06, val: eur(g.internal_female_median), color: 'C5A065' },
+            { x: COLS[3].x + 0.04, w: COLS[3].w - 0.06, val: eur(g.internal_male_median),   color: C.brandLight },
+            { x: COLS[4].x + 0.04, w: COLS[4].w - 0.06, val: gapStr, color: gapCol, bold: true },
+            { x: COLS[5].x + 0.04, w: COLS[5].w - 0.06, val: compaF != null ? `${compaF}%` : '—', color: compaF != null && compaF < 87 ? C.red : C.text },
+            { x: COLS[6].x + 0.04, w: COLS[6].w - 0.06, val: compaM != null ? `${compaM}%` : '—', color: compaM != null && compaM < 87 ? C.red : C.text },
+            { x: COLS[7].x + 0.04, w: COLS[7].w - 0.06, val: euStr, color: euCol, bold: true },
+        ]
+        cells.forEach(c => {
+            slide.addText(c.val, {
+                x: c.x, y: y + 0.05, w: c.w, h: ROW_H - 0.08,
+                fontSize: 8, bold: !!c.bold, color: c.color ?? C.text, fontFace: 'Calibri',
+            })
+        })
+    })
+
+    if (grades.length > maxRows) {
+        slide.addText(`… und ${grades.length - maxRows} weitere Gruppen`, {
+            x: ML, y: tY + 0.26 + maxRows * ROW_H + 0.04, w: CW, h: 0.2,
+            fontSize: 7.5, color: C.textSub, fontFace: 'Calibri', italic: true,
+        })
+    }
+
+    slide.addText(
+        'Intra-Gruppen-Luecke: Median F. minus Median M. / Median M. Compa-Ratio = Median div. Bandmitte x 100. ' +
+        '>= 5% loest Art. 10 Begruendungspflicht aus. Quelle: importierte Mitarbeiterdaten.',
+        { x: ML, y: 5.0, w: CW, h: 0.2, fontSize: 6.5, color: C.textSub, fontFace: 'Calibri', italic: true }
+    )
+    addFooter(slide, slideNum, total)
+}
+
+// ── Slide: Salary Band IQR Chart (Internal Entgeltbänder) ────────────────────
+
+function addSalaryBandChartSlide(
+    pptx:     PptxGenJS,
+    grades:   BandGradeSummary[],
+    total:    number,
+    slideNum: number,
+    isSample = false,
+) {
+    const slide = pptx.addSlide()
+    addBackground(slide, isSample)
+    addHeader(
+        slide,
+        'Interne Entgeltbänder — Grundgehalt',
+        'Grundgehalt (Brutto, jährlich) · Interquartilbereich (P25–P75) mit Medianen nach Geschlecht · EU-RL 2023/970 Art. 9',
+    )
+
+    // 'GRUNDGEHALT' badge top-right
+    slide.addShape('rect', {
+        x: W - MR - 2.1, y: MT + 0.08, w: 1.95, h: 0.28,
+        fill: { color: '0e2146' }, line: { color: C.brand, width: 0.8 }, rectRadius: 0.05,
+    })
+    slide.addText('GRUNDGEHALT', {
+        x: W - MR - 2.1, y: MT + 0.08, w: 1.95, h: 0.28,
+        fontSize: 8, bold: true, color: C.brandLight, fontFace: 'Calibri', align: 'center', valign: 'middle',
+    })
+
+    const gradesWithData = grades.filter(g => g.internal_n != null && g.internal_p25_base != null && g.internal_p75_base != null)
+    if (gradesWithData.length === 0) {
+        slide.addText('Keine Banddaten verfügbar.', {
+            x: ML, y: 2.8, w: CW, h: 0.4,
+            fontSize: 13, color: C.textSub, fontFace: 'Calibri', align: 'center',
+        })
+        addFooter(slide, slideNum, total)
+        return
+    }
+
+    // Determine global min/max across all grades for consistent scale
+    const allMins = gradesWithData.map(g => g.internal_min_base ?? g.internal_p25_base ?? 0)
+    const allMaxs = gradesWithData.map(g => g.internal_max_base ?? g.internal_p75_base ?? 0)
+    const globalMin = Math.min(...allMins) * 0.92
+    const globalMax = Math.max(...allMaxs) * 1.05
+    const range = globalMax - globalMin || 1
+
+    const LABEL_W = 0.7    // grade label column width
+    const N_W     = 0.4    // n column width
+    const GAP_W   = 0.65   // gap % column width (right)
+    const BAR_X   = ML + LABEL_W + N_W + 0.08
+    const BAR_W   = CW - LABEL_W - N_W - GAP_W - 0.18
+
+    const startY  = 1.62
+    const maxRows = Math.min(gradesWithData.length, 9)
+    const rowH    = Math.min(0.56, (FOOTER_Y - startY - 0.35) / maxRows)
+
+    function xpos(val: number): number {
+        return BAR_X + ((val - globalMin) / range) * BAR_W
+    }
+
+    // Column headers
+    slide.addText('Gruppe', { x: ML,                  y: startY - 0.22, w: LABEL_W, h: 0.18, fontSize: 7, bold: true, color: C.textSub, fontFace: 'Calibri' })
+    slide.addText('n',      { x: ML + LABEL_W,        y: startY - 0.22, w: N_W,     h: 0.18, fontSize: 7, bold: true, color: C.textSub, fontFace: 'Calibri' })
+    slide.addText('P25–P75 Interquartilbereich (IQR)',
+                            { x: BAR_X, y: startY - 0.22, w: BAR_W, h: 0.18, fontSize: 7, bold: true, color: C.textSub, fontFace: 'Calibri', align: 'center' })
+    slide.addText('Gap F/M',{ x: BAR_X + BAR_W + 0.06, y: startY - 0.22, w: GAP_W,  h: 0.18, fontSize: 7, bold: true, color: C.textSub, fontFace: 'Calibri', align: 'right' })
+
+    gradesWithData.slice(0, maxRows).forEach((g, i) => {
+        const y   = startY + i * rowH
+        const barY = y + rowH * 0.28
+        const barH = rowH * 0.44
+
+        const p25     = g.internal_p25_base!
+        const p75     = g.internal_p75_base!
+        const medAll  = g.internal_median_base
+        const medF    = g.internal_female_median
+        const medM    = g.internal_male_median
+        const gap     = g.intra_grade_gap_pct
+        const gapStr  = gap == null ? '—' : `${gap > 0 ? '+' : ''}${gap.toFixed(1)}%`
+        const gapCol  = gap == null ? C.textSub : Math.abs(gap) >= 5 ? C.red : C.green
+
+        // IQR track background (full bar range for context)
+        slide.addShape('rect', {
+            x: BAR_X, y: barY, w: BAR_W, h: barH,
+            fill: { color: C.footer }, line: { color: C.border, width: 0.3 },
+        })
+
+        // IQR fill (P25→P75) — blue tinted
+        const iqrX = xpos(p25)
+        const iqrW = xpos(p75) - iqrX
+        if (iqrW > 0.01) {
+            slide.addShape('rect', {
+                x: iqrX, y: barY, w: iqrW, h: barH,
+                fill: { color: '1e3a5f' }, line: { color: '3b82f6', width: 0.5 },
+            })
+        }
+
+        // Overall median line (bright blue)
+        if (medAll != null) {
+            const mx = xpos(medAll)
+            slide.addShape('line', { x: mx, y: barY - 0.03, w: 0, h: barH + 0.06, line: { color: C.brand, width: 1.5 } })
+        }
+
+        // Female median marker (gold diamond) - rendered as a small rotated square
+        if (medF != null) {
+            const fx = xpos(medF)
+            slide.addShape('rect', {
+                x: fx - 0.07, y: barY + barH * 0.5 - 0.07, w: 0.14, h: 0.14,
+                fill: { color: C.female }, line: { color: 'transparent', width: 0 }, rotate: 45,
+            })
+        }
+
+        // Male median marker (blue dot)
+        if (medM != null) {
+            const mmx = xpos(medM)
+            slide.addShape('ellipse', {
+                x: mmx - 0.07, y: barY + barH * 0.5 - 0.07, w: 0.14, h: 0.14,
+                fill: { color: C.brandLight }, line: { color: 'transparent', width: 0 },
+            })
+        }
+
+        // EUR figures below each bar: P25 at far-left · Median centered on track · P75 at far-right
+        // Anchored to BAR_X/BAR_W (fixed track bounds), NOT iqrX/iqrW, to prevent clustering
+        const lblY    = barY + barH + 0.02   // just below the bar
+        const lblH    = 0.13
+        const lblSize = 5.5
+        slide.addText(
+            p25.toLocaleString('de-DE', { maximumFractionDigits: 0 }) + ' \u20ac',
+            { x: BAR_X, y: lblY, w: 0.9, h: lblH, fontSize: lblSize, color: C.textSub, fontFace: 'Calibri', align: 'left' }
+        )
+        if (medAll != null) {
+            slide.addText(
+                'Med. ' + medAll.toLocaleString('de-DE', { maximumFractionDigits: 0 }) + ' \u20ac',
+                { x: BAR_X + BAR_W * 0.5 - 0.6, y: lblY, w: 1.2, h: lblH, fontSize: lblSize, color: C.brandLight, fontFace: 'Calibri', align: 'center' }
+            )
+        }
+        slide.addText(
+            p75.toLocaleString('de-DE', { maximumFractionDigits: 0 }) + ' \u20ac',
+            { x: BAR_X + BAR_W - 0.9, y: lblY, w: 0.9, h: lblH, fontSize: lblSize, color: C.textSub, fontFace: 'Calibri', align: 'right' }
+        )
+
+        // Grade label + n
+        slide.addText(g.job_grade, {
+            x: ML, y: y + rowH * 0.25, w: LABEL_W - 0.04, h: rowH * 0.5,
+            fontSize: 9, bold: true, color: C.text, fontFace: 'Calibri', valign: 'middle',
+        })
+        slide.addText(g.internal_n != null ? String(g.internal_n) + ' MA' : '—', {
+            x: ML + LABEL_W, y: y + rowH * 0.25, w: N_W - 0.04, h: rowH * 0.5,
+            fontSize: 7.5, color: C.textSub, fontFace: 'Calibri', valign: 'middle',
+        })
+
+        // Gap % badge right
+        slide.addText(gapStr, {
+            x: BAR_X + BAR_W + 0.06, y: y + rowH * 0.25, w: GAP_W - 0.04, h: rowH * 0.5,
+            fontSize: 10, bold: true, color: gapCol, fontFace: 'Calibri', valign: 'middle', align: 'right',
+        })
+    })
+
+    // Legend
+    const ly = startY + maxRows * rowH + 0.06
+    slide.addShape('rect',    { x: ML,        y: ly + 0.01, w: 0.25, h: 0.09, fill: { color: '1e3a5f' }, line: { color: '3b82f6', width: 0.5 } })
+    slide.addText('IQR (P25–P75)', { x: ML + 0.28, y: ly - 0.02, w: 1.0, h: 0.16, fontSize: 7, color: C.textSub, fontFace: 'Calibri' })
+    slide.addShape('line',    { x: ML + 1.35, y: ly + 0.055, w: 0, h: 0.10, line: { color: C.brand, width: 1.5 } })
+    slide.addText('Gesamt-Median', { x: ML + 1.42, y: ly - 0.02, w: 1.0, h: 0.16, fontSize: 7, color: C.textSub, fontFace: 'Calibri' })
+    slide.addShape('rect',    { x: ML + 2.53, y: ly, w: 0.11, h: 0.11, fill: { color: C.female }, line: { color: 'transparent', width: 0 }, rotate: 45 })
+    slide.addText('Median F.', { x: ML + 2.72, y: ly - 0.02, w: 0.8, h: 0.16, fontSize: 7, color: C.female, fontFace: 'Calibri' })
+    slide.addShape('ellipse', { x: ML + 3.58, y: ly, w: 0.11, h: 0.11, fill: { color: C.brandLight }, line: { color: 'transparent', width: 0 } })
+    slide.addText('Median M.', { x: ML + 3.74, y: ly - 0.02, w: 0.8, h: 0.16, fontSize: 7, color: C.brandLight, fontFace: 'Calibri' })
+
+    slide.addText(
+        'Alle Gehaltswerte in EUR (Brutto, jährlich). IQR = Interquartilbereich P25–P75. ' +
+        'Gruppen mit weniger als 5 Mitarbeitenden werden nicht angezeigt. Quelle: importierte Mitarbeiterdaten.',
+        { x: ML, y: 5.0, w: CW, h: 0.2, fontSize: 6.5, color: C.textSub, fontFace: 'Calibri', italic: true }
+    )
+    addFooter(slide, slideNum, total)
+}
+
 export interface PptOptions {
     orgName:                 string
     analysisName:            string
@@ -948,6 +1232,7 @@ export interface PptOptions {
     explClaimedMap?:         Map<string, number>   // employee_id → total claimed reduction %
     isSample?:               boolean
     sampleMode?:             'trial' | 'expired' | null
+    bandGrades?:             BandGradeSummary[]   // EU Art. 9 salary band data (optional)
 }
 
 // ── Locked upgrade slide (trial/expired) ─────────────────────────────
@@ -1016,10 +1301,12 @@ export async function generateReportPptx(
     pptx.subject = `${opts.orgName} – Entgeltbericht ${results.reporting_year} (EU-RL 2023/970)`
     pptx.title   = opts.analysisName
 
-    const date  = new Date(opts.analysisDate).toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' })
-    const hasMaßnahmen = (opts.plans ?? []).length > 0
-    const total = hasMaßnahmen ? 10 : 9
-    const isSample = !!opts.isSample
+    const date          = new Date(opts.analysisDate).toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' })
+    const hasMaßnahmen  = (opts.plans ?? []).length > 0
+    const hasBandSlide   = (opts.bandGrades ?? []).length > 0
+    const isSample       = !!opts.isSample
+    // 8 base slides + 1 if Maßnahmen + 2 if Bands (chart + table) (dept slide removed — not EU mandatory)
+    const total = 8 + (hasMaßnahmen ? 1 : 0) + (hasBandSlide ? 2 : 0)
 
     // Slide 1 — Cover (always shown)
     addCoverSlide(pptx, results, opts.orgName, opts.analysisName, date, total, isSample as any)
@@ -1030,13 +1317,34 @@ export async function generateReportPptx(
         // Trial/expired: from slide 3 onwards — single locked upgrade slide
         addLockedSlide(pptx, 3, total, opts.sampleMode ?? 'trial')
     } else {
+        let currentSlide = 3
+        // Slide 3 — Gap Overview (always)
         addSlide2(pptx, results, total, opts.explanationAdjustedGap ?? null, isSample)
+        currentSlide++
+        // Slides 4+5 — Entgeltbänder: IQR chart + Compa-Ratio table (EU Art. 9, if available)
+        if (hasBandSlide) {
+            addSalaryBandChartSlide(pptx, opts.bandGrades!, total, currentSlide, isSample)
+            currentSlide++
+            addSalaryBandSlide(pptx, opts.bandGrades!, total, currentSlide, isSample)
+            currentSlide++
+        }
+        // Slide 5 — Grade distribution (gender bars + WIF gap)
         addGradeSlide(pptx, results, total, opts.explClaimedMap ?? new Map(), isSample)
-        addSlide3(pptx, results, total, opts.explClaimedMap ?? new Map(), isSample)
+        currentSlide++
+        // Slide 6 — Quartile distribution (EU Art. 9)
         addSlide4(pptx, results, total, isSample)
+        currentSlide++
+        // Slide 7 — Salary comparison (hourly rates)
         addSlide5(pptx, results, total, isSample)
+        currentSlide++
+        // Slide 8 — Individual remediation overview
         addSlide6(pptx, results, total, opts.explainedEmployeeIds ?? new Set(), isSample)
-        if (hasMaßnahmen) addMaßnahmenSlide(pptx, opts.plans!, total, isSample)
+        currentSlide++
+        // Optional: Maßnahmenplan
+        if (hasMaßnahmen) {
+            addMaßnahmenSlide(pptx, opts.plans!, total, isSample)
+            currentSlide++
+        }
         addSlide7(pptx, results, opts.orgName, date, total, isSample)
     }
 

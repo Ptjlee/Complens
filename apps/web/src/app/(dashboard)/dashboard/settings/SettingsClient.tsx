@@ -3,11 +3,12 @@
 import { useState, useTransition, useEffect } from 'react'
 import { User } from '@supabase/supabase-js'
 import {
-    Building2, User as UserIcon, CreditCard, Shield,
+    Building2, User as UserIcon, CreditCard, Shield, TrendingUp,
     Check, AlertTriangle, ChevronRight, Crown, Zap, Users, FileDown, Globe,
 } from 'lucide-react'
 import { signOut } from '@/app/(auth)/actions'
 import TeamPanel from './TeamPanel'
+import SalaryBandsPanel from './SalaryBandsPanel'
 import { useTranslation } from '@/lib/i18n/LanguageContext'
 import type { Lang } from '@/lib/i18n/translations'
 
@@ -318,13 +319,13 @@ type Props = {
 // ─── Main component ───────────────────────────────────────────
 
 export default function SettingsClient({ user, org, role, memberCount, teamData, profileData, legalData }: Props) {
-    const [activeTab, setActiveTab] = useState<'org' | 'team' | 'profile' | 'billing' | 'security'>('org')
+    const [activeTab, setActiveTab] = useState<'org' | 'team' | 'profile' | 'billing' | 'security' | 'bands'>('org')
     const [openInvite, setOpenInvite] = useState(false)
     const plan = planInfo(org?.plan ?? null)
 
     useEffect(() => {
-        const hash = window.location.hash.replace('#', '') as 'org' | 'team' | 'profile' | 'billing' | 'security'
-        const valid = ['org', 'team', 'profile', 'billing', 'security']
+        const hash = window.location.hash.replace('#', '') as 'org' | 'team' | 'profile' | 'billing' | 'security' | 'bands'
+        const valid = ['org', 'team', 'profile', 'billing', 'security', 'bands']
         if (valid.includes(hash)) setActiveTab(hash)
     }, [])
 
@@ -337,11 +338,12 @@ export default function SettingsClient({ user, org, role, memberCount, teamData,
     const trialActive = !isLicensed && trialEnd && trialEnd > now
 
     const tabs = [
-        { id: 'org',      label: 'Organisation', icon: Building2  },
-        { id: 'team',     label: 'Team',          icon: Users      },
-        { id: 'profile',  label: 'Profil',        icon: UserIcon   },
-        { id: 'billing',  label: 'Abonnement',    icon: CreditCard },
-        { id: 'security', label: 'Datenschutz',   icon: Shield     },
+        { id: 'org',      label: 'Organisation', icon: Building2,  adminOnly: false },
+        { id: 'team',     label: 'Team',          icon: Users,       adminOnly: false },
+        { id: 'profile',  label: 'Profil',        icon: UserIcon,    adminOnly: false },
+        { id: 'bands',    label: 'Entgeltbänder', icon: TrendingUp,  adminOnly: true  },
+        { id: 'billing',  label: 'Abonnement',    icon: CreditCard,  adminOnly: false },
+        { id: 'security', label: 'Datenschutz',   icon: Shield,      adminOnly: false },
     ] as const
 
     return (
@@ -377,7 +379,7 @@ export default function SettingsClient({ user, org, role, memberCount, teamData,
             <div className="flex gap-6">
                 {/* Sidebar nav */}
                 <nav className="w-44 flex-shrink-0 space-y-1">
-                    {tabs.map(({ id, label, icon: Icon }) => (
+                 {tabs.filter(t => !t.adminOnly || role === 'admin').map(({ id, label, icon: Icon }) => (
                         <button
                             key={id}
                             onClick={() => setActiveTab(id)}
@@ -398,6 +400,7 @@ export default function SettingsClient({ user, org, role, memberCount, teamData,
                     {activeTab === 'org'      && <OrgTab      org={org} role={role} memberCount={memberCount} legalData={legalData} onInvite={() => { setOpenInvite(true); setActiveTab('team') }} />}
                     {activeTab === 'team'     && <TeamPanel   teamData={teamData} openInviteOnMount={openInvite} onInviteMounted={() => setOpenInvite(false)} />}
                     {activeTab === 'profile'  && <ProfileTab  user={user} profileData={profileData} />}
+                    {activeTab === 'bands'    && <SalaryBandsPanel />}
                     {activeTab === 'billing'  && <BillingTab  org={org} plan={plan} subEnd={subEnd} isLicensed={isLicensed} legalComplete={!!(legalData.legal_representative && legalData.legal_address && legalData.legal_city)} onGoToOrg={() => setActiveTab('org')} />}
                     {activeTab === 'security' && <SecurityTab />}
                 </div>

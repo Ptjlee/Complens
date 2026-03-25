@@ -15,17 +15,19 @@ import {
     HelpCircle,
     Database,
     TrendingUp,
+    Landmark,
 } from 'lucide-react'
 
 const navItems = [
-    { href: '/dashboard',          label: 'Übersicht',             icon: LayoutDashboard },
-    { href: '/dashboard/import',   label: 'Daten importieren',     icon: Upload },
-    { href: '/dashboard/datasets', label: 'Datensätze verwalten',  icon: Database },
-    { href: '/dashboard/analysis', label: 'Analyse',               icon: BarChart3 },
-    { href: '/dashboard/trends',   label: 'Trendanalyse',          icon: TrendingUp },
-    { href: '/dashboard/reports',  label: 'Berichte',              icon: FileText },
-    { href: '/dashboard/remediation', label: 'Maßnahmen',          icon: Wrench },
-    { href: '/dashboard/portal',   label: 'Auskunftsrecht',        icon: Users },
+    { href: '/dashboard',               label: 'Übersicht',            icon: LayoutDashboard, adminOnly: false },
+    { href: '/dashboard/import',        label: 'Daten importieren',    icon: Upload,          adminOnly: true  },
+    { href: '/dashboard/datasets',      label: 'Datensätze verwalten', icon: Database,        adminOnly: true  },
+    { href: '/dashboard/analysis',      label: 'Analyse',              icon: BarChart3,       adminOnly: false },
+    { href: '/dashboard/trends',        label: 'Trendanalyse',         icon: TrendingUp,      adminOnly: false },
+    { href: '/dashboard/reports',       label: 'Berichte',             icon: FileText,        adminOnly: false },
+    { href: '/dashboard/remediation',   label: 'Maßnahmen',            icon: Wrench,          adminOnly: true  },
+    { href: '/dashboard/salary-bands',  label: 'Entgeltbänder',        icon: Landmark,        adminOnly: true  },
+    { href: '/dashboard/portal',        label: 'Auskunftsrecht',       icon: Users,           adminOnly: true  },
 ]
 
 const bottomItems = [
@@ -37,16 +39,8 @@ const bottomItems = [
 export default function Sidebar({ role }: { role?: 'admin' | 'viewer' }) {
     const pathname = usePathname()
 
-    // Filter out items that viewers shouldn't see
     const visibleNavItems = navItems.filter(item => {
-        if (role !== 'admin' && [
-            '/dashboard/import',
-            '/dashboard/datasets',
-            '/dashboard/remediation',
-            '/dashboard/portal',
-        ].includes(item.href)) {
-            return false
-        }
+        if (role !== 'admin' && item.adminOnly) return false
         return true
     })
 

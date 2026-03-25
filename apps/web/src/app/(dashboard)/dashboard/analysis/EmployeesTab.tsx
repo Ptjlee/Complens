@@ -482,7 +482,7 @@ function ExplanationDrawer({
                                 style={{ borderColor: 'var(--color-pl-border)' }}>
                                 <span style={{ color: 'var(--color-pl-text-primary)', fontWeight: 600 }}>Verbleibende Restlücke</span>
                                 <span style={{ color: residualPct > 5 ? '#ef4444' : '#34d399', fontWeight: 700 }}>
-                                    {residualPct.toFixed(1)}%
+                                    {residualPct > 0 ? `-${residualPct.toFixed(1)}%` : '0%'}
                                 </span>
                             </div>
                             {residualPct > 5 && (
@@ -755,7 +755,7 @@ export default function EmployeesTab({
                             <div className="text-right flex-shrink-0">
                                 <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>Median Restlücke</p>
                                 <p className="text-2xl font-bold" style={{ color: residualColor }}>
-                                    +{residualAdjusted.toFixed(1)}%
+                                    {residualAdjusted > 0 ? `-${residualAdjusted.toFixed(1)}%` : '0%'}
                                 </p>
                             </div>
                         </div>
@@ -992,7 +992,8 @@ export default function EmployeesTab({
                                     const col = residual < 5 ? '#34d399' : '#f87171'
                                     return (
                                         <div className="text-center">
-                                            <p className="text-xs font-bold" style={{ color: col }}>+{residual.toFixed(1)}%</p>
+                                            <p className="text-xs font-bold" style={{ color: col }}>
+                                            {residual > 0 ? `-${residual.toFixed(1)}%` : '0%'}</p>
                                             <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>Restlücke</p>
                                         </div>
                                     )
