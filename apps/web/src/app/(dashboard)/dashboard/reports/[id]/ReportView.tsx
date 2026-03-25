@@ -721,27 +721,39 @@ export default function ReportView({
                                 </div>
                             ) : (
                                 <>
-                                    {/* KPI row */}
-                                    <div className="grid grid-cols-3 gap-4">
-                                        {[{
-                                            label: 'Aktiv gesamt',
-                                            value: remediationPlans.filter(p => p.status !== 'dismissed').length,
-                                            color: 'var(--color-pl-text-primary)',
-                                        }, {
-                                            label: 'Abgeschlossen',
-                                            value: remediationPlans.filter(p => p.status === 'completed').length,
-                                            color: 'var(--color-pl-green)',
-                                        }, {
-                                            label: 'Offen / In Arbeit',
-                                            value: remediationPlans.filter(p => p.status === 'open' || p.status === 'in_progress').length,
-                                            color: 'var(--color-pl-amber)',
-                                        }].map(({ label, value, color }) => (
-                                            <div key={label} className="glass-card p-4">
-                                                <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>{label}</p>
-                                                <p className="text-3xl font-bold" style={{ color }}>{value}</p>
+                                    {/* KPI row — meaningful counts, not plan-status */}
+                                    {(() => {
+                                        const criticalCount = flaggedEmployees.length
+                                        const plansCreated  = remediationPlans.filter(p => p.status !== 'dismissed').length
+                                        const coveredIds    = new Set(remediationPlans.filter(p => p.status !== 'dismissed').map(p => p.employee_id))
+                                        const withoutPlan   = flaggedEmployees.filter(f => !coveredIds.has(f.employee_id)).length
+                                        return (
+                                            <div className="grid grid-cols-3 gap-4">
+                                                {[{
+                                                    label: 'Kritische Fälle',
+                                                    sub:   '≥ 5% Lücke (Art. 9)',
+                                                    value: criticalCount,
+                                                    color: criticalCount > 0 ? 'var(--color-pl-red)' : 'var(--color-pl-green)',
+                                                }, {
+                                                    label: 'Maßnahmenpläne',
+                                                    sub:   'Pläne erstellt',
+                                                    value: plansCreated,
+                                                    color: plansCreated > 0 ? 'var(--color-pl-brand)' : 'var(--color-pl-text-tertiary)',
+                                                }, {
+                                                    label: 'Noch ohne Plan',
+                                                    sub:   'Kein Plan vorhanden',
+                                                    value: withoutPlan,
+                                                    color: withoutPlan > 0 ? 'var(--color-pl-amber)' : 'var(--color-pl-green)',
+                                                }].map(({ label, sub, value, color }) => (
+                                                    <div key={label} className="glass-card p-4">
+                                                        <p className="text-xs font-semibold uppercase tracking-wide mb-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>{label}</p>
+                                                        <p className="text-3xl font-bold mb-1" style={{ color }}>{value}</p>
+                                                        <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>{sub}</p>
+                                                    </div>
+                                                ))}
                                             </div>
-                                        ))}
-                                    </div>
+                                        )
+                                    })()}
 
                                     {/* Action types */}
                                     <div className="glass-card p-5">
