@@ -401,6 +401,7 @@ PayLens/
 | **PPT/PDF/Web: title consistency** | All outputs use user-given dataset name, not internal “Analyse YYYY” |
 | **PDF: Bereiche optional** | Departments section off by default in PDF modal (not EU Art. 9 mandatory) |
 | **Web: compliance clarity** | “Nicht EU-Pflicht” badge on Bereiche section in interactive report |
+| **GA4 Analytics** | `NEXT_PUBLIC_GA_MEASUREMENT_ID` set; `GoogleAnalytics` component in `layout.tsx` — fully active |
 | **TypeScript** | `tsc --noEmit` → 0 errors |
 
 ---
@@ -411,7 +412,6 @@ PayLens/
 
 | Task | Notes |
 |------|-------|
-| **GA4 Measurement ID** | Set `NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX` — code already wired, just needs ID |
 | **Add-on seat E2E test** | Route implemented; needs real SEPA/card payment end-to-end test |
 | **Compliance dashboard** | Dynamic Art. 9 sub-requirement status per org |
 | **Employee portal polish** | Art. 7 PDF letter final UX review |

@@ -64,10 +64,11 @@ All core product features are live.
 | **Stripe German invoice setup** | Template wired to all subscription checkouts. `preferred_locales: ['de']` set on all customers. Products renamed to German Leistungsbeschreibung (§14 UStG). |
 | **Trends module** | SVG line chart, department heatmap, grade heatmap, delta KPIs, year-over-year table — fully implemented. |
 | **Salary Bands module** | Auto-detect grades, compute P25/median/P75/gender medians, EU Art. 9 compliance heatmap, market benchmarks, compa-ratio. Dashboard KPI card + Analysis tab + PDF section + Sidebar route. |
-| **Stripe price IDs** | Real price IDs set via `STRIPE_PRICE_LICENSE` + `STRIPE_PRICE_ADDITIONAL_ACCESS` env vars — wired in checkout + webhook routes. |
-| **Stripe webhook** | `/api/stripe/webhook` live; `STRIPE_WEBHOOK_SECRET` in env. |
-| **Resend email** | `RESEND_API_KEY` + `RESEND_FROM_EMAIL` configured. Welcome, invite, support reply, bulk email all functional. |
-| **All critical env vars** | Supabase, Gemini, Resend, Stripe (secret + webhook + price IDs), `SUPERADMIN_EMAILS`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_APP_URL` all set in `.env.local`. |
+| **Stripe real price IDs** | `STRIPE_PRICE_LICENSE` + `STRIPE_PRICE_ADDITIONAL_ACCESS` set; wired in checkout + webhook routes |
+| **Stripe webhook live** | `/api/stripe/webhook` active; `STRIPE_WEBHOOK_SECRET` configured |
+| **Resend email** | `RESEND_API_KEY` + `RESEND_FROM_EMAIL` configured; all email flows functional |
+| **All env vars set** | Supabase, Gemini, Resend, Stripe, `SUPERADMIN_EMAILS`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_APP_URL` |
+| **GA4 Analytics** | `NEXT_PUBLIC_GA_MEASUREMENT_ID` confirmed set; `GoogleAnalytics` in `layout.tsx` — fully active |
 
 ---
 
@@ -99,7 +100,6 @@ All core product features are live.
 | **Compliance dashboard** | Dynamic Art. 9 sub-requirement status per org (planned) |
 | **Employee portal polish** | Art. 7 PDF letter — final UX review |
 | **Hero Showcase Carousel** | Astro landing page — awaiting 6 dashboard screenshots from live server |
-| **GA4 activation** | Set `NEXT_PUBLIC_GA_MEASUREMENT_ID` — code already wired, needs Measurement ID |
 
 ### 🟢 Low
 | Task | Notes |
