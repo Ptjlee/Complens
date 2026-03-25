@@ -566,7 +566,7 @@ function PlanRow({
                 </span>
 
                 {/* Horizon indicators — short / mid / long term */}
-                <span className="w-36 hidden xl:flex items-center justify-around flex-shrink-0">
+                <span className="w-36 hidden min-[1800px]:flex items-center justify-around flex-shrink-0">
                     {(['6m', '1y', '2-3y'] as const).map((horizon, i) => {
                         const horizons = horizon === '2-3y'
                             ? ['1.5y', '2-3y'] as const
@@ -1269,7 +1269,7 @@ export default function RemediationClient({
                                     <span className="w-24 text-right flex-shrink-0">Lücke</span>
                                     <span className="w-24 text-right flex-shrink-0 hidden md:block">Restlücke</span>
                                     
-                                    <span className="w-36 hidden xl:flex items-center justify-around flex-shrink-0">
+                                    <span className="w-36 hidden min-[1800px]:flex items-center justify-around flex-shrink-0">
                                         <span className="w-12 text-center" title="Kurzfristig: 0–6 Monate">Kurz</span>
                                         <span className="w-12 text-center" title="Mittelfristig: 6–12 Monate">Mittel</span>
                                         <span className="w-12 text-center" title="Langfristig: 12+ Monate">Lang</span>

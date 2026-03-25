@@ -321,6 +321,160 @@ export async function getAnalysisForDataset(datasetId: string) {
 
     return data ?? null
 }
+
+// ============================================================
+// Recommend WIF factors: trial ALL valid combinations through the
+// real gap engine and pick the one with minimum |adjusted_median|.
+// job_grade is always mandatory.
+// Degenerate factors (≥85% same value OR <2 distinct values) are
+// pre-filtered so they never pollute comparison cells.
+// ============================================================
+
+export type WifRecommendation = {
+    recommended: string[]
+    stats: Record<string, {
+        distinctValues: number
+        dominantPct: number
+        included: boolean        // passed diversity filter
+        reason: string
+    }>
+    bestGap: number | null       // adjusted_median of the winning combo (0-1 fraction)
+}
+
+export async function getRecommendedWifFactors(
+    datasetId: string,
+): Promise<WifRecommendation> {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    const ALL_OPTIONAL = ['employment_type', 'department', 'location'] as const
+    const fallback: WifRecommendation = {
+        recommended: ['job_grade', 'employment_type', 'department', 'location'],
+        stats: {},
+        bestGap: null,
+    }
+    if (!user) return fallback
+
+    const admin = createAdminClient()
+
+    // ── 1. Fetch dataset meta ─────────────────────────────────
+    const { data: datasetMeta } = await admin
+        .from('datasets')
+        .select('org_id, reporting_year, standard_weekly_hours, default_salary_period')
+        .eq('id', datasetId)
+        .single()
+    if (!datasetMeta) return fallback
+
+    // ── 2. Fetch all employee rows ────────────────────────────
+    const { data: rawEmployees } = await admin
+        .from('employees')
+        .select(`
+            id, employee_ref, first_name, last_name,
+            gender, salary_base, salary_variable, variable_pay_type,
+            overtime_pay, benefits_in_kind, salary_period,
+            weekly_hours, monthly_hours, fte_ratio,
+            job_title, department, job_grade,
+            employment_type, seniority_years, location
+        `)
+        .eq('dataset_id', datasetId)
+
+    if (!rawEmployees?.length) return fallback
+
+    // ── 3. Diversity filter ───────────────────────────────────
+    const DOMINANCE = 0.85   // ≥85% same value = degenerate
+    const total     = rawEmployees.length
+    const stats: WifRecommendation['stats'] = {}
+    const qualified: string[] = []   // optional factors that pass the filter
+
+    for (const key of ALL_OPTIONAL) {
+        const freq = new Map<string, number>()
+        for (const row of rawEmployees) {
+            const val = String((row as Record<string, unknown>)[key] ?? '').trim()
+            if (val) freq.set(val, (freq.get(val) ?? 0) + 1)
+        }
+        const distinctValues = freq.size
+        const maxCount       = freq.size ? Math.max(...freq.values()) : 0
+        const dominantPct    = total > 0 ? (maxCount / total) * 100 : 100
+        const isDegenerate   = dominantPct >= DOMINANCE * 100
+        const hasDiversity   = distinctValues >= 2
+        const included       = hasDiversity && !isDegenerate
+
+        stats[key] = {
+            distinctValues,
+            dominantPct: Math.round(dominantPct),
+            included,
+            reason: !hasDiversity
+                ? 'Nur ein einziger Wert vorhanden – kein Trennmerkmal'
+                : isDegenerate
+                    ? `${Math.round(dominantPct)}% haben denselben Wert – zu homogen`
+                    : `${distinctValues} verschiedene Werte – geeignet`,
+        }
+        if (included) qualified.push(key)
+    }
+
+    // ── 4. Map employees to engine format ─────────────────────
+    const defaultPeriod = (datasetMeta.default_salary_period ?? 'annual') as 'annual' | 'monthly' | 'hourly'
+    const employees: EmployeeRecord[] = rawEmployees.map(e => ({
+        id:               e.id,
+        employee_ref:     e.employee_ref ?? null,
+        first_name:       e.first_name   ?? null,
+        last_name:        e.last_name    ?? null,
+        gender:           e.gender as EmployeeRecord['gender'],
+        salary_base:      Number(e.salary_base),
+        salary_variable:  Number(e.salary_variable ?? 0),
+        variable_pay_type: (e.variable_pay_type as 'eur'|'pct'|'auto') ?? 'auto',
+        overtime_pay:      Number(e.overtime_pay   ?? 0),
+        benefits_in_kind:  Number(e.benefits_in_kind ?? 0),
+        salary_period:    (e.salary_period as 'annual'|'monthly'|'hourly') ?? defaultPeriod,
+        weekly_hours:     e.weekly_hours  != null ? Number(e.weekly_hours)  : null,
+        monthly_hours:    e.monthly_hours != null ? Number(e.monthly_hours) : null,
+        fte_ratio:        Number(e.fte_ratio ?? 1),
+        job_title:        e.job_title,
+        department:       e.department,
+        job_grade:        e.job_grade,
+        employment_type:  e.employment_type ?? 'full_time',
+        seniority_years:  e.seniority_years ? Number(e.seniority_years) : null,
+        location:         e.location,
+    }))
+
+    const engineCfg = {
+        dataset_id:            datasetId,
+        org_id:                datasetMeta.org_id,
+        reporting_year:        datasetMeta.reporting_year,
+        standard_weekly_hours: datasetMeta.standard_weekly_hours
+            ? Number(datasetMeta.standard_weekly_hours) : 40,
+    }
+
+    // ── 5. Trial all 2^n combinations of qualified factors ────
+    // Always include job_grade; try every subset of qualified optionals.
+    let bestCombo: string[]    = ['job_grade', ...qualified]  // default = all qualified
+    let bestGapAbs             = Infinity
+    let bestGapValue: number | null = null
+
+    const nOpt = qualified.length
+    const totalCombos = 1 << nOpt   // 2^n
+
+    for (let mask = 0; mask < totalCombos; mask++) {
+        const combo: string[] = ['job_grade']
+        for (let i = 0; i < nOpt; i++) {
+            if (mask & (1 << i)) combo.push(qualified[i])
+        }
+        try {
+            const result = runAnalysis(employees, engineCfg, { wifFactors: combo })
+            const gap    = Math.abs(result.overall.adjusted_median ?? Infinity)
+            if (gap < bestGapAbs) {
+                bestGapAbs   = gap
+                bestCombo    = combo
+                bestGapValue = result.overall.adjusted_median
+            }
+        } catch { /* skip invalid combinations */ }
+    }
+
+    return { recommended: bestCombo, stats, bestGap: bestGapValue }
+}
+
+
+
 // ============================================================
 // Multi-year trend — one GPG point per reporting year
 // ============================================================

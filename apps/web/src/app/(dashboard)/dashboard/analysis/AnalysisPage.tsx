@@ -9,7 +9,9 @@ import {
 import {
     runDatasetAnalysis,
     getAnalysisForDataset,
+    getRecommendedWifFactors,
 } from './actions'
+import type { WifRecommendation } from './actions'
 import { getExplanationsForAnalysis } from './explanations/actions'
 import type { AnalysisResult, DepartmentResult } from '@/lib/calculations/types'
 import EmployeesTab from './EmployeesTab'
@@ -204,11 +206,13 @@ export default function AnalysisPageClient({
     const [runPending, startRunTransition]        = useTransition()
     const [runError, setRunError]                 = useState('')
     const [showRerunConfirm, setShowRerunConfirm] = useState(false)
+    const [wifStats, setWifStats]                 = useState<WifRecommendation['stats']>({})
     const rerunRef = useRef<HTMLDivElement>(null)
 
     // Track 2 — WIF Factor selection (default: all 4)
     const [selectedWif, setSelectedWif] = useState<string[]>([...ALL_WIF])
     function toggleWif(factor: string) {
+        if (factor === 'job_grade') return  // mandatory — cannot deselect
         setSelectedWif(prev =>
             prev.includes(factor)
                 ? prev.length > 1 ? prev.filter(f => f !== factor) : prev  // always keep ≥1
@@ -216,17 +220,35 @@ export default function AnalysisPageClient({
         )
     }
 
-    const loadForDataset = useCallback(async (datasetId: string) => {
+    const loadForDataset = useCallback(async (datasetId: string, resetWif = true) => {
         setLoadingAnalysis(true)
         setAnalysis(null)
         setExplanations([])
         setActiveTab('overview')
-        const data = await getAnalysisForDataset(datasetId) as AnalysisData | null
-        setAnalysis(data)
-        if (data?.id) {
-            const expl = await getExplanationsForAnalysis(data.id) as Explanation[]
-            setExplanations(expl)
+
+        if (resetWif) {
+            // On dataset switch: load analysis + auto-recommend WIF in parallel
+            const [data, wifRec] = await Promise.all([
+                getAnalysisForDataset(datasetId) as Promise<AnalysisData | null>,
+                getRecommendedWifFactors(datasetId),
+            ])
+            setAnalysis(data)
+            setWifStats(wifRec.stats)
+            setSelectedWif(wifRec.recommended)
+            if (data?.id) {
+                const expl = await getExplanationsForAnalysis(data.id) as Explanation[]
+                setExplanations(expl)
+            }
+        } else {
+            // After a re-run: reload results only, keep user's WIF selection intact
+            const data = await getAnalysisForDataset(datasetId) as AnalysisData | null
+            setAnalysis(data)
+            if (data?.id) {
+                const expl = await getExplanationsForAnalysis(data.id) as Explanation[]
+                setExplanations(expl)
+            }
         }
+
         setLoadingAnalysis(false)
     }, [])
 
@@ -250,7 +272,7 @@ export default function AnalysisPageClient({
         startRunTransition(async () => {
             const result = await runDatasetAnalysis(selectedId, name, 'archive', undefined, selectedWif)
             if (result.error) { setRunError(result.error); return }
-            await loadForDataset(selectedId)
+            await loadForDataset(selectedId, false)  // keep user's WIF selection
         })
     }
 
@@ -261,7 +283,7 @@ export default function AnalysisPageClient({
         startRunTransition(async () => {
             const result = await runDatasetAnalysis(selectedId, analysis.name, 'replace', analysis.id, selectedWif)
             if (result.error) { setRunError(result.error); return }
-            await loadForDataset(selectedId)
+            await loadForDataset(selectedId, false)  // keep user's WIF selection
         })
     }
 
@@ -498,15 +520,27 @@ export default function AnalysisPageClient({
                     <div className="flex flex-wrap gap-2">
                         {ALL_WIF.map(factor => {
                             const active = selectedWif.includes(factor)
+                            const isMandatory = factor === 'job_grade'
+                            const stat = wifStats[factor]
+                            const tooltip = isMandatory
+                                ? 'Entgeltgruppe ist gemäß EU Art. 9 obligatorisch'
+                                : stat?.reason ?? ''
                             return (
-                                <button key={factor} onClick={() => toggleWif(factor)}
+                                <button key={factor} onClick={() => !isMandatory && toggleWif(factor)}
+                                    title={tooltip}
                                     className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
                                     style={{
                                         background: active ? 'rgba(59,130,246,0.2)' : 'var(--theme-pl-action-ghost)',
                                         border:     `1px solid ${active ? 'rgba(59,130,246,0.5)' : 'var(--color-pl-border)'}`,
                                         color:      active ? 'var(--color-pl-brand-light)' : 'var(--color-pl-text-tertiary)',
+                                        cursor:     isMandatory ? 'not-allowed' : 'pointer',
+                                        opacity:    isMandatory ? 1 : undefined,
                                     }}>
                                     {active ? '✓ ' : ''}{WIF_LABELS[factor]}
+                                    {isMandatory && <span style={{ fontSize: 9, marginLeft: 4, opacity: 0.7 }}>●</span>}
+                                    {stat && !isMandatory && !stat.included && active === false && (
+                                        <span style={{ fontSize: 9, marginLeft: 4, color: 'var(--color-pl-amber)' }}>⚠</span>
+                                    )}
                                 </button>
                             )
                         })}
@@ -572,6 +606,17 @@ export default function AnalysisPageClient({
                                 {results.hours_coverage_pct < 100 && (
                                     <p style={{ color: 'var(--color-pl-amber)' }}>⚠ {results.hours_coverage_pct}% Stundendaten</p>
                                 )}
+                                {/* Bug 1 fix: show mismatch warning when UI selection differs from stored results */
+                                (() => {
+                                    const used = [...results.wif_factors_used].sort().join(',')
+                                    const sel  = [...selectedWif].sort().join(',')
+                                    if (used === sel) return null
+                                    return (
+                                        <p className="mt-1 flex items-start gap-1" style={{ color: 'var(--color-pl-amber)' }}>
+                                            ⚠ WIF-Auswahl geändert – neue Analyse starten, um sie anzuwenden.
+                                        </p>
+                                    )
+                                })()}
                             </div>
                         </div>
                         {/* Nach Begründungen — only shown when explanations exist */}
@@ -612,20 +657,24 @@ export default function AnalysisPageClient({
                             const medianResidual = sumRaw > 0
                                 ? adjustedMedianPct * (sumResiduals / sumRaw)
                                 : adjustedMedianPct
-                            return (
-                                <div className="glass-card p-5" style={{ border: '1px solid var(--color-pl-green)' }}>
-                                    <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: 'var(--color-pl-green)' }}>
+                            return (() => {
+                                const residualAbs = Math.abs(medianResidual)
+                                const cardColor = residualAbs >= 5 ? 'var(--color-pl-red)' : 'var(--color-pl-green)'
+                                return (
+                                <div className="glass-card p-5" style={{ border: `1px solid ${cardColor}` }}>
+                                    <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: cardColor }}>
                                         Nach Begründungen
                                     </p>
                                     <GapBadge value={medianResidual / 100} />
-                                    <div className="mt-3 pt-3 border-t text-xs space-y-1" style={{ borderColor: 'var(--color-pl-green)' }}>
+                                    <div className="mt-3 pt-3 border-t text-xs space-y-1" style={{ borderColor: cardColor }}>
                                         <p style={{ color: 'var(--color-pl-text-tertiary)' }}>
                                             {existingExplanations.length} von {flaggedNonOk.length} Pers. begründet
                                         </p>
                                         <p style={{ color: 'var(--color-pl-text-tertiary)' }}>Median Restlücke</p>
                                     </div>
                                 </div>
-                            )
+                                )
+                            })()
                         })()}
                     </div>
 
