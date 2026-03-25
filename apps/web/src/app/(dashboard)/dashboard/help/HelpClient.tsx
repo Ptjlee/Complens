@@ -5,7 +5,7 @@ import {
     PlayCircle, Upload, BarChart3, FileText, MessageSquare, Users,
     ShieldCheck, Settings, TrendingUp, ChevronDown, ChevronRight,
     AlertTriangle, CheckCircle2, Info, Mail, Download, Search,
-    BookOpen, Lightbulb, Zap, Globe,
+    BookOpen, Lightbulb, Zap, Globe, Layers, ExternalLink,
 } from 'lucide-react'
 import dynamic from 'next/dynamic'
 
@@ -377,30 +377,79 @@ const MODULES: Module[] = [
         ],
     },
     {
-        id: 'trends',
-        icon: <TrendingUp size={20} />,
-        color: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
-        title: '8 · Trendanalyse',
-        subtitle: 'Entwicklung der Entgeltlücke über mehrere Jahre',
+        id: 'bands',
+        icon: <Layers size={20} />,
+        color: 'linear-gradient(135deg,#0ea5e9,#10b981)',
+        title: '8 · Entgeltbänder (Art. 9)',
+        subtitle: 'Interne Gehaltsbänder erstellen und EU-Intra-Gruppen-Compliance prüfen',
         steps: [
             {
                 step: 1,
-                title: 'Mehrjährige Vergleiche',
-                body: 'Die Trendanalyse wird automatisch aktiv, sobald mindestens 2 abgeschlossene Analysen mit unterschiedlichen Berichtsjahren vorhanden sind. Sie sehen dann Liniendiagramme, Delta-Karten und Heatmaps für Bereiche und Entgeltgruppen.',
+                title: 'Was sind Entgeltbänder?',
+                body: 'Entgeltbänder legen Min-/Maximalvergütung pro Entgeltgruppe fest. EU Art. 9 verpflichtet Unternehmen zur Veröffentlichung von Entgeltinformationen nach Kategorie und Geschlecht. Eine Intra-Gruppen-Lücke ≥ 5% innerhalb derselben Entgeltgruppe löst Begründungspflicht nach Art. 10 aus.',
+                tip: 'Die Compa-Ratio = (Median-Gehalt ÷ Bandmitte) × 100. Werte < 87% sind ein typisches Warnsignal für Unterbezahlung in der C&B-Praxis.',
             },
             {
                 step: 2,
-                title: 'Delta-Karten interpretieren',
-                body: 'Jede Delta-Karte zeigt den aktuellen Wert und die Veränderung zum Vorjahreswert. Grün = Verbesserung (Gap gesunken), Rot = Verschlechterung (Gap gestiegen). Der Vergleich bezieht sich immer auf das unmittelbar vorherige Berichtsjahr.',
+                title: 'Entgeltbänder automatisch anlegen',
+                body: 'CompLens erkennt die job_grade-Werte aus Ihren importierten Daten und schlägt automatisch das passende Benennungsschema vor (G-Skala, L-Skala, TVöD, TV-L, ERA, E-Skala usw.). Per 1-Klick werden alle Entgeltgruppen angelegt und die Statistiken berechnet.',
+                tip: 'Sie können das Benennungsschema im Bereich Einstellungen → Entgeltbänder jederzeit anpassen.',
             },
             {
                 step: 3,
-                title: 'Bereichs-Heatmap',
-                body: 'Die Heatmap im Tab „Bereiche" zeigt farbcodiert die bereinigte Entgeltlücke je Abteilung und Jahr. Dunkelrot = Gap > 10%, Orange = 5–10%, Gelb = 2–5%, Grün = < 2%. Ideal für Fortschrittsberichte an Geschäftsführung oder Betriebsrat.',
+                title: 'Interne Statistiken & EU-Heatmap',
+                body: 'Für jede Entgeltgruppe berechnet CompLens intern: Min, P25, Median, P75, Max (Grundgehalt), getrennte ♀/♂ Mediane, Anzahl Beschäftigte (n), Intra-Lücke und Gesamtvergütungs-Median. Die EU Art. 9 Heatmap bewertet jede Gruppe binär: Grün = konform (< 5%), Rot = Handlungsbedarf (≥ 5%).',
+            },
+            {
+                step: 4,
+                title: 'Markt-Benchmark ergänzen',
+                body: 'Optional: Externe Marktdaten (z. B. Kienbaum, Radford, StepStone) per Gruppe eintragen (Quelle, Jahr, P25/P50/P75 extern). Diese erscheinen dann im Box-Plot-Diagramm als Vergleichsband.',
+            },
+            {
+                step: 5,
+                title: 'Entgeltbänder in Berichten',
+                body: 'Die Bandvisualisierung erscheint im Analyse-Tab „Entgeltbänder (Art. 9)", auf dem Dashboard (7. KPI-Karte), im PDF-Export als optionale Seite (aktivierbar in PDF-Optionen) und in der PPT-Präsentation als eigene Folie mit IQR-Diagramm.',
             },
         ],
         faqs: [
-            { q: 'Warum sehe ich keine Trendansicht?', a: 'Die Trendansicht erfordert mindestens 2 abgeschlossene Analysen. Führen Sie zunächst Analysen für mehrere Berichtsjahre durch (oder importieren Sie Daten aus vergangenen Jahren).' },
+            { q: 'Intra-Gruppen-Lücke vs. Gesamt-Gender-Pay-Gap — was ist der Unterschied?', a: 'Der Gesamt-Gap vergleicht alle Frauen und Männer im Unternehmen. Die Intra-Gruppen-Lücke (Art. 9) vergleicht Frauen und Männer innerhalb derselben Entgeltgruppe. Beides ist meldepflichtig; die Intra-Lücke ist schwerer zu begründen, da die Kohorte bereits vergleichbar ist.' },
+            { q: 'Was passiert bei Gruppen < 5 Personen?', a: 'Entgeltgruppen mit weniger als 5 Personen einer Geschlechtergruppe werden aus Datenschutzgründen anonymisiert. Sie erscheinen in der Heatmap grau.' },
+            { q: 'Muss ich Entgeltbänder manuell definieren?', a: 'Nein. CompLens erstellt Bänder automatisch aus Ihren importierten job_grade-Werten. Sie können Min/Max-Grenzen nachträglich anpassen. Manual overrides sind jederzeit möglich.' },
+        ],
+    },
+    {
+        id: 'trends',
+        icon: <TrendingUp size={20} />,
+        color: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
+        title: '9 · Trendanalyse',
+        subtitle: 'Entwicklung der Entgeltlücke über mehrere Jahre vergleichen',
+        steps: [
+            {
+                step: 1,
+                title: 'Datensätze für die Analyse auswählen',
+                body: 'Öffnen Sie Trendanalyse. Im Bereich „Datensatz-Auswahl" sehen Sie alle vorhandenen Analysen. Wählen Sie per Checkbox mindestens 2 Datensätze aus, die Sie vergleichen möchten. CompLens ermittelt automatisch sinnvolle Vorauswahl basierend auf Berichtsjahr.',
+                tip: 'Sie müssen mindestens 2 Datensätze auswählen, damit Trendlinien und Delta-Karten berechnet werden.',
+            },
+            {
+                step: 2,
+                title: 'Jahresvergleich vs. Vergleichsmodus',
+                body: 'Standard-Modus: Pro Berichtsjahr wird eine Linie dargestellt (ein Datensatz pro Jahr). Vergleichsmodus (Umschalter oben rechts): Jeder ausgewählte Datensatz wird als eigene Linie angezeigt — auch wenn mehrere Datensätze dasselbe Jahr abdecken. Ideal für A/B-Szenarien (z. B. mit und ohne bestimmte Abteilung).',
+                tip: 'Im Vergleichsmodus können Sie gezielt 2 Szenarien gegenüberstellen, z. B. „Datensatz 2024 Gesamt" vs. „Datensatz 2024 ohne Management".',
+            },
+            {
+                step: 3,
+                title: 'Delta-Karten interpretieren',
+                body: 'Jede Delta-Karte zeigt den aktuellen Wert und die Veränderung zum Vorjahreswert. Grün = Verbesserung (Gap gesunken), Rot = Verschlechterung (Gap gestiegen). Der Vergleich bezieht sich immer auf das unmittelbar vorherige Jahr in der Auswahl.',
+            },
+            {
+                step: 4,
+                title: 'Bereichs- und Entgeltgruppen-Heatmap',
+                body: 'Die Tabs „Bereiche" und „Gruppen" zeigen farbcodiert die bereinigte Entgeltlücke je Abteilung/Gruppe und Jahr. Dunkelrot = Gap > 10%, Orange = 5–10%, Gelb = 2–5%, Grün = < 2%. Ideal für Fortschrittsberichte an Geschäftsführung oder Betriebsrat.',
+            },
+        ],
+        faqs: [
+            { q: 'Warum sehe ich keine Trendansicht?', a: 'Sie müssen erst mindestens 2 Datensätze/Analysen in der Datensatz-Auswahl anklicken. Ohne Auswahl erscheint der Hinweis „Wählen Sie mindestens einen Datensatz aus".' },
+            { q: 'Kann ich denselben Datensatz zweimal hinzufügen?', a: 'Nein. Jeder Datensatz kann nur einmal ausgewählt werden. Wenn Sie Szenarien vergleichen möchten, importieren Sie denselben Datensatz mit unterschiedlichen Parametern (z. B. gefilterte Mitarbeitergruppen).' },
             { q: 'Werden Trends auch im Bericht angezeigt?', a: 'Trendverläufe sind aktuell nur in der interaktiven Trendansicht verfügbar. Eine Integration in den PDF-Bericht ist für eine zukünftige Version geplant.' },
         ],
     },
@@ -408,7 +457,7 @@ const MODULES: Module[] = [
         id: 'compliance',
         icon: <ShieldCheck size={20} />,
         color: 'linear-gradient(135deg,#10b981,#14b8a6)',
-        title: '9 · DSGVO & Compliance',
+        title: '10 · DSGVO & Compliance',
         subtitle: 'Datenschutz, AVV und Rechtsnachweise',
         steps: [
             {
@@ -437,7 +486,7 @@ const MODULES: Module[] = [
         id: 'settings',
         icon: <Settings size={20} />,
         color: 'linear-gradient(135deg,#64748b,#334155)',
-        title: '10 · Einstellungen & Team',
+        title: '11 · Einstellungen & Team',
         subtitle: 'Profil, Organisation und Abonnement verwalten',
         steps: [
             {
@@ -497,6 +546,7 @@ export default function HelpClient() {
     return (
         <div className="space-y-6">
             {showSupport && <SupportTicketModal onClose={() => setShowSupport(false)} />}
+
             {/* ── Header ── */}
             <div className="flex items-start justify-between gap-4 pb-5" style={{ borderBottom: '1px solid var(--color-pl-border)' }}>
                 <div>
@@ -509,6 +559,46 @@ export default function HelpClient() {
                     </p>
                 </div>
             </div>
+
+            {/* ── Demo Video Banner ── */}
+            <a
+                href="https://www.youtube.com/watch?v=s7Y346Gxklo"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-4 p-4 rounded-2xl group transition-all hover:-translate-y-0.5"
+                style={{
+                    background: 'linear-gradient(135deg, rgba(239,68,68,0.12), rgba(239,68,68,0.04))',
+                    border: '1px solid rgba(239,68,68,0.3)',
+                    textDecoration: 'none',
+                }}
+            >
+                {/* Play icon */}
+                <div
+                    className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105"
+                    style={{ background: 'linear-gradient(135deg,#ef4444,#dc2626)', boxShadow: '0 6px 18px rgba(239,68,68,0.35)' }}
+                >
+                    <PlayCircle size={24} className="text-white" />
+                </div>
+                {/* Text */}
+                <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold" style={{ color: 'var(--color-pl-text-primary)' }}>
+                        CompLens Demo ansehen
+                    </p>
+                    <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>
+                        8 Minuten · Vollständige Plattform-Demo · EU-Entgelttransparenz von Import bis Export
+                    </p>
+                </div>
+                {/* Badge */}
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <span
+                        className="text-xs font-semibold px-2.5 py-1 rounded-full"
+                        style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171' }}
+                    >
+                        YouTube
+                    </span>
+                    <ExternalLink size={14} style={{ color: 'var(--color-pl-text-tertiary)' }} />
+                </div>
+            </a>
 
             {/* ── Search ── */}
             <div className="relative max-w-lg">

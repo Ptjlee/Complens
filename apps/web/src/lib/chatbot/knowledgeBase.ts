@@ -178,17 +178,25 @@ FAQ:
 
 ── MODUL 8: TRENDANALYSE ──
 
-Wann verfügbar: Automatisch aktiv ab 2 abgeschlossenen Analysen mit verschiedenen Berichtsjahren.
-Zeigt: Liniendiagramme, Delta-Karten (vs. Vorjahr), Heatmaps für Bereiche + Entgeltgruppen.
+Datensätze auswählen (WICHTIG — neue UI):
+Trendanalyse öffnen → Bereich "Datensatz-Auswahl" → per Checkbox mindestens 2 Datensätze auswählen.
+Ohne Auswahl erscheint der Hinweis "Wählen Sie mindestens einen Datensatz aus".
+CompLens wählt automatisch eine sinnvolle Vorauswahl basierend auf Berichtsjahr vor.
+
+Jahresvergleich vs. Vergleichsmodus:
+Standard-Modus: Pro Berichtsjahr eine Linie (ein repräsentativer Datensatz pro Jahr).
+Vergleichsmodus (Umschalter oben rechts): Jeder ausgewählte Datensatz = eigene Linie,
+auch wenn mehrere Datensätze dasselbe Jahr abdecken. Ideal für A/B-Szenarien.
 
 Delta-Karten: Grün = Gap gesunken (Verbesserung), Rot = Gap gestiegen (Verschlechterung).
+Vergleich bezieht sich auf das unmittelbar vorherige Jahr in der Auswahl.
 
-Bereichs-Heatmap (Tab "Bereiche"):
+Bereichs-Heatmap (Tab "Bereiche") & Gruppen-Heatmap (Tab "Gruppen"):
 Farbkodiert: Dunkelrot (>10%), Orange (5–10%), Gelb (2–5%), Grün (<2%).
-Ideal für Fortschrittsberichte.
 
 FAQ:
-- Keine Trendansicht? → Mindestens 2 Analysen verschiedener Jahre erforderlich.
+- Keine Trendansicht? → Mindestens 2 Datensätze in der Datensatz-Auswahl anklicken.
+- Derselbe Datensatz kann nicht zweimal ausgewählt werden.
 - Trends aktuell nur interaktiv (nicht im PDF-Export, für zukünftige Version geplant).
 
 ── MODUL 9: DSGVO & COMPLIANCE ──
@@ -280,13 +288,19 @@ FAQ:
 - Analyse: Entgeltlücken berechnen und detailliert ansehen
 - Begründungen (via Analyse): Entgeltunterschiede dokumentieren
 - Maßnahmen: Entgeltlücken mit strukturierten Plänen schließen
-- Trendanalyse: Jahresüberschreitende Entwicklung der Lücken
+- Trendanalyse: Jahresüberschreitende Entwicklung der Lücken (Datensätze müssen manuell ausgewählt werden)
 - Entgeltbänder: Interne Gehaltsbänder + EU Art. 9 Intra-Gruppen-Compliance
 - Berichte: PDF/PPT-Exporte generieren
 - Auskunftsrecht: Mitarbeiterauskunft Art. 7 EU-RL 2023/970
 - DSGVO & Compliance: Datenschutz und Rechtsnachweise
 - Einstellungen: Profil, Team, Organisation, Abonnement
-- Hilfe: Diese Bedienungsanleitung
+- Hilfe: Bedienungsanleitung (enthält auch Demo-Video)
+
+══ DEMO-VIDEO ══
+Vollständige 8-minütige CompLens-Demo auf YouTube verfügbar:
+https://www.youtube.com/watch?v=s7Y346Gxklo
+Dort werden alle Module in Reihenfolge gezeigt: Import → Analyse → Entgeltbänder → Begründungen → Maßnahmen → Export.
+Nutzer können auf das Video verwiesen werden, wenn sie eine visuelle Übersicht suchen.
 `
 
 export default COMPLENS_KB
