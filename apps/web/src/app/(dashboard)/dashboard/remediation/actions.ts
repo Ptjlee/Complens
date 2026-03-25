@@ -21,15 +21,16 @@ export type PlanStatus = 'open' | 'in_progress' | 'completed' | 'dismissed'
 export type PlanHorizon = '6m' | '1y' | '1.5y' | '2-3y'
 
 export interface PlanStep {
-    id:            string          // client-generated UUID
-    step_number:   number
-    action_type:   ActionType
-    description:   string
-    horizon:       PlanHorizon
-    target_salary: number | null
-    responsible:   string
-    notes:         string
-    status:        PlanStatus
+    id:                  string          // client-generated UUID
+    step_number:         number
+    action_type:         ActionType
+    description:         string
+    horizon:             PlanHorizon
+    target_salary:        number | null   // base salary target (annual €)
+    target_variable_pay?: number | null   // variable/bonus target (annual €); undefined = no change
+    responsible:         string
+    notes:               string
+    status:              PlanStatus
 }
 
 // Horizon display labels — defined in RemediationClient.tsx (not here, 'use server' allows only async functions)
@@ -270,8 +271,9 @@ export async function generateRemediationAiPlan(
     reportingYear: number,
     standardWeeklyHours: number,
     analysisId: string,
-    residualPct = 0,             // pre-computed by client from explanation data
-    adjustedTargetHourly = 0,   // hourly rate that closes only the residual gap
+    residualPct = 0,
+    adjustedTargetHourly = 0,
+    planSteps: PlanStep[] = [],   // user-defined compensation steps
 ): Promise<{ text?: string; error?: string }> {
     const apiKey = process.env.GEMINI_API_KEY
     if (!apiKey) return { error: 'Gemini API-Key fehlt.' }
@@ -324,8 +326,62 @@ export async function generateRemediationAiPlan(
 
     const name = [flag.first_name, flag.last_name].filter(Boolean).join(' ') || `Mitarbeiter:in ${flag.employee_id}`
 
+    // ── Build plan-steps narrative (if user has defined steps) ──
+    const HORIZON_ORDER = ['6m', '1y', '1.5y', '2-3y']
+    const HORIZON_LABEL: Record<string, string> = {
+        '6m':   'Kurzfristig (≤ 6 Monate)',
+        '1y':   'Mittelfristig (ca. 1 Jahr)',
+        '1.5y': 'Mittelfristig (ca. 1,5 Jahre)',
+        '2-3y': 'Langfristig (2–3 Jahre)',
+    }
+    const ACTION_LABEL: Record<string, string> = {
+        salary_increase:      'Gehaltsanpassung',
+        job_reclassification: 'Neueinstufung',
+        promotion:            'Beförderung',
+        bonus_adjustment:     'Bonusanpassung',
+        review:               'Manuelle Prüfung',
+    }
+    const currentBase     = flag.hourly_rate * flag.imported_annualised_hours - flag.imported_variable_pay_eur
+    const currentVariable = flag.imported_variable_pay_eur
+    const currentTotal    = currentBase + currentVariable
+
+    let planSection = ''
+    if (planSteps.length > 0) {
+        const sorted = [...planSteps].sort(
+            (a, b) => HORIZON_ORDER.indexOf(a.horizon) - HORIZON_ORDER.indexOf(b.horizon)
+        )
+        let runBase = currentBase
+        let runVar  = currentVariable
+        const stepLines = sorted.map((s, i) => {
+            const prevBase = runBase
+            const prevVar  = runVar
+            if (s.action_type === 'bonus_adjustment') {
+                if (s.target_salary != null) runVar = Math.max(runVar, s.target_salary)
+            } else {
+                if (s.target_salary        != null) runBase = Math.max(runBase, s.target_salary)
+                if (s.target_variable_pay  != null) runVar  = Math.max(runVar,  s.target_variable_pay)
+            }
+            const baseLine = (s.action_type !== 'bonus_adjustment' && s.target_salary != null)
+                ? ` Grundgehalt: ${Math.round(prevBase).toLocaleString('de-DE')} € → ${s.target_salary.toLocaleString('de-DE')} € (+${(((s.target_salary / prevBase) - 1) * 100).toFixed(1)}%)`
+                : ''
+            const effVarTarget = s.action_type === 'bonus_adjustment' ? s.target_salary : (s.target_variable_pay ?? null)
+            const varLine = effVarTarget != null
+                ? ` Variabler Anteil: ${Math.round(prevVar).toLocaleString('de-DE')} € → ${Math.round(effVarTarget).toLocaleString('de-DE')} €`
+                : ''
+            const total = `Gesamt nach Schritt: ${(runBase + runVar).toLocaleString('de-DE', { maximumFractionDigits: 0 })} €/Jahr`
+            const resp  = s.responsible ? ` | Zuständig: ${s.responsible}` : ''
+            const desc  = s.description ? ` | Hinweis: "${s.description}"` : ''
+            return `  Schritt ${i + 1} [${HORIZON_LABEL[s.horizon] ?? s.horizon}] — ${ACTION_LABEL[s.action_type] ?? s.action_type}:${baseLine}${varLine}. ${total}${resp}${desc}`
+        })
+        const finalTotal = runBase + runVar
+        const changeVsNow = ((finalTotal / currentTotal - 1) * 100).toFixed(1)
+        stepLines.push(`  → ENDZUSTAND: Grundgehalt ${Math.round(runBase).toLocaleString('de-DE')} €, Variable ${Math.round(runVar).toLocaleString('de-DE')} €, Gesamt ${Math.round(finalTotal).toLocaleString('de-DE')} €/Jahr (${changeVsNow > '0' ? '+' : ''}${changeVsNow}% ggü. heute)`)
+        planSection = stepLines.join('\n')
+    }
+
+    // hasPlan is always true here (client guards the empty case)
     const prompt = `Du bist Experte für EU-Entgelttransparenz (Richtlinie 2023/970 / EntgTranspG).
-Erstelle einen konkreten Maßnahmenplan für folgende Situation:
+Der HR hat bereits einen konkreten Vergütungsplan definiert. Erstelle einen schriftlichen Maßnahmenplan, der AUSSCHLIEßLICH auf diesen definierten Schritten basiert. Erfinde keine eigenen Zahlen.
 
 Organisation: ${orgName}
 Berichtsjahr: ${reportingYear}
@@ -338,7 +394,7 @@ ENTGELTLÜCKENANALYSE:
 - Aktueller Bruttostundenlohn: ${flag.hourly_rate.toFixed(2)} €/h
 - Kohorten-Median (gleiche WIF-Gruppe): ${flag.cohort_median.toFixed(2)} €/h
 - Festgestellte Rohlücke: ${rawGapPct}% (${flag.severity === 'high' ? 'KRITISCH' : flag.severity === 'overpaid' ? 'ÜBERBEZAHLT' : 'ZU PRÜFEN'})
-- Aktuelles Jahresgehalt (annualisiert): ${Number(annualCurrent).toLocaleString('de-DE')} €
+- Aktuelle Jahresvergütung (annualisiert): ${Number(annualCurrent).toLocaleString('de-DE')} € (Basis: ${Math.round(currentBase).toLocaleString('de-DE')} €, Variable: ${Math.round(currentVariable).toLocaleString('de-DE')} €)
 - Kohortenmedian (Jahresbasis): ${Number(annualMedian).toLocaleString('de-DE')} €
 ${hasExplanation
     ? `- Durch HR-Begründung erklärter Anteil: ${(Number(rawGapPct) - residualPct).toFixed(1)}%
@@ -349,19 +405,23 @@ ${hasExplanation
 BEREITS ERFASSTE HR-BEGRÜNDUNG (aus Analyse-Modul):
 ${begSection}
 
+VOM HR DEFINIERTER VERGÜTUNGSPLAN (GRUNDLAGE DES MASSNAHMENPLANS):
+${planSection}
+
+WICHTIG: Verwende AUSSCHLIEßLICH diese Schritte und ihre Zahlen. Der Plan ist bereits entschieden — formuliere ihn als schriftlichen Maßnahmenplan.
 ${hasExplanation
-    ? `WICHTIG: Fokussiere den Maßnahmenplan AUSSCHLIEßLICH auf die verbleibende Restlücke von ${residualPct.toFixed(1)}%. Die durch HR-Begründung erklärten ${(Number(rawGapPct) - residualPct).toFixed(1)}% müssen NICHT angepasst werden. Das Zielgehalt bezieht sich nur auf den unerklärten Anteil.`
-    : 'WICHTIG: Keine Begründung erfasst. Empfehle sowohl sofortige Gehaltsanpassung als auch Erfassung einer Begründung gemäß Art. 10.'}
+    ? `Fokussiere außerdem auf die verbleibende Restlücke von ${residualPct.toFixed(1)}%. Die durch HR-Begründung erklärten ${(Number(rawGapPct) - residualPct).toFixed(1)}% müssen NICHT angepasst werden.`
+    : ''}
 
 Erstelle einen Maßnahmenplan mit diesen Abschnitten (Deutsch, sachlich, direkt):
 1. **Handlungsbedarf** — Rohlücke, erklärter Anteil, Restlücke (3 Zahlen klar nennen)
-2. **Empfohlene Maßnahme** — konkrete Entscheidung, bezogen nur auf die Restlücke
-3. **Zielgehalt** — spezifische EUR-Empfehlung basierend auf der Restlücke
-4. **Zeitplan** — bis wann umzusetzen (3/6/12 Monate), warum
-5. **Zuständigkeit** — Wer muss handeln
+2. **Geplante Maßnahmen** — Jeden definierten Schritt mit Zeithorizont, konkreten EUR-Beträgen (Basis+Variable) und Endzustand beschreiben
+3. **Zielgehalt** — Endzustand nach allen Schritten (Basis + Variable + Gesamt), Vergleich zu Kohortenmedian
+4. **Zeitplan** — Zeitstrahl der definierten Schritte (Horizonte aus Plan)
+5. **Zuständigkeit** — Verantwortliche aus den Schritten
 6. **Risiko bei Untätigkeit** — rechtlich / reputational
 
-Max. 320 Wörter. Keine Marketing-Sprache. Direkt und professionell.`
+Max. 380 Wörter. Keine Marketing-Sprache. Direkt und professionell.`
 
     try {
         const genAI = new GoogleGenerativeAI(apiKey)

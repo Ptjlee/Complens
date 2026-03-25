@@ -41,7 +41,7 @@ export default async function TrendsPage() {
         return {
             year:              r.reporting_year ?? ds?.reporting_year ?? new Date(a.created_at).getFullYear(),
             analysisId:        a.id,
-            analysisName:      a.name ?? ds?.name ?? 'Analyse',
+            analysisName:      ds?.name ?? a.name ?? 'Analyse',
             createdAt:         a.created_at,
             unadjustedMedian:  (o.unadjusted_median ?? 0) * 100,
             unadjustedMean:    (o.unadjusted_mean   ?? 0) * 100,

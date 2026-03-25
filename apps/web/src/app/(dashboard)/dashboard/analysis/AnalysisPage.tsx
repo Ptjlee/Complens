@@ -266,7 +266,9 @@ export default function AnalysisPageClient({
     function handleRerun() {
         if (!selectedId) return
         const ds  = datasets.find(d => d.id === selectedId)
-        const name = `${ds?.name ?? 'Datensatz'} · Analyse (${new Date().toLocaleDateString('de-DE')})`
+        // Name = user-provided dataset name (e.g. "PayData 2027") — no date suffix since
+        // analyses are already distinguished by created_at in the UI.
+        const name = ds?.name ?? `Analyse ${ds?.reporting_year ?? new Date().getFullYear()}`
         setRunError('')
         setShowRerunConfirm(false)
         startRunTransition(async () => {
@@ -315,7 +317,7 @@ export default function AnalysisPageClient({
                     <h1 className="text-xl font-bold" style={{ color: 'var(--color-pl-text-primary)' }}>Analyse</h1>
                     {analysis && (
                         <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                            {analysis.name} · {new Date(analysis.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        {selectedDs?.name ?? analysis.name} · {selectedDs?.reporting_year ?? ''} · {new Date(analysis.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: 'numeric' })}
                         </p>
                     )}
                 </div>

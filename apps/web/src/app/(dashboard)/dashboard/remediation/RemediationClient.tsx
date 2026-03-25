@@ -31,11 +31,11 @@ const SEVERITY_META: Record<string, { label: string; color: string; bg: string; 
 }
 
 const ACTION_TYPES: { value: ActionType; label: string }[] = [
-    { value: 'salary_increase',      label: 'Gehaltserhöhung' },
+    { value: 'salary_increase',      label: 'Gehaltsanpassung (Basis + Variable)' },
     { value: 'job_reclassification', label: 'Neueinstufung' },
     { value: 'promotion',            label: 'Beförderung' },
-    { value: 'bonus_adjustment',     label: 'Bonusanpassung' },
     { value: 'review',               label: 'Manuelle Prüfung' },
+    // 'bonus_adjustment' intentionally omitted — legacy type, still rendered for existing steps
 ]
 
 const STATUS_META: Record<PlanStatus, { label: string; icon: React.ReactNode; color: string }> = {
@@ -73,15 +73,16 @@ function newStepId() {
 
 function makeDefaultStep(n: number, horizon: PlanHorizon): PlanStep {
     return {
-        id:            newStepId(),
-        step_number:   n,
-        action_type:   'salary_increase',
-        description:   '',
+        id:                  newStepId(),
+        step_number:         n,
+        action_type:         'salary_increase',
+        description:         '',
         horizon,
-        target_salary: null,
-        responsible:   '',
-        notes:         '',
-        status:        'open',
+        target_salary:       null,
+        target_variable_pay: null,
+        responsible:         '',
+        notes:               '',
+        status:              'open',
     }
 }
 
@@ -146,6 +147,65 @@ function calcAnnualBase(flag: IndividualFlag): number {
     }
 }
 
+// ============================================================
+// Progression engine — single source of truth for multi-step plans
+// Applies steps in horizon order and tracks running base/variable
+// state BEFORE each step is applied. All UI and cost calculations
+// derive from this to ensure staircase consistency.
+// ============================================================
+
+const HORIZON_ORDER: PlanHorizon[] = ['6m', '1y', '1.5y', '2-3y']
+
+type StepState = {
+    runningBase:     number
+    runningVariable: number
+    runningTotal:    number
+    runningHourly:   number
+}
+
+function computeProgression(
+    flag: IndividualFlag,
+    steps: PlanStep[],
+): { stateBeforeStep: Map<string, StepState>; final: StepState } {
+    const sorted = [...steps].sort(
+        (a, b) => HORIZON_ORDER.indexOf(a.horizon) - HORIZON_ORDER.indexOf(b.horizon)
+    )
+    let runningBase     = calcAnnualBase(flag)
+    let runningVariable = flag.imported_variable_pay_eur
+    const stateBeforeStep = new Map<string, StepState>()
+
+    for (const step of sorted) {
+        const snap: StepState = {
+            runningBase,
+            runningVariable,
+            runningTotal:  runningBase + runningVariable,
+            runningHourly: (runningBase + runningVariable) / flag.imported_annualised_hours,
+        }
+        stateBeforeStep.set(step.id, snap)
+
+        if (step.action_type === 'bonus_adjustment') {
+            // LEGACY: old steps stored variable amount in target_salary
+            if (step.target_salary != null)
+                runningVariable = Math.max(runningVariable, step.target_salary)
+        } else {
+            // NEW: target_salary = base, target_variable_pay = variable (both optional)
+            if (step.target_salary != null)
+                runningBase = Math.max(runningBase, step.target_salary)
+            if (step.target_variable_pay != null)
+                runningVariable = Math.max(runningVariable, step.target_variable_pay)
+        }
+    }
+    return {
+        stateBeforeStep,
+        final: {
+            runningBase,
+            runningVariable,
+            runningTotal:  runningBase + runningVariable,
+            runningHourly: (runningBase + runningVariable) / flag.imported_annualised_hours,
+        },
+    }
+}
+
 function selectStyle(): React.CSSProperties {
     return {
         background: 'var(--color-pl-surface-raised)',
@@ -193,9 +253,11 @@ function BudgetSimPanel({
     // ── 1. Payroll baseline from raw import fields ──────────────
     const totalPayroll = allFlags.reduce((sum, f) => sum + calcAnnualTotal(f), 0)
 
-    // ── 2. Incremental cost per horizon bucket ──────────────────
-    // We only count steps that have a financial impact (salary_increase / bonus_adjustment)
-    // and have a target_salary set.
+    // ── 2. Cost per horizon bucket using progression engine ─────────────
+    // Each step's marginal cost = its target MINUS the running state
+    // immediately before it executes (stateBeforeStep). This handles both
+    // salary and bonus steps, including cross-type succession (bonus %
+    // computed on a post-raise base).
     const horizonCosts: Record<PlanHorizon, number> = { '6m': 0, '1y': 0, '1.5y': 0, '2-3y': 0 }
     let totalMeasureCost = 0
 
@@ -204,24 +266,39 @@ function BudgetSimPanel({
         const flag = allFlags.find(f => f.employee_id === plan.employee_id)
         if (!flag) continue
 
-        for (const step of plan.plan_steps) {
-            if (step.target_salary == null) continue
+        const { stateBeforeStep } = computeProgression(flag, plan.plan_steps)
+        const sortedSteps = [...plan.plan_steps].sort(
+            (a, b) => HORIZON_ORDER.indexOf(a.horizon) - HORIZON_ORDER.indexOf(b.horizon)
+        )
 
-            let delta = 0
-            if (step.action_type === 'salary_increase') {
-                // Delta = target annual salary MINUS current annual base (not total — avoids double-counting bonuses)
-                const currentBase = calcAnnualBase(flag)
-                delta = Math.max(0, step.target_salary - currentBase)
-            } else if (step.action_type === 'bonus_adjustment') {
-                // Delta = target bonus MINUS current bonus amount
-                delta = Math.max(0, step.target_salary - flag.imported_variable_pay_eur)
+        for (const step of sortedSteps) {
+            const before = stateBeforeStep.get(step.id)
+            if (!before) continue
+
+            if (step.action_type === 'bonus_adjustment') {
+                // LEGACY: variable stored in target_salary
+                const delta = step.target_salary != null
+                    ? Math.max(0, step.target_salary - before.runningVariable) : 0
+                if (delta > 0) {
+                    horizonCosts[step.horizon] = (horizonCosts[step.horizon] ?? 0) + delta
+                    totalMeasureCost += delta
+                }
+            } else {
+                // Base delta
+                const baseDelta = step.target_salary != null
+                    ? Math.max(0, step.target_salary - before.runningBase) : 0
+                // Variable delta
+                const varDelta = step.target_variable_pay != null
+                    ? Math.max(0, step.target_variable_pay - before.runningVariable) : 0
+                const total = baseDelta + varDelta
+                if (total > 0) {
+                    horizonCosts[step.horizon] = (horizonCosts[step.horizon] ?? 0) + total
+                    totalMeasureCost += total
+                }
             }
-
-            if (delta <= 0) continue
-            horizonCosts[step.horizon] = (horizonCosts[step.horizon] ?? 0) + delta
-            totalMeasureCost += delta
         }
     }
+
 
     const impactPct = totalPayroll > 0 ? (totalMeasureCost / totalPayroll) * 100 : 0
     const afterPayroll = totalPayroll + totalMeasureCost
@@ -418,11 +495,15 @@ function PlanRow({
             : flag.cohort_median
 
     async function handleGenerate() {
+        if (planSteps.length === 0) {
+            setAiError('Bitte erst mindestens einen Maßnahmenschritt planen (Kurzfristig / Mittelfristig / Langfristig), bevor der Plan generiert wird.')
+            return
+        }
         setAiLoading(true)
         setAiError('')
         const { text, error } = await generateRemediationAiPlan(
             flag, orgName, reportingYear, standardWeeklyHours, analysisId,
-            residualPct, adjustedTarget
+            residualPct, adjustedTarget, planSteps
         )
         setAiLoading(false)
         if (error) { setAiError(error); return }
@@ -607,28 +688,73 @@ function PlanRow({
             {/* Expanded panel */}
             {open && (
                 <div className="px-4 pb-4 pt-2 border-t space-y-4" style={{ borderColor: 'var(--color-pl-border)' }}>
-                    {/* Salary snapshot */}
-                    <div className={`grid gap-3 ${explanation ? 'grid-cols-4' : 'grid-cols-3'}`}>
-                        {[
-                            { label: 'Jahresgehalt',           value: eur(annualCurrent) },
-                            { label: 'Kohorte Median',         value: eur(annualMedian) },
-                            { label: 'Lücke (Kohorte)',        value: `${gapPct >= 0 ? '+' : ''}${gapPct.toFixed(1)}%`, color: sev.color },
-                            ...(explanation ? [{
-                                label: 'Verbleibende Restlücke',
-                                value: `${residualPct.toFixed(1)}%`,
-                                color: residualPct < 5 ? '#34d399' : '#ef4444',
-                                highlight: true,
-                            }] : []),
-                        ].map(({ label, value, color, highlight }) => (
-                            <div key={label} className="rounded-lg p-3" style={{
-                                background: highlight ? 'rgba(245,158,11,0.06)' : 'var(--color-pl-surface-raised)',
-                                border: `1px solid ${highlight ? 'rgba(245,158,11,0.25)' : 'var(--color-pl-border)'}`,
-                            }}>
-                                <p className="text-xs mb-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>{label}</p>
-                                <p className="text-sm font-semibold" style={{ color: color ?? 'var(--color-pl-text-primary)' }}>{value}</p>
+                    {/* Salary snapshot — 5 boxes */}
+                    {(() => {
+                        const hasPlanTarget = planSteps.some(s => s.target_salary != null)
+                        const { final } = computeProgression(flag, planSteps)
+                        const annualBase    = calcAnnualBase(flag)
+                        const annualVariable = flag.imported_variable_pay_eur
+                        const gapAfterPlan  = flag.imported_annualised_hours > 0
+                            ? ((final.runningHourly - flag.cohort_median) / flag.cohort_median) * 100
+                            : null
+                        return (
+                        <div className={`grid gap-3 grid-cols-3 ${hasPlanTarget || explanation ? 'md:grid-cols-5' : 'md:grid-cols-4'}`}>
+
+                            {/* Box 1: Jahresgehalt with base/variable split */}
+                            <div className="rounded-lg p-3" style={{ background: 'var(--color-pl-surface-raised)', border: '1px solid var(--color-pl-border)' }}>
+                                <p className="text-xs mb-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>Jahresvergütung</p>
+                                <p className="text-sm font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>{eur(annualCurrent)}</p>
+                                <div className="mt-1 space-y-0.5">
+                                    <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>&#9632; Grund: {eur(annualBase)}</p>
+                                    {annualVariable > 0 && (
+                                        <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>&#9632; Variabel: {eur(annualVariable)}</p>
+                                    )}
+                                </div>
                             </div>
-                        ))}
-                    </div>
+
+                            {/* Box 2: Kohorte Median */}
+                            <div className="rounded-lg p-3" style={{ background: 'var(--color-pl-surface-raised)', border: '1px solid var(--color-pl-border)' }}>
+                                <p className="text-xs mb-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>Kohorte Median</p>
+                                <p className="text-sm font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>{eur(annualMedian)}</p>
+                                <p className="text-xs mt-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>{eur(flag.cohort_median, 2)}/h</p>
+                            </div>
+
+                            {/* Box 3: Zielvergütung (final plan state) — only when plan has targets */}
+                            {hasPlanTarget && (
+                                <div className="rounded-lg p-3" style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.28)' }}>
+                                    <p className="text-xs mb-1" style={{ color: 'var(--color-pl-accent)' }}>Zielvergütung</p>
+                                    <p className="text-sm font-semibold" style={{ color: 'var(--color-pl-accent)' }}>{eur(final.runningTotal)}</p>
+                                    <div className="mt-1 space-y-0.5">
+                                        <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>&#9632; Grund: {eur(final.runningBase)}</p>
+                                        {final.runningVariable > 0 && (
+                                            <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>&#9632; Variabel: {eur(final.runningVariable)}</p>
+                                        )}
+                                        <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>→ {eur(final.runningHourly, 2)}/h</p>
+                                        {gapAfterPlan != null && (
+                                            <p className="text-xs font-semibold" style={{ color: Math.abs(gapAfterPlan) < 5 ? '#34d399' : '#ef4444' }}>
+                                                Lücke nach Plan: {gapAfterPlan >= 0 ? '+' : ''}{gapAfterPlan.toFixed(1)}%
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Box 4: Lücke */}
+                            <div className="rounded-lg p-3" style={{ background: 'var(--color-pl-surface-raised)', border: '1px solid var(--color-pl-border)' }}>
+                                <p className="text-xs mb-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>Lücke (Kohorte)</p>
+                                <p className="text-sm font-semibold" style={{ color: sev.color }}>{gapPct >= 0 ? '+' : ''}{gapPct.toFixed(1)}%</p>
+                            </div>
+
+                            {/* Box 5: Restlücke — conditional */}
+                            {explanation && (
+                                <div className="rounded-lg p-3" style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.25)' }}>
+                                    <p className="text-xs mb-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>Verbleibende Restlücke</p>
+                                    <p className="text-sm font-semibold" style={{ color: residualPct < 5 ? '#34d399' : '#ef4444' }}>{residualPct.toFixed(1)}%</p>
+                                </div>
+                            )}
+                        </div>
+                        )
+                    })()}
 
                     {/* ── Begründung aus Analyse-Modul ── */}
                     {explLoading && (
@@ -685,16 +811,25 @@ function PlanRow({
 
                     {/* AI plan section */}
                     <div>
-                        <div className="flex items-center justify-between mb-2">
-                            <p className="text-xs font-semibold" style={{ color: 'var(--color-pl-text-secondary)' }}>Maßnahmenplan</p>
+                        <div className="flex items-start justify-between mb-1">
+                            <div>
+                                <p className="text-xs font-semibold" style={{ color: 'var(--color-pl-text-secondary)' }}>Maßnahmenplan</p>
+                                <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>
+                                    {planSteps.length > 0
+                                        ? '„Plan generieren" fasst Ihre definierten Schritte als formellen Maßnahmenplan zusammen.'
+                                        : 'Definieren Sie zuerst Ihre Planschritte — dann fasst „Plan generieren" diese als Maßnahmenplan zusammen.'}
+                                </p>
+                            </div>
                             <button
                                 onClick={handleGenerate}
                                 disabled={aiLoading}
-                                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-all"
+                                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-all flex-shrink-0 ml-3"
                                 style={{
-                                    background: 'linear-gradient(135deg,rgba(99,102,241,0.15),rgba(139,92,246,0.15))',
-                                    border: '1px solid rgba(99,102,241,0.35)',
-                                    color: 'var(--color-pl-accent)',
+                                    background: planSteps.length > 0
+                                        ? 'linear-gradient(135deg,rgba(99,102,241,0.2),rgba(139,92,246,0.2))'
+                                        : 'rgba(99,102,241,0.07)',
+                                    border: `1px solid ${planSteps.length > 0 ? 'rgba(99,102,241,0.45)' : 'rgba(99,102,241,0.2)'}`,
+                                    color: planSteps.length > 0 ? 'var(--color-pl-accent)' : 'var(--color-pl-text-tertiary)',
                                 }}
                             >
                                 {aiLoading
@@ -702,21 +837,45 @@ function PlanRow({
                                     : <><Sparkles size={11} /> {aiText ? 'Neu generieren' : 'Plan generieren'}</>}
                             </button>
                         </div>
-                        {aiError && <p className="text-xs mb-2" style={{ color: '#f87171' }}>{aiError}</p>}
-                        <textarea
-                            rows={6}
-                            value={aiText}
-                            onChange={e => setAiText(e.target.value)}
-                            placeholder="Klicken Sie 'Plan generieren' oder geben Sie Ihren Plan manuell ein…"
-                            className="w-full text-xs rounded-lg resize-y p-3"
-                            style={{
-                                background: 'var(--color-pl-surface-raised)',
-                                border: '1px solid var(--color-pl-border)',
-                                color: 'var(--color-pl-text-primary)',
-                                lineHeight: 1.6,
-                                outline: 'none',
-                            }}
-                        />
+
+                        {aiError && <p className="text-xs mb-2 mt-1" style={{ color: '#f87171' }}>{aiError}</p>}
+
+                        {aiText ? (
+                            <textarea
+                                rows={6}
+                                value={aiText}
+                                onChange={e => setAiText(e.target.value)}
+                                className="w-full text-xs rounded-lg resize-y p-3 mt-2"
+                                style={{
+                                    background: 'var(--color-pl-surface-raised)',
+                                    border: '1px solid var(--color-pl-border)',
+                                    color: 'var(--color-pl-text-primary)',
+                                    lineHeight: 1.6,
+                                    outline: 'none',
+                                }}
+                            />
+                        ) : (
+                            <div className="mt-2 rounded-lg px-4 py-5 text-center"
+                                style={{ background: 'var(--color-pl-surface-raised)', border: '1px dashed var(--color-pl-border)' }}>
+                                {planSteps.length === 0 ? (<>
+                                    <p className="text-xs font-medium mb-1" style={{ color: 'var(--color-pl-text-secondary)' }}>
+                                        Erst Schritte planen, dann generieren
+                                    </p>
+                                    <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)', lineHeight: 1.6 }}>
+                                        Fügen Sie unten einen oder mehrere Planschritte hinzu (kurzfristig / mittelfristig / langfristig) mit den geplanten Vergütungsanpassungen.<br />
+                                        Sobald mindestens ein Schritt definiert ist, erstellt „<strong style={{ color: 'var(--color-pl-accent)' }}>Plan generieren</strong>" daraus automatisch einen formellen, dokumentierbaren Maßnahmenplan.
+                                    </p>
+                                </>) : (<>
+                                    <Sparkles size={16} className="mx-auto mb-2" style={{ color: 'var(--color-pl-accent)', opacity: 0.7 }} />
+                                    <p className="text-xs font-medium mb-1" style={{ color: 'var(--color-pl-text-secondary)' }}>
+                                        {planSteps.length} Schritt{planSteps.length > 1 ? 'e' : ''} definiert — bereit zur Generierung
+                                    </p>
+                                    <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
+                                        Klicken Sie auf „<strong style={{ color: 'var(--color-pl-accent)' }}>Plan generieren</strong>", um einen schriftlichen Maßnahmenplan auf Basis Ihrer Schritte zu erstellen.
+                                    </p>
+                                </>)}
+                            </div>
+                        )}
                     </div>
 
                     {/* Multi-step plan builder */}
@@ -815,147 +974,287 @@ function PlanRow({
                                             </div>
 
                                                                                         {/* Row 3: action-type-aware planning fields */}
-                                            {step.action_type === 'salary_increase' ? (<>
-                                                <div className="grid grid-cols-2 gap-2">
-                                                    <div>
-                                                        <label className="text-xs mb-1 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>Erhöhung %</label>
-                                                        <div className="relative">
-                                                            <input
-                                                                type="text" inputMode="decimal"
-                                                                value={pctStrings[step.id] !== undefined
-                                                                    ? pctStrings[step.id]
-                                                                    : step.target_salary
-                                                                        ? (((step.target_salary / annualCurrent) - 1) * 100).toFixed(1)
-                                                                        : ''}
-                                                                onChange={e => {
-                                                                    const raw = e.target.value
-                                                                    setPctStrings(s => ({ ...s, [step.id]: raw }))
-                                                                    const pct = parseFloat(raw.replace(',', '.'))
-                                                                    if (!isNaN(pct)) updateStep({ target_salary: Math.round(annualCurrent * (1 + pct / 100)) })
-                                                                    else if (raw.trim() === '') updateStep({ target_salary: null })
-                                                                }}
-                                                                onBlur={e => {
-                                                                    // Normalise display on blur
-                                                                    const pct = parseFloat(e.target.value.replace(',', '.'))
-                                                                    if (!isNaN(pct)) setPctStrings(s => ({ ...s, [step.id]: pct.toFixed(1) }))
-                                                                }}
-                                                                placeholder="z. B. 5"
-                                                                style={{ ...selectStyle(), paddingRight: '1.8rem' }}
-                                                            />
-                                                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs pointer-events-none"
-                                                                style={{ color: 'var(--color-pl-text-tertiary)' }}>%</span>
-                                                        </div>
-                                                    </div>
-                                                    <div>
-                                                        <label className="text-xs mb-1 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>Neues Zielgehalt (€/Jahr)</label>
-                                                        <input
-                                                            type="text"
-                                                            value={step.target_salary != null ? step.target_salary.toLocaleString('de-DE') : ''}
-                                                            onChange={e => {
-                                                             const v = e.target.value ? parseFloat(e.target.value.replace(/\./g,'').replace(',','.')) : null
-                                                             updateStep({ target_salary: v })
-                                                             setPctStrings(s => { const n = { ...s }; delete n[step.id]; return n })
-                                                         }}
-                                                            placeholder={eur(annualCurrent).replace(' €','')}
-                                                            style={{ ...selectStyle() }}
-                                                        />
-                                                    </div>
-                                                </div>
-                                                {step.target_salary != null && (
-                                                    <div className="flex items-center gap-2 text-xs px-3 py-2 rounded-lg"
-                                                        style={{ background: 'rgba(52,211,153,0.07)', border: '1px solid rgba(52,211,153,0.2)' }}>
-                                                        <span style={{ color: 'var(--color-pl-text-tertiary)' }}>Aktuell {eur(annualCurrent)}</span>
-                                                        <span style={{ color: '#34d399' }}>→</span>
-                                                        <span style={{ color: '#34d399', fontWeight: 700 }}>{eur(step.target_salary)}</span>
-                                                        <span style={{ color: 'var(--color-pl-text-tertiary)', marginLeft: 'auto' }}>
-                                                            +{(((step.target_salary / annualCurrent) - 1) * 100).toFixed(1)}%
-                                                        </span>
-                                                    </div>
-                                                )}
-                                                <div>
-                                                    <label className="text-xs mb-1 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>Verantwortliche Person</label>
-                                                    <input type="text" value={step.responsible} onChange={e => updateStep({ responsible: e.target.value })} placeholder="z. B. HR-Leitung" style={{ ...selectStyle() }} />
-                                                </div>
-                                            </>) : step.action_type === 'bonus_adjustment' ? (<>
+                                            {(step.action_type === 'salary_increase' || step.action_type === 'job_reclassification' || step.action_type === 'promotion') ? (<>
                                                 {(() => {
-                                                    const baseSalary = annualCurrent - flag.imported_variable_pay_eur
-                                                    const currentBonusPct = baseSalary > 0 ? (flag.imported_variable_pay_eur / baseSalary) * 100 : 0
-                                                    const newBonusPct = step.target_salary != null && baseSalary > 0
-                                                        ? (step.target_salary / baseSalary) * 100 : null
-                                                    return (<>
-                                                        <div className="flex items-center gap-3 px-3 py-2 rounded-lg text-xs"
-                                                            style={{ background: 'var(--color-pl-surface-raised)', border: '1px solid var(--color-pl-border)' }}>
-                                                            <span style={{ color: 'var(--color-pl-text-tertiary)' }}>Aktueller Bonus:</span>
-                                                            <span style={{ color: 'var(--color-pl-text-primary)', fontWeight: 700 }}>{eur(flag.imported_variable_pay_eur)}</span>
-                                                            {baseSalary > 0 && (
-                                                                <span style={{ color: 'var(--color-pl-text-tertiary)' }}>({currentBonusPct.toFixed(1)}% des Grundgehalts)</span>
-                                                            )}
-                                                        </div>
-                                                        <div className="grid grid-cols-2 gap-2">
-                                                            <div>
-                                                                <label className="text-xs mb-1 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>Neues Bonus-Ziel %</label>
-                                                                <div className="relative">
-                                                                    <input
-                                                                        type="text" inputMode="decimal"
-                                                                        value={pctStrings[`bonus_${step.id}`] !== undefined
-                                                                            ? pctStrings[`bonus_${step.id}`]
-                                                                            : newBonusPct != null ? newBonusPct.toFixed(1) : ''}
-                                                                        onChange={e => {
-                                                                            const raw = e.target.value
-                                                                            const key = `bonus_${step.id}`
-                                                                            setPctStrings(s => ({ ...s, [key]: raw }))
-                                                                            const pct = parseFloat(raw.replace(',', '.'))
-                                                                            if (!isNaN(pct)) updateStep({ target_salary: Math.round(baseSalary * pct / 100) })
-                                                                            else if (raw.trim() === '') updateStep({ target_salary: null })
-                                                                        }}
-                                                                        onBlur={e => {
-                                                                            const key = `bonus_${step.id}`
-                                                                            const pct = parseFloat(e.target.value.replace(',', '.'))
-                                                                            if (!isNaN(pct)) setPctStrings(s => ({ ...s, [key]: pct.toFixed(1) }))
-                                                                        }}
-                                                                        placeholder={currentBonusPct.toFixed(1)}
-                                                                        style={{ ...selectStyle(), paddingRight: '1.8rem' }}
-                                                                    />
-                                                                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs pointer-events-none"
-                                                                        style={{ color: 'var(--color-pl-text-tertiary)' }}>%</span>
+                                                    // Use progression: step's % is relative to the running base BEFORE this step
+                                                    const { stateBeforeStep } = computeProgression(flag, planSteps)
+                                                     const before = stateBeforeStep.get(step.id)
+                                                     const stepBase = before?.runningBase ?? annualCurrent
+                                                     const showPrevNote = before && before.runningBase > calcAnnualBase(flag)
+                                                     return (<>
+                                                    {showPrevNote && (
+                                                        <p className="text-xs px-3 py-1.5 rounded-lg" style={{ background: 'rgba(52,211,153,0.06)', color: 'var(--color-pl-text-tertiary)', border: '1px solid rgba(52,211,153,0.15)' }}>
+                                                            Basis nach Vorschritten: <strong style={{ color: '#34d399' }}>{eur(stepBase)}</strong>
+                                                        </p>
+                                                    )}
+
+                                                    {/* ── Compact 2-column: Grundgehalt │ Variables Entgelt ── */}
+                                                    {(() => {
+                                                        const bonusBase    = step.target_salary ?? stepBase
+                                                        const prevVariable = before?.runningVariable ?? flag.imported_variable_pay_eur
+                                                        const curBonusPct  = bonusBase > 0 ? (prevVariable / bonusBase) * 100 : 0
+                                                        const newBonusPct  = step.target_variable_pay != null && bonusBase > 0
+                                                            ? (step.target_variable_pay / bonusBase) * 100 : null
+
+                                                        const newBase      = step.target_salary     ?? stepBase
+                                                        const newVariable  = step.target_variable_pay ?? prevVariable
+                                                        const curTotal     = stepBase + prevVariable
+                                                        const newTotal     = newBase  + newVariable
+                                                        const totalDelta   = newTotal - curTotal
+                                                        const totalDeltaPct = curTotal > 0 ? (newTotal / curTotal - 1) * 100 : 0
+                                                        const hasAnyTarget = step.target_salary != null || step.target_variable_pay != null
+
+                                                        return (<>
+                                                        <div className="grid gap-3" style={{ gridTemplateColumns: '1fr 1px 1fr' }}>
+
+                                                            {/* LEFT: Grundgehalt */}
+                                                            <div className="space-y-1.5">
+                                                                <p className="text-xs font-semibold" style={{ color: 'var(--color-pl-text-secondary)' }}>
+                                                                    Grundgehalt <span style={{ fontWeight: 400, color: 'var(--color-pl-text-tertiary)' }}>· aktuell {eur(stepBase)}</span>
+                                                                </p>
+                                                                <div className="grid grid-cols-2 gap-1.5">
+                                                                    <div>
+                                                                        <label className="text-xs mb-0.5 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>Erhöhung %</label>
+                                                                        <div className="relative">
+                                                                            <input
+                                                                                type="text" inputMode="decimal"
+                                                                                value={pctStrings[step.id] !== undefined
+                                                                                    ? pctStrings[step.id]
+                                                                                    : step.target_salary
+                                                                                        ? (((step.target_salary / stepBase) - 1) * 100).toFixed(1)
+                                                                                        : ''}
+                                                                                onChange={e => {
+                                                                                    const raw = e.target.value
+                                                                                    setPctStrings(s => ({ ...s, [step.id]: raw }))
+                                                                                    const pct = parseFloat(raw.replace(',', '.'))
+                                                                                    if (!isNaN(pct)) updateStep({ target_salary: Math.round(stepBase * (1 + pct / 100)) })
+                                                                                    else if (raw.trim() === '') updateStep({ target_salary: null })
+                                                                                }}
+                                                                                onBlur={e => {
+                                                                                    const pct = parseFloat(e.target.value.replace(',', '.'))
+                                                                                    if (!isNaN(pct)) setPctStrings(s => ({ ...s, [step.id]: pct.toFixed(1) }))
+                                                                                }}
+                                                                                placeholder="z. B. 5"
+                                                                                style={{ ...selectStyle(), paddingRight: '1.8rem', fontSize: '0.75rem', padding: '0.35rem 1.8rem 0.35rem 0.6rem' }}
+                                                                            />
+                                                                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs pointer-events-none" style={{ color: 'var(--color-pl-text-tertiary)' }}>%</span>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div>
+                                                                        <label className="text-xs mb-0.5 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>Zielgehalt €/Jahr</label>
+                                                                        <input
+                                                                            type="text"
+                                                                            value={step.target_salary != null ? step.target_salary.toLocaleString('de-DE') : ''}
+                                                                            onChange={e => {
+                                                                                const v = e.target.value ? parseFloat(e.target.value.replace(/\./g,'').replace(',','.')) : null
+                                                                                updateStep({ target_salary: v })
+                                                                                setPctStrings(s => { const n = { ...s }; delete n[step.id]; return n })
+                                                                            }}
+                                                                            placeholder={eur(stepBase).replace(' €','')}
+                                                                            style={{ ...selectStyle(), fontSize: '0.75rem', padding: '0.35rem 0.6rem' }}
+                                                                        />
+                                                                    </div>
                                                                 </div>
+                                                                {step.target_salary != null && (
+                                                                    <div className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-md"
+                                                                        style={{ background: 'rgba(52,211,153,0.07)', border: '1px solid rgba(52,211,153,0.2)' }}>
+                                                                        <span style={{ color: 'var(--color-pl-text-tertiary)' }}>{eur(stepBase)}</span>
+                                                                        <span style={{ color: '#34d399' }}>→</span>
+                                                                        <span style={{ color: '#34d399', fontWeight: 700 }}>{eur(step.target_salary)}</span>
+                                                                        <span style={{ color: 'var(--color-pl-text-tertiary)', marginLeft: 'auto' }}>
+                                                                            +{(((step.target_salary / stepBase) - 1) * 100).toFixed(1)}%
+                                                                        </span>
+                                                                    </div>
+                                                                )}
                                                             </div>
-                                                            <div>
-                                                                <label className="text-xs mb-1 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>Neuer Bonusbetrag (€/Jahr)</label>
-                                                                <input
-                                                                    type="text"
-                                                                    value={step.target_salary != null ? step.target_salary.toLocaleString('de-DE') : ''}
-                                                                    onChange={e => {
-                                                                        const v = e.target.value ? parseFloat(e.target.value.replace(/\./g,'').replace(',','.')) : null
-                                                                        updateStep({ target_salary: v })
-                                                                        const key = `bonus_${step.id}`
-                                                                        setPctStrings(s => { const n = { ...s }; delete n[key]; return n })
-                                                                    }}
-                                                                    placeholder={eur(flag.imported_variable_pay_eur).replace(' €','')}
-                                                                    style={{ ...selectStyle() }}
-                                                                />
+
+                                                            {/* Divider */}
+                                                            <div style={{ background: 'var(--color-pl-border)' }} />
+
+                                                            {/* RIGHT: Variables Entgelt */}
+                                                            <div className="space-y-1.5">
+                                                                <p className="text-xs font-semibold" style={{ color: 'var(--color-pl-accent)' }}>
+                                                                    Variables Entgelt <span style={{ fontWeight: 400, color: 'var(--color-pl-text-tertiary)' }}>· {eur(prevVariable)} ({curBonusPct.toFixed(1)}%)</span>
+                                                                </p>
+                                                                <div className="grid grid-cols-2 gap-1.5">
+                                                                    <div>
+                                                                        <label className="text-xs mb-0.5 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>Bonus-Ziel %</label>
+                                                                        <div className="relative">
+                                                                            <input
+                                                                                type="text" inputMode="decimal"
+                                                                                value={pctStrings[`vp_${step.id}`] !== undefined
+                                                                                    ? pctStrings[`vp_${step.id}`]
+                                                                                    : newBonusPct != null ? newBonusPct.toFixed(1) : ''}
+                                                                                onChange={e => {
+                                                                                    const raw = e.target.value
+                                                                                    const key = `vp_${step.id}`
+                                                                                    setPctStrings(s => ({ ...s, [key]: raw }))
+                                                                                    const pct = parseFloat(raw.replace(',', '.'))
+                                                                                    if (!isNaN(pct)) updateStep({ target_variable_pay: Math.round(bonusBase * pct / 100) })
+                                                                                    else if (raw.trim() === '') updateStep({ target_variable_pay: null })
+                                                                                }}
+                                                                                onBlur={e => {
+                                                                                    const key = `vp_${step.id}`
+                                                                                    const pct = parseFloat(e.target.value.replace(',', '.'))
+                                                                                    if (!isNaN(pct)) setPctStrings(s => ({ ...s, [key]: pct.toFixed(1) }))
+                                                                                }}
+                                                                                placeholder={curBonusPct.toFixed(1)}
+                                                                                style={{ ...selectStyle(), paddingRight: '1.8rem', fontSize: '0.75rem', padding: '0.35rem 1.8rem 0.35rem 0.6rem' }}
+                                                                            />
+                                                                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs pointer-events-none" style={{ color: 'var(--color-pl-text-tertiary)' }}>%</span>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div>
+                                                                        <label className="text-xs mb-0.5 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>Bonusbetrag €/Jahr</label>
+                                                                        <input
+                                                                            type="text"
+                                                                            value={step.target_variable_pay != null ? step.target_variable_pay.toLocaleString('de-DE') : ''}
+                                                                            onChange={e => {
+                                                                                const v = e.target.value ? parseFloat(e.target.value.replace(/\./g,'').replace(',','.')) : null
+                                                                                updateStep({ target_variable_pay: v })
+                                                                                const key = `vp_${step.id}`
+                                                                                setPctStrings(s => { const n = { ...s }; delete n[key]; return n })
+                                                                            }}
+                                                                            placeholder={eur(prevVariable).replace(' €','')}
+                                                                            style={{ ...selectStyle(), fontSize: '0.75rem', padding: '0.35rem 0.6rem' }}
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                                {step.target_variable_pay != null && (
+                                                                    <div className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-md"
+                                                                        style={{
+                                                                            background: step.target_variable_pay >= prevVariable ? 'rgba(99,102,241,0.07)' : 'rgba(251,191,36,0.07)',
+                                                                            border: `1px solid ${step.target_variable_pay >= prevVariable ? 'rgba(99,102,241,0.25)' : 'rgba(251,191,36,0.2)'}`,
+                                                                        }}>
+                                                                        <span style={{ color: 'var(--color-pl-text-tertiary)' }}>{eur(prevVariable)}</span>
+                                                                        <span style={{ color: step.target_variable_pay >= prevVariable ? 'var(--color-pl-accent)' : '#fbbf24' }}>→</span>
+                                                                        <span style={{ fontWeight: 700, color: step.target_variable_pay >= prevVariable ? 'var(--color-pl-accent)' : '#fbbf24' }}>
+                                                                            {eur(step.target_variable_pay)}
+                                                                        </span>
+                                                                        <span style={{ color: 'var(--color-pl-text-tertiary)', marginLeft: 'auto' }}>
+                                                                            {newBonusPct != null ? `${newBonusPct.toFixed(1)}% v. Basis` : ''}
+                                                                        </span>
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         </div>
-                                                        {step.target_salary != null && (
+
+                                                        {/* ── Consolidated total ── */}
+                                                        {hasAnyTarget && (
                                                             <div className="flex items-center gap-2 text-xs px-3 py-2 rounded-lg"
-                                                                style={{
-                                                                    background: step.target_salary >= flag.imported_variable_pay_eur ? 'rgba(52,211,153,0.07)' : 'rgba(251,191,36,0.07)',
-                                                                    border: `1px solid ${step.target_salary >= flag.imported_variable_pay_eur ? 'rgba(52,211,153,0.2)' : 'rgba(251,191,36,0.2)'}`,
-                                                                }}>
-                                                                <span style={{ color: 'var(--color-pl-text-tertiary)' }}>Bisher {eur(flag.imported_variable_pay_eur)}</span>
-                                                                <span style={{ color: step.target_salary >= flag.imported_variable_pay_eur ? '#34d399' : '#fbbf24' }}>→</span>
-                                                                <span style={{ fontWeight: 700, color: step.target_salary >= flag.imported_variable_pay_eur ? '#34d399' : '#fbbf24' }}>
-                                                                    {eur(step.target_salary)}
-                                                                </span>
+                                                                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid var(--color-pl-border)' }}>
+                                                                <span style={{ color: 'var(--color-pl-text-tertiary)' }}>Gesamt:</span>
+                                                                <span style={{ color: 'var(--color-pl-text-secondary)' }}>{eur(curTotal)}</span>
+                                                                <span style={{ color: 'var(--color-pl-text-tertiary)' }}>→</span>
+                                                                <span style={{ color: '#34d399', fontWeight: 700 }}>{eur(newTotal)}</span>
                                                                 <span style={{ color: 'var(--color-pl-text-tertiary)', marginLeft: 'auto' }}>
-                                                                    {step.target_salary >= flag.imported_variable_pay_eur ? '+' : ''}{(step.target_salary - flag.imported_variable_pay_eur).toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} €
+                                                                    {totalDelta >= 0 ? '+' : ''}{eur(totalDelta)} · {totalDeltaPct >= 0 ? '+' : ''}{totalDeltaPct.toFixed(1)}%
                                                                 </span>
                                                             </div>
                                                         )}
+                                                        </>)
+                                                    })()}
+
+                                                    <div>
+                                                        <label className="text-xs mb-1 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>Verantwortliche Person</label>
+                                                        <input type="text" value={step.responsible} onChange={e => updateStep({ responsible: e.target.value })} placeholder="z. B. HR-Leitung" style={{ ...selectStyle() }} />
+                                                    </div>
+                                                    </>)
+                                                })()}
+                                            </>) : step.action_type === 'bonus_adjustment' ? (<>
+                                                {(() => {
+                                                    // Bonus % applied to the running base AFTER all prior salary steps
+                                                    const { stateBeforeStep } = computeProgression(flag, planSteps)
+                                                    const before = stateBeforeStep.get(step.id)
+                                                    const baseSalary     = before?.runningBase ?? calcAnnualBase(flag)
+                                                    const prevVariable   = before?.runningVariable ?? flag.imported_variable_pay_eur
+                                                    const currentBonusPct = baseSalary > 0 ? (prevVariable / baseSalary) * 100 : 0
+                                                    const newBonusPct     = step.target_salary != null && baseSalary > 0
+                                                        ? (step.target_salary / baseSalary) * 100 : null
+                                                    const showPrevNote = before && before.runningBase > calcAnnualBase(flag)
+                                                    return (<>
+                                                    {showPrevNote && (
+                                                        <p className="text-xs px-3 py-1.5 rounded-lg" style={{ background: 'rgba(99,102,241,0.06)', color: 'var(--color-pl-text-tertiary)', border: '1px solid rgba(99,102,241,0.2)' }}>
+                                                            Bonus-Basis nach Vorschritten: <strong style={{ color: 'var(--color-pl-accent)' }}>{eur(baseSalary)}</strong>
+                                                        </p>
+                                                    )}
+                                                    <div className="flex items-center gap-3 px-3 py-2 rounded-lg text-xs"
+                                                        style={{ background: 'var(--color-pl-surface-raised)', border: '1px solid var(--color-pl-border)' }}>
+                                                        <span style={{ color: 'var(--color-pl-text-tertiary)' }}>Aktueller Bonus:</span>
+                                                        <span style={{ color: 'var(--color-pl-text-primary)', fontWeight: 700 }}>{eur(prevVariable)}</span>
+                                                        {baseSalary > 0 && (
+                                                            <span style={{ color: 'var(--color-pl-text-tertiary)' }}>({currentBonusPct.toFixed(1)}% des Grundgehalts)</span>
+                                                        )}
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-2">
                                                         <div>
-                                                            <label className="text-xs mb-1 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>Verantwortliche Person</label>
-                                                            <input type="text" value={step.responsible} onChange={e => updateStep({ responsible: e.target.value })} placeholder="z. B. HR-Leitung" style={{ ...selectStyle() }} />
+                                                            <label className="text-xs mb-1 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>Neues Bonus-Ziel %</label>
+                                                            <div className="relative">
+                                                                <input
+                                                                    type="text" inputMode="decimal"
+                                                                    value={pctStrings[`bonus_${step.id}`] !== undefined
+                                                                        ? pctStrings[`bonus_${step.id}`]
+                                                                        : newBonusPct != null ? newBonusPct.toFixed(1) : ''}
+                                                                    onChange={e => {
+                                                                        const raw = e.target.value
+                                                                        const key = `bonus_${step.id}`
+                                                                        setPctStrings(s => ({ ...s, [key]: raw }))
+                                                                        const pct = parseFloat(raw.replace(',', '.'))
+                                                                        // % of the running base at THIS step (not today's base)
+                                                                        if (!isNaN(pct)) updateStep({ target_salary: Math.round(baseSalary * pct / 100) })
+                                                                        else if (raw.trim() === '') updateStep({ target_salary: null })
+                                                                    }}
+                                                                    onBlur={e => {
+                                                                        const key = `bonus_${step.id}`
+                                                                        const pct = parseFloat(e.target.value.replace(',', '.'))
+                                                                        if (!isNaN(pct)) setPctStrings(s => ({ ...s, [key]: pct.toFixed(1) }))
+                                                                    }}
+                                                                    placeholder={currentBonusPct.toFixed(1)}
+                                                                    style={{ ...selectStyle(), paddingRight: '1.8rem' }}
+                                                                />
+                                                                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs pointer-events-none"
+                                                                    style={{ color: 'var(--color-pl-text-tertiary)' }}>%</span>
+                                                            </div>
                                                         </div>
+                                                        <div>
+                                                            <label className="text-xs mb-1 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>Neuer Bonusbetrag (€/Jahr)</label>
+                                                            <input
+                                                                type="text"
+                                                                value={step.target_salary != null ? step.target_salary.toLocaleString('de-DE') : ''}
+                                                                onChange={e => {
+                                                                    const v = e.target.value ? parseFloat(e.target.value.replace(/\./g,'').replace(',','.')) : null
+                                                                    updateStep({ target_salary: v })
+                                                                    const key = `bonus_${step.id}`
+                                                                    setPctStrings(s => { const n = { ...s }; delete n[key]; return n })
+                                                                }}
+                                                                placeholder={eur(prevVariable).replace(' €','')}
+                                                                style={{ ...selectStyle() }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    {step.target_salary != null && (
+                                                        <div className="flex items-center gap-2 text-xs px-3 py-2 rounded-lg"
+                                                            style={{
+                                                                background: step.target_salary >= prevVariable ? 'rgba(52,211,153,0.07)' : 'rgba(251,191,36,0.07)',
+                                                                border: `1px solid ${step.target_salary >= prevVariable ? 'rgba(52,211,153,0.2)' : 'rgba(251,191,36,0.2)'}`,
+                                                            }}>
+                                                            <span style={{ color: 'var(--color-pl-text-tertiary)' }}>Bisher {eur(prevVariable)}</span>
+                                                            <span style={{ color: step.target_salary >= prevVariable ? '#34d399' : '#fbbf24' }}>→</span>
+                                                            <span style={{ fontWeight: 700, color: step.target_salary >= prevVariable ? '#34d399' : '#fbbf24' }}>
+                                                                {eur(step.target_salary)}
+                                                            </span>
+                                                            <span style={{ color: 'var(--color-pl-text-tertiary)', marginLeft: 'auto' }}>
+                                                                {step.target_salary >= prevVariable ? '+' : ''}{(step.target_salary - prevVariable).toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} €
+                                                            </span>
+                                                            {baseSalary > 0 && newBonusPct != null && (
+                                                                <span style={{ color: 'var(--color-pl-text-tertiary)' }}>({newBonusPct.toFixed(1)}% v. Basis)</span>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                    <div>
+                                                        <label className="text-xs mb-1 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>Verantwortliche Person</label>
+                                                        <input type="text" value={step.responsible} onChange={e => updateStep({ responsible: e.target.value })} placeholder="z. B. HR-Leitung" style={{ ...selectStyle() }} />
+                                                    </div>
                                                     </>)
                                                 })()}
                                             </>) : (
@@ -1185,7 +1484,7 @@ export default function RemediationClient({
                         {analyses.length === 0 && <option value="">Keine Analysen vorhanden</option>}
                         {analyses.map(a => (
                             <option key={a.id} value={a.id}>
-                                {a.name} ({a.datasets?.reporting_year ?? '?'})
+                                {a.datasets?.name ?? a.name} ({a.datasets?.reporting_year ?? '?'})
                             </option>
                         ))}
                     </select>
