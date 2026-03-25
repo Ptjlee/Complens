@@ -565,39 +565,36 @@ export default function HelpClient() {
                 href="https://www.youtube.com/watch?v=s7Y346Gxklo"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-4 p-4 rounded-2xl group transition-all hover:-translate-y-0.5"
+                className="flex items-center gap-3 px-4 py-3 rounded-xl group transition-all hover:opacity-80"
                 style={{
-                    background: 'linear-gradient(135deg, rgba(239,68,68,0.12), rgba(239,68,68,0.04))',
-                    border: '1px solid rgba(239,68,68,0.3)',
+                    background: 'var(--color-pl-surface)',
+                    border: '1px solid var(--color-pl-border)',
                     textDecoration: 'none',
                 }}
             >
-                {/* Play icon */}
+                {/* Play icon — neutral */}
                 <div
-                    className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105"
-                    style={{ background: 'linear-gradient(135deg,#ef4444,#dc2626)', boxShadow: '0 6px 18px rgba(239,68,68,0.35)' }}
+                    className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center"
+                    style={{ background: 'var(--color-pl-brand)', opacity: 0.85 }}
                 >
-                    <PlayCircle size={24} className="text-white" />
+                    <PlayCircle size={16} className="text-white" />
                 </div>
                 {/* Text */}
                 <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold" style={{ color: 'var(--color-pl-text-primary)' }}>
+                    <p className="text-sm font-medium" style={{ color: 'var(--color-pl-text-primary)' }}>
                         CompLens Demo ansehen
                     </p>
-                    <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                        8 Minuten · Vollständige Plattform-Demo · EU-Entgelttransparenz von Import bis Export
+                    <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
+                        8 Min. · Vollständige Plattform-Demo von Import bis Export
                     </p>
                 </div>
-                {/* Badge */}
-                <div className="flex items-center gap-1.5 flex-shrink-0">
-                    <span
-                        className="text-xs font-semibold px-2.5 py-1 rounded-full"
-                        style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171' }}
-                    >
-                        YouTube
-                    </span>
-                    <ExternalLink size={14} style={{ color: 'var(--color-pl-text-tertiary)' }} />
-                </div>
+                {/* YouTube badge only is red */}
+                <span
+                    className="text-xs font-semibold px-2.5 py-1 rounded-full flex-shrink-0"
+                    style={{ background: '#ef4444', color: '#fff' }}
+                >
+                    YouTube
+                </span>
             </a>
 
             {/* ── Search ── */}
