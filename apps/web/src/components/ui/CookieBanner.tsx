@@ -1,53 +1,27 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Cookie, ShieldCheck, X } from 'lucide-react'
+import { ShieldCheck } from 'lucide-react'
 
 export default function CookieBanner() {
     const [showBanner, setShowBanner] = useState(false)
 
     useEffect(() => {
-        // Read local storage on mount to check if user already consented
         const consent = localStorage.getItem('complens_cookie_consent')
         if (!consent) {
             setShowBanner(true)
-        } else if (consent === 'granted') {
-            // Re-apply granted status — gtag may not be loaded yet, so we poll
-            let attempts = 0
-            const apply = () => {
-                if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
-                    window.gtag('consent', 'update', {
-                        analytics_storage: 'granted',
-                        ad_storage: 'granted',
-                        ad_user_data: 'granted',
-                        ad_personalization: 'granted',
-                    })
-                } else if (attempts < 30) {
-                    // retry every 100ms for up to 3 seconds
-                    attempts++
-                    setTimeout(apply, 100)
-                }
-            }
-            apply()
         }
+        // GA loading is handled by GoogleAnalyticsLoader, which polls localStorage
     }, [])
 
     function handleAccept() {
         localStorage.setItem('complens_cookie_consent', 'granted')
-        if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
-            window.gtag('consent', 'update', {
-                analytics_storage: 'granted',
-                ad_storage: 'granted',
-                ad_user_data: 'granted',
-                ad_personalization: 'granted',
-            })
-        }
+        // GoogleAnalyticsLoader polls localStorage and will load GA automatically
         setShowBanner(false)
     }
 
     function handleReject() {
         localStorage.setItem('complens_cookie_consent', 'denied')
-        // It's already denied by default via RootLayout
         setShowBanner(false)
     }
 
