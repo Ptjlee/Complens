@@ -8,16 +8,16 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts')
 // allowlisted so legitimate app functionality is not blocked.
 const CSP = [
     "default-src 'self'",
-    // Scripts: self + Stripe (checkout iframe/popup) + Next.js hot reload (dev only)
-    "script-src 'self' 'unsafe-inline' https://js.stripe.com",
+    // Scripts: self + Stripe (checkout iframe/popup) + Google Analytics
+    "script-src 'self' 'unsafe-inline' https://js.stripe.com https://www.googletagmanager.com",
     // Styles: self + inline (Next.js CSS-in-JS, Tailwind) + Google Fonts
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     // Fonts
     "font-src 'self' https://fonts.gstatic.com data:",
     // Images: self + blob (PDF previews) + data URIs + Supabase storage
     `img-src 'self' blob: data: ${process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''}`,
-    // API connections: Supabase, Stripe, Google Gemini API
-    `connect-src 'self' ${process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''} wss://*.supabase.co https://api.stripe.com https://generativelanguage.googleapis.com`,
+    // API connections: Supabase, Stripe, Google Gemini API, Google Analytics
+    `connect-src 'self' ${process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''} wss://*.supabase.co https://api.stripe.com https://generativelanguage.googleapis.com https://www.google-analytics.com https://analytics.google.com https://www.googletagmanager.com`,
     // Stripe elements load in iframes
     "frame-src https://js.stripe.com https://hooks.stripe.com",
     // Workers: blob for PDF generation
