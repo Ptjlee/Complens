@@ -59,8 +59,12 @@ export default function Sidebar({ role }: { role?: 'admin' | 'viewer' }) {
                 borderColor: 'var(--color-pl-border)',
             }}
         >
-            {/* Logo */}
-            <div className="flex items-center gap-2.5 px-5 py-5 border-b" style={{ borderColor: 'var(--color-pl-border)' }}>
+            {/* Logo → links to main site */}
+            <a
+                href="https://complens.de"
+                className="flex items-center gap-2.5 px-5 py-5 border-b hover:opacity-80 transition-opacity"
+                style={{ borderColor: 'var(--color-pl-border)', textDecoration: 'none' }}
+            >
                 <Logo size={32} />
                 <div>
                     <div className="font-bold text-sm" style={{ color: 'var(--color-pl-text-primary)' }}>
@@ -70,7 +74,7 @@ export default function Sidebar({ role }: { role?: 'admin' | 'viewer' }) {
                         EU Entgelttransparenz
                     </div>
                 </div>
-            </div>
+            </a>
 
             {/* Main nav */}
             <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">

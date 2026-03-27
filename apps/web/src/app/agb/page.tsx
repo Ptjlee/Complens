@@ -16,10 +16,10 @@ export default function AgbPage() {
                 {/* Header */}
                 <div className="mb-10">
                     <BackButton />
-                    <div className="flex items-center gap-3 mb-6">
+                    <a href="https://complens.de" className="flex items-center gap-3 mb-6 hover:opacity-80 transition-opacity" style={{ textDecoration: 'none' }}>
                         <Logo size={32} />
                         <span className="font-bold text-xl" style={{ color: 'var(--color-pl-text-primary)' }}>CompLens</span>
-                    </div>
+                    </a>
                     <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--color-pl-text-primary)' }}>
                         Allgemeine Geschäftsbedingungen
                     </h1>

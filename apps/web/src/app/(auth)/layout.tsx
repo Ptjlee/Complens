@@ -8,8 +8,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                 className="hidden lg:flex flex-col justify-between w-[480px] flex-shrink-0 px-12 py-12 border-r"
                 style={{ borderColor: 'var(--color-pl-border)', background: 'var(--color-pl-surface)' }}
             >
-                {/* Logo */}
-                <div className="flex items-center gap-3">
+                {/* Logo → links to main site */}
+                <a href="https://complens.de" className="flex items-center gap-3 hover:opacity-80 transition-opacity" style={{ textDecoration: 'none' }}>
                     <Logo size={40} />
                     <div>
                         <div className="font-bold text-base" style={{ color: 'var(--color-pl-text-primary)' }}>
@@ -19,7 +19,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                             EU Entgelttransparenz
                         </div>
                     </div>
-                </div>
+                </a>
 
                 {/* Headline + value props */}
                 <div className="space-y-8">
