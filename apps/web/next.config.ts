@@ -17,7 +17,7 @@ const CSP = [
     // Images: self + blob (PDF previews) + data URIs + Supabase storage
     `img-src 'self' blob: data: ${process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''}`,
     // API connections: Supabase, Stripe, Google Gemini API, Google Analytics
-    `connect-src 'self' ${process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''} wss://*.supabase.co https://api.stripe.com https://generativelanguage.googleapis.com https://www.google-analytics.com https://analytics.google.com https://www.googletagmanager.com`,
+    `connect-src 'self' ${process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''} wss://*.supabase.co https://api.stripe.com https://generativelanguage.googleapis.com https://*.google-analytics.com https://analytics.google.com https://www.googletagmanager.com`,
     // Stripe elements load in iframes
     "frame-src https://js.stripe.com https://hooks.stripe.com",
     // Workers: blob for PDF generation
