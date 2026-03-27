@@ -12,15 +12,23 @@ export default function CookieBanner() {
         if (!consent) {
             setShowBanner(true)
         } else if (consent === 'granted') {
-            // Re-apply granted status on subsequent pages
-            if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
-                window.gtag('consent', 'update', {
-                    analytics_storage: 'granted',
-                    ad_storage: 'granted',
-                    ad_user_data: 'granted',
-                    ad_personalization: 'granted',
-                })
+            // Re-apply granted status — gtag may not be loaded yet, so we poll
+            let attempts = 0
+            const apply = () => {
+                if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
+                    window.gtag('consent', 'update', {
+                        analytics_storage: 'granted',
+                        ad_storage: 'granted',
+                        ad_user_data: 'granted',
+                        ad_personalization: 'granted',
+                    })
+                } else if (attempts < 30) {
+                    // retry every 100ms for up to 3 seconds
+                    attempts++
+                    setTimeout(apply, 100)
+                }
             }
+            apply()
         }
     }, [])
 
