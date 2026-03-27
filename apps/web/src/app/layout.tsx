@@ -4,7 +4,6 @@ import { NextIntlClientProvider } from 'next-intl'
 import { getLocale, getMessages } from 'next-intl/server'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import CookieBanner from '@/components/ui/CookieBanner'
-import GoogleAnalyticsLoader from '@/components/ui/GoogleAnalyticsLoader'
 import './globals.css'
 
 const inter = Inter({
@@ -59,6 +58,8 @@ export const metadata: Metadata = {
   },
 }
 
+const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID
+
 export default async function RootLayout({
   children,
 }: {
@@ -69,13 +70,47 @@ export default async function RootLayout({
 
   return (
     <html lang={locale} className={inter.variable} suppressHydrationWarning>
+      <head>
+        {GA_ID && (
+          <script
+            id="ga-consent-init"
+            dangerouslySetInnerHTML={{
+              __html: `
+(function(){
+  var GA_ID = '${GA_ID}';
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  window.gtag = gtag;
+
+  // Called by CookieBanner after user clicks 'Alle akzeptieren'
+  window.grantGA = function(){
+    if(document.getElementById('ga-script')) return;
+    var s = document.createElement('script');
+    s.id = 'ga-script';
+    s.async = true;
+    s.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID;
+    document.head.appendChild(s);
+    gtag('js', new Date());
+    gtag('config', GA_ID);
+  };
+
+  // If user already consented on a previous visit, load GA immediately
+  try {
+    if(localStorage.getItem('complens_cookie_consent') === 'granted'){
+      window.grantGA();
+    }
+  } catch(e){}
+})();
+              `,
+            }}
+          />
+        )}
+      </head>
       <body className="antialiased font-sans">
         <NextIntlClientProvider locale={locale} messages={messages}>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             {children}
             <CookieBanner />
-            {/* GA only loads after cookie consent is granted — no Consent Mode complexity */}
-            <GoogleAnalyticsLoader />
           </ThemeProvider>
         </NextIntlClientProvider>
       </body>

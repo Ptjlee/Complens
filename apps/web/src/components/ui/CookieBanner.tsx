@@ -16,7 +16,10 @@ export default function CookieBanner() {
 
     function handleAccept() {
         localStorage.setItem('complens_cookie_consent', 'granted')
-        // GoogleAnalyticsLoader polls localStorage and will load GA automatically
+        // Trigger GA script load (defined in layout.tsx <head> inline script)
+        if (typeof window !== 'undefined' && typeof (window as unknown as Record<string, unknown>)['grantGA'] === 'function') {
+            (window as unknown as Record<string, () => void>)['grantGA']()
+        }
         setShowBanner(false)
     }
 
