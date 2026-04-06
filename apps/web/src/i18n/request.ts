@@ -1,10 +1,13 @@
 import { getRequestConfig } from 'next-intl/server'
+import { cookies } from 'next/headers'
 
-// CompLens is a German-first product — always serve German messages.
-// If multi-language support is added later, derive locale from the DB
-// member.preferred_language column instead of a browser cookie.
+// CompLens reads the user's preferred language from the NEXT_LOCALE cookie.
+// The cookie is set by /api/profile/language and by the dashboard layout.
+// Falls back to 'de' (German-first product).
 export default getRequestConfig(async () => {
-    const locale = 'de'
+    const cookieStore = await cookies()
+    const raw = cookieStore.get('NEXT_LOCALE')?.value
+    const locale = raw === 'en' ? 'en' : 'de'
     return {
         locale,
         messages: (await import(`../../messages/${locale}.json`)).default,

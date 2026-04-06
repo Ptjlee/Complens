@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
+import { getTranslations } from 'next-intl/server'
+import { rateLimit, RATE_LIMITS } from '@/lib/api/rateLimit'
 
 const BUCKET   = 'support-attachments'
 const MAX_BYTES = 8 * 1024 * 1024 // 8 MB
@@ -18,6 +20,9 @@ const serviceClient = () =>
  * The ticketId is set after ticket creation; path is sent along during ticket POST.
  */
 export async function POST(req: NextRequest) {
+    const limited = rateLimit(req, RATE_LIMITS.form)
+    if (limited) return limited
+
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return new NextResponse('Unauthorized', { status: 401 })
@@ -30,7 +35,8 @@ export async function POST(req: NextRequest) {
     }
 
     if (file.size > MAX_BYTES) {
-        return NextResponse.json({ error: 'Datei zu groß (max. 8 MB).' }, { status: 413 })
+        const t = await getTranslations('errors')
+        return NextResponse.json({ error: t('fileTooLarge') }, { status: 413 })
     }
 
     // Allowed MIME types
@@ -41,8 +47,9 @@ export async function POST(req: NextRequest) {
         'application/zip',
     ]
     if (!ALLOWED.includes(file.type)) {
+        const t = await getTranslations('errors')
         return NextResponse.json(
-            { error: 'Dateityp nicht erlaubt (PNG, JPG, PDF, TXT, ZIP).' },
+            { error: t('fileTypeNotAllowed') },
             { status: 415 },
         )
     }

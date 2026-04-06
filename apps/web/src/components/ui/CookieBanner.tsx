@@ -1,9 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useTranslations } from 'next-intl'
 import { ShieldCheck } from 'lucide-react'
 
 export default function CookieBanner() {
+    const t = useTranslations('cookie')
     const [showBanner, setShowBanner] = useState(false)
 
     useEffect(() => {
@@ -32,7 +34,7 @@ export default function CookieBanner() {
 
     return (
         <div className="fixed bottom-0 left-0 right-0 z-[100] p-4 pointer-events-none flex justify-center">
-            <div 
+            <div
                 className="max-w-3xl w-full flex flex-col sm:flex-row items-center justify-between gap-6 px-6 py-5 rounded-2xl pointer-events-auto"
                 style={{
                     background: 'rgba(15, 15, 20, 0.95)',
@@ -47,28 +49,30 @@ export default function CookieBanner() {
                     </div>
                     <div>
                         <h3 className="font-bold text-sm text-white flex items-center gap-2">
-                            Ihre Privatsphäre ist uns wichtig
+                            {t('title')}
                         </h3>
                         <p className="text-xs text-[#94a3b8] mt-1 leading-relaxed max-w-lg">
-                            Wir verwenden Cookies zur Analyse unseres Traffics, um Ihr Nutzererlebnis stetig zu verbessern (Google Analytics). Mit einem Klick auf &bdquo;Alle akzeptieren&ldquo; stimmen Sie der Verwendung von Analyse-Cookies zu. Weitere Informationen finden Sie in unserer <a href="/privacy" className="text-[#38bdf8] hover:underline">Datenschutzerklärung</a>.
+                            {t.rich('body', {
+                                link: (chunks) => <a href="/privacy" className="text-[#38bdf8] hover:underline">{chunks}</a>,
+                            })}
                         </p>
                     </div>
                 </div>
-                
+
                 <div className="flex items-center gap-3 w-full sm:w-auto shrink-0 justify-end">
                     <button
                         onClick={handleReject}
                         className="text-xs font-semibold px-4 py-2.5 rounded-xl transition-all w-full sm:w-auto text-[#94a3b8] hover:text-white"
                         style={{ border: '1px solid rgba(255,255,255,0.1)' }}
                     >
-                        Ablehnen
+                        {t('reject')}
                     </button>
                     <button
                         onClick={handleAccept}
                         className="text-xs font-bold px-5 py-2.5 rounded-xl transition-all w-full sm:w-auto hover:brightness-110"
                         style={{ background: '#5b61ff', color: 'white', boxShadow: '0 4px 14px 0 rgba(91, 97, 255, 0.39)' }}
                     >
-                        Alle akzeptieren
+                        {t('accept')}
                     </button>
                 </div>
             </div>

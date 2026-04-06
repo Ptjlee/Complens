@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { createClient } from '@/lib/supabase/server'
 import { requireAiPlan } from '@/lib/api/planGuard'
 import type { AnalysisResult } from '@/lib/calculations/types'
-import COMPLENS_KB from '@/lib/chatbot/knowledgeBase'
+import { getKnowledgeBase } from '@/lib/chatbot/knowledgeBase'
+import { rateLimit, RATE_LIMITS } from '@/lib/api/rateLimit'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -30,32 +32,38 @@ function buildSystemPrompt(
     year: number,
     explanations: ExplanationRow[],
     remediationPlans: RemediationRow[],
+    locale: string,
 ): string {
     const o = result.overall
+    const en = locale === 'en'
 
     // Top 8 departments by absolute gap
     const deptLines = (result.by_department || [])
         .filter(d => !d.suppressed)
         .sort((a, b) => Math.abs(b.gap.adjusted_median ?? 0) - Math.abs(a.gap.adjusted_median ?? 0))
         .slice(0, 8)
-        .map(d => `  - ${d.department}: bereinigt ${pct(d.gap.adjusted_median)} | unbereinigt ${pct(d.gap.unadjusted_median)} | ${d.employee_count} MA | F: ${d.gap.female_count} / M: ${d.gap.male_count}`)
+        .map(d => en
+            ? `  - ${d.department}: adjusted ${pct(d.gap.adjusted_median)} | unadjusted ${pct(d.gap.unadjusted_median)} | ${d.employee_count} empl. | F: ${d.gap.female_count} / M: ${d.gap.male_count}`
+            : `  - ${d.department}: bereinigt ${pct(d.gap.adjusted_median)} | unbereinigt ${pct(d.gap.unadjusted_median)} | ${d.employee_count} MA | F: ${d.gap.female_count} / M: ${d.gap.male_count}`)
         .join('\n')
 
     // Top 8 grades
     const gradeLines = (result.by_grade || [])
         .filter(g => !g.suppressed)
         .slice(0, 8)
-        .map(g => `  - ${g.grade}: bereinigt ${pct(g.gap.adjusted_median)} | ${g.employee_count} MA`)
+        .map(g => en
+            ? `  - ${g.grade}: adjusted ${pct(g.gap.adjusted_median)} | ${g.employee_count} empl.`
+            : `  - ${g.grade}: bereinigt ${pct(g.gap.adjusted_median)} | ${g.employee_count} MA`)
         .join('\n')
 
     // Quartiles
     const qs = result.quartiles
     const quartileLines = qs ? [
-        `  Q1 (unterste 25%): F ${qs.q1?.female_pct ?? 0}% / M ${qs.q1?.male_pct ?? 0}%`,
+        `  Q1 (${en ? 'bottom' : 'unterste'} 25%): F ${qs.q1?.female_pct ?? 0}% / M ${qs.q1?.male_pct ?? 0}%`,
         `  Q2:                F ${qs.q2?.female_pct ?? 0}% / M ${qs.q2?.male_pct ?? 0}%`,
         `  Q3:                F ${qs.q3?.female_pct ?? 0}% / M ${qs.q3?.male_pct ?? 0}%`,
-        `  Q4 (oberste 25%):  F ${qs.q4?.female_pct ?? 0}% / M ${qs.q4?.male_pct ?? 0}%`,
-    ].join('\n') : '  Keine Daten'
+        `  Q4 (${en ? 'top' : 'oberste'} 25%):  F ${qs.q4?.female_pct ?? 0}% / M ${qs.q4?.male_pct ?? 0}%`,
+    ].join('\n') : (en ? '  No data' : '  Keine Daten')
 
     // Individual flags summary
     const flags = result.individual_flags || []
@@ -68,7 +76,9 @@ function buildSystemPrompt(
     const topFlags = flags
         .filter(f => f.severity === 'high')
         .slice(0, 5)
-        .map(f => `  - Entgeltgruppe ${f.job_grade}: Gap ${pct(f.gap_vs_gender_pct)} (${f.gender === 'female' ? 'weiblich' : 'männlich'}, ID: ${f.employee_id})`)
+        .map(f => en
+            ? `  - Pay grade ${f.job_grade}: Gap ${pct(f.gap_vs_gender_pct)} (${f.gender === 'female' ? 'female' : 'male'}, ID: ${f.employee_id})`
+            : `  - Entgeltgruppe ${f.job_grade}: Gap ${pct(f.gap_vs_gender_pct)} (${f.gender === 'female' ? 'weiblich' : 'männlich'}, ID: ${f.employee_id})`)
         .join('\n')
 
     // Explanations summary
@@ -79,19 +89,87 @@ function buildSystemPrompt(
     const explCategoryLines = (() => {
         const cats: Record<string, number> = {}
         for (const e of explanations.filter(x => x.status === 'explained')) {
-            const key = e.category_key ?? 'unbekannt'
+            const key = e.category_key ?? (en ? 'unknown' : 'unbekannt')
             cats[key] = (cats[key] ?? 0) + 1
         }
         return Object.entries(cats)
             .sort((a, b) => b[1] - a[1])
-            .map(([k, n]) => `  - ${k}: ${n} Fälle`)
-            .join('\n') || '  Keine Begründungen erfasst'
+            .map(([k, n]) => `  - ${k}: ${n} ${en ? 'cases' : 'Fälle'}`)
+            .join('\n') || (en ? '  No explanations recorded' : '  Keine Begründungen erfasst')
     })()
 
     // Remediation summary
     const remOpen      = remediationPlans.filter(r => r.status === 'open').length
     const remProgress  = remediationPlans.filter(r => r.status === 'in_progress').length
     const remDone      = remediationPlans.filter(r => r.status === 'completed').length
+
+    const kb = getKnowledgeBase(locale)
+
+    if (en) {
+        return [
+            `You are a specialised HR compliance assistant at ${orgName} for the EU Pay Transparency Directive 2023/970/EU.`,
+            'You have access to the full analysis results, all recorded explanations, and the remediation plan. Your tasks:',
+            '1. Explain and contextualise the numbers',
+            '2. Precisely identify legal obligations (with article references)',
+            '3. Provide concrete, prioritised recommendations for action',
+            '4. Suggest compliant formulations for pay gap explanations',
+            '5. Clarify reporting processes and deadlines',
+            '',
+            `═══ ANALYSIS CONTEXT: ${orgName} — Reporting Year ${year} ═══`,
+            '',
+            `Total employees: ${result.total_employees} (Women: ${o.female_count}, Men: ${o.male_count})`,
+            `WIF factors (for adjustment): ${(result.wif_factors_used || []).join(', ')}`,
+            `Reporting basis: gross hourly pay per Art. 3(1b) EU 2023/970`,
+            '',
+            '── OVERALL RESULT ──',
+            `Unadjusted pay gap (median):     ${pct(o.unadjusted_median)}`,
+            `Unadjusted pay gap (mean):       ${pct(o.unadjusted_mean)}`,
+            `Adjusted pay gap (median):       ${pct(o.adjusted_median)}   ← mandatory per Art. 9`,
+            `Adjusted pay gap (mean):         ${pct(o.adjusted_mean)}`,
+            `5% threshold exceeded: ${o.exceeds_5pct ? 'YES → Joint pay assessment per Art. 9(1c) required' : 'NO → Annual review per Art. 9(1a) recommended'}`,
+            '',
+            '── TOP DEPARTMENTS BY GAP ──',
+            deptLines || '  No data',
+            '',
+            '── PAY GRADES ──',
+            gradeLines || '  No data',
+            '',
+            '── QUARTILE DISTRIBUTION (female/male share per quartile) ──',
+            quartileLines,
+            '',
+            '── FLAGGED INDIVIDUAL CASES (anonymised) ──',
+            `Critical (> 20%): ${highFlags} persons`,
+            `Medium (10–20%):  ${medFlags} persons`,
+            `Minor (5–10%):    ${lowFlags} persons`,
+            `Overpaid:         ${overFlags} persons`,
+            highFlags > 0 ? `Top risk cases:\n${topFlags}` : '',
+            '',
+            '── EXPLANATIONS (Art. 10 / Art. 18) ──',
+            `Recorded & explained: ${explainedCount}`,
+            `Open / pending:       ${pendingCount}`,
+            `Dismissed:            ${dismissedCount}`,
+            `Most frequent categories:\n${explCategoryLines}`,
+            '',
+            '── REMEDIATION PLAN (Art. 11) ──',
+            `Open:          ${remOpen}`,
+            `In progress:   ${remProgress}`,
+            `Completed:     ${remDone}`,
+            '',
+            '── COMMUNICATION RULES ──',
+            '- ALWAYS respond in English, concisely and professionally',
+            '- Quote figures directly from the analysis context above',
+            '- Reference specific articles of Directive 2023/970/EU',
+            '- When action is needed: prioritised steps with concrete timelines',
+            '- For explanation formulations: suggest directive-compliant, objective HR texts',
+            '- Avoid marketing language and vagueness',
+            '- If something is outside the context, say so clearly and refer to support',
+            '- You have no real-time data — only the aggregates above. State this when relevant.',
+            '',
+            '── COMPLENS PRODUCT KNOWLEDGE ──',
+            'When the user asks how to use something in CompLens, use the following product knowledge:',
+            kb,
+        ].filter(Boolean).join('\n')
+    }
 
     return [
         `Du bist ein spezialisierter HR-Compliance-Assistent bei ${orgName} für die EU-Entgelttransparenzrichtlinie 2023/970/EU.`,
@@ -154,7 +232,7 @@ function buildSystemPrompt(
         '',
         '── COMPLENS PRODUKTWISSEN ──',
         'Wenn der Nutzer fragt wie er etwas in CompLens bedient, nutze das folgende Produktwissen:',
-        COMPLENS_KB,
+        kb,
     ].filter(Boolean).join('\n')
 }
 
@@ -219,7 +297,14 @@ export async function POST(
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> },
 ) {
+    const limited = rateLimit(req, RATE_LIMITS.ai)
+    if (limited) return limited
+
     const { id } = await params
+
+    // Locale
+    const store = await cookies()
+    const locale = store.get('NEXT_LOCALE')?.value === 'en' ? 'en' : 'de'
 
     // Auth + AI plan gate
     const guard = await requireAiPlan()
@@ -272,6 +357,7 @@ export async function POST(
         year,
         (explanations ?? []) as ExplanationRow[],
         (remediationPlans ?? []) as RemediationRow[],
+        locale,
     )
 
     // ── Log conversation topic (best-effort, async) ──

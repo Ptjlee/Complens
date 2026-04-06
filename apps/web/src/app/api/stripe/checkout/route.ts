@@ -3,6 +3,7 @@ import Stripe from 'stripe'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { parseBody } from '@/lib/api/parseBody'
+import { rateLimit, RATE_LIMITS } from '@/lib/api/rateLimit'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_dummy', {
     apiVersion: '2026-02-25.clover',
@@ -24,6 +25,9 @@ const CheckoutSchema = z.object({
  * Returns: { url: string } — redirect to Stripe Checkout
  */
 export async function POST(req: NextRequest) {
+    const limited = rateLimit(req, RATE_LIMITS.stripe)
+    if (limited) return limited
+
     try {
         const supabase = await createClient()
         const { data: { user } } = await supabase.auth.getUser()

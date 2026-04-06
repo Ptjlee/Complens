@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Layers, Users } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import type { AnalysisResult, DispersionPoint, GenderDistRow } from '@/lib/calculations/types'
 
 // ============================================================
@@ -23,14 +24,14 @@ const C_MALE = {
 // ============================================================
 // Quartile bar
 // ============================================================
-function QuartileBar({ label, female_pct, male_pct, count }: {
-    label: string; female_pct: number; male_pct: number; count: number
+function QuartileBar({ label, female_pct, male_pct, count, empAbbrev }: {
+    label: string; female_pct: number; male_pct: number; count: number; empAbbrev: string
 }) {
     return (
         <div>
             <div className="flex items-center justify-between mb-1">
                 <span className="text-xs font-medium" style={{ color: 'var(--color-pl-text-secondary)' }}>{label}</span>
-                <span className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>{count} MA</span>
+                <span className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>{count} {empAbbrev}</span>
             </div>
             <div className="flex h-4 rounded-full overflow-hidden gap-0.5">
                 <div className="transition-all duration-700 rounded-l-full"
@@ -49,13 +50,13 @@ function QuartileBar({ label, female_pct, male_pct, count }: {
 // ============================================================
 // Gender Distribution Stacked Bar row
 // ============================================================
-function GenderDistBar({ row }: { row: GenderDistRow }) {
+function GenderDistBar({ row, empAbbrev }: { row: GenderDistRow; empAbbrev: string }) {
     const other = Math.max(0, 100 - row.female_pct - row.male_pct)
     return (
         <div>
             <div className="flex items-center justify-between mb-1">
                 <span className="text-xs font-medium" style={{ color: 'var(--color-pl-text-secondary)' }}>{row.label}</span>
-                <span className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>{row.total} MA</span>
+                <span className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>{row.total} {empAbbrev}</span>
             </div>
             <div className="flex h-3 rounded-full overflow-hidden gap-px">
                 {row.female_pct > 0 && <div style={{ width: `${row.female_pct}%`, background: C_FEMALE.bar }} />}
@@ -71,9 +72,11 @@ function GenderDistBar({ row }: { row: GenderDistRow }) {
 }
 
 // ============================================================
-// Gender Distribution Card — toggle Ebene / Bereich
+// Gender Distribution Card — toggle Level / Department
 // ============================================================
 function GenderDistCard({ byGrade, byDept }: { byGrade: GenderDistRow[]; byDept: GenderDistRow[] }) {
+    const t = useTranslations('charts.genderDist')
+    const tC = useTranslations('charts')
     const [mode, setMode] = useState<'grade' | 'dept'>('grade')
     const rows = mode === 'grade' ? byGrade : byDept
     return (
@@ -82,7 +85,7 @@ function GenderDistCard({ byGrade, byDept }: { byGrade: GenderDistRow[]; byDept:
                 <div className="flex items-center gap-2">
                     <Users size={15} style={{ color: 'var(--color-pl-brand-light)' }} />
                     <h2 className="text-sm font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>
-                        Geschlechterverteilung
+                        {t('title')}
                     </h2>
                 </div>
                 <div className="flex rounded-lg overflow-hidden text-xs" style={{ border: '1px solid var(--color-pl-border)' }}>
@@ -91,20 +94,20 @@ function GenderDistCard({ byGrade, byDept }: { byGrade: GenderDistRow[]; byDept:
                             background: mode === m ? 'var(--theme-pl-action-border)' : 'transparent',
                             color:      mode === m ? 'var(--color-pl-brand-light)' : 'var(--color-pl-text-tertiary)',
                             fontWeight: mode === m ? 600 : 400,
-                        }}>{m === 'grade' ? 'Ebene' : 'Bereich'}</button>
+                        }}>{m === 'grade' ? t('grade') : t('dept')}</button>
                     ))}
                 </div>
             </div>
             <div className="space-y-3">
                 {rows.length === 0
-                    ? <p className="text-xs text-center py-6" style={{ color: 'var(--color-pl-text-tertiary)' }}>Keine Daten.</p>
-                    : rows.map(row => <GenderDistBar key={row.label} row={row} />)
+                    ? <p className="text-xs text-center py-6" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('noData')}</p>
+                    : rows.map(row => <GenderDistBar key={row.label} row={row} empAbbrev={tC('employeesAbbrev')} />)
                 }
             </div>
             <div className="flex gap-4 mt-3 pt-3" style={{ borderTop: '1px solid var(--color-pl-border)' }}>
-                <span className="text-xs flex items-center gap-1" style={{ color: C_FEMALE.solid }}><span>■</span> Frauen</span>
-                <span className="text-xs flex items-center gap-1" style={{ color: C_MALE.solid   }}><span>■</span> Männer</span>
-                <span className="text-xs flex items-center gap-1" style={{ color: 'var(--color-pl-text-tertiary)' }}><span>■</span> Sonstige</span>
+                <span className="text-xs flex items-center gap-1" style={{ color: C_FEMALE.solid }}><span>■</span> {t('female')}</span>
+                <span className="text-xs flex items-center gap-1" style={{ color: C_MALE.solid   }}><span>■</span> {t('male')}</span>
+                <span className="text-xs flex items-center gap-1" style={{ color: 'var(--color-pl-text-tertiary)' }}><span>■</span> {t('other')}</span>
             </div>
         </div>
     )
@@ -122,6 +125,7 @@ const TBtn = ({ label, active, onClick }: { label: string; active: boolean; onCl
 // Salary Comparison Bar Chart — pay tier + annual/hourly toggles
 // ============================================================
 function SalaryComparisonCard({ results }: { results: AnalysisResult }) {
+    const t = useTranslations('charts.salaryComparison')
     const o     = results.overall
     const SCALE = (results.standard_weekly_hours ?? 40) * 52
 
@@ -148,17 +152,17 @@ function SalaryComparisonCard({ results }: { results: AnalysisResult }) {
 
     const groups = [
         {
-            key: 'median', title: 'Median', gapPct: gapMedPct,
+            key: 'median', title: t('median'), gapPct: gapMedPct,
             rows: [
-                { label: 'Männer', value: toDisplay(maleMedH),   color: C_MALE.bar,   count: o.male_count   },
-                { label: 'Frauen', value: toDisplay(femaleMedH), color: C_FEMALE.bar, count: o.female_count },
+                { label: t('male'), value: toDisplay(maleMedH),   color: C_MALE.bar,   count: o.male_count   },
+                { label: t('female'), value: toDisplay(femaleMedH), color: C_FEMALE.bar, count: o.female_count },
             ],
         },
         {
-            key: 'mean', title: 'Mittelwert', gapPct: gapMeanPct,
+            key: 'mean', title: t('mean'), gapPct: gapMeanPct,
             rows: [
-                { label: 'Männer', value: toDisplay(maleMeanH),   color: C_MALE.bar,   count: o.male_count   },
-                { label: 'Frauen', value: toDisplay(femaleMeanH), color: C_FEMALE.bar, count: o.female_count },
+                { label: t('male'), value: toDisplay(maleMeanH),   color: C_MALE.bar,   count: o.male_count   },
+                { label: t('female'), value: toDisplay(femaleMeanH), color: C_FEMALE.bar, count: o.female_count },
             ],
         },
     ]
@@ -178,30 +182,30 @@ function SalaryComparisonCard({ results }: { results: AnalysisResult }) {
             <div className="flex items-start justify-between mb-4">
                 <div>
                     <h2 className="text-sm font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>
-                        Gehalt — Männer vs. Frauen
+                        {t('title')}
                     </h2>
                     <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                        {"Median & Mittelwert · "}
-                        <span style={{ color: 'var(--color-pl-accent)' }}>Lückenberechnung basiert auf Gesamtvergütung</span>
+                        {t('subtitle')}
+                        <span style={{ color: 'var(--color-pl-accent)' }}>{t('gapBasedOnTotal')}</span>
                         {' (EU Art. 3 RL 2023/970)'}
                     </p>
                 </div>
                 <div className="flex gap-3 text-xs flex-shrink-0 items-center">
-                    <span className="flex items-center gap-1" style={{ color: C_MALE.solid   }}><span>■</span> Männer</span>
-                    <span className="flex items-center gap-1" style={{ color: C_FEMALE.solid }}><span>■</span> Frauen</span>
+                    <span className="flex items-center gap-1" style={{ color: C_MALE.solid   }}><span>■</span> {t('male')}</span>
+                    <span className="flex items-center gap-1" style={{ color: C_FEMALE.solid }}><span>■</span> {t('female')}</span>
                 </div>
             </div>
 
             {/* Toggle row: tier left, unit right */}
             <div className="flex items-center gap-2 mb-4">
                 <div className="flex rounded-lg overflow-hidden text-xs" style={{ border: '1px solid var(--color-pl-border)' }}>
-                    <TBtn label="Basis"           active={tier==='base_only'} onClick={()=>setTier('base_only')} />
-                    <TBtn label="Gesamtvergütung" active={tier==='total'}     onClick={()=>setTier('total')} />
+                    <TBtn label={t('basis')}           active={tier==='base_only'} onClick={()=>setTier('base_only')} />
+                    <TBtn label={t('totalComp')} active={tier==='total'}     onClick={()=>setTier('total')} />
                 </div>
                 <div className="flex-1" />
                 <div className="flex rounded-lg overflow-hidden text-xs" style={{ border: '1px solid var(--color-pl-border)' }}>
-                    <TBtn label="Jährlich"  active={unit==='annual'} onClick={()=>setUnit('annual')} />
-                    <TBtn label="Stündlich" active={unit==='hourly'} onClick={()=>setUnit('hourly')} />
+                    <TBtn label={t('annual')}  active={unit==='annual'} onClick={()=>setUnit('annual')} />
+                    <TBtn label={t('hourly')} active={unit==='hourly'} onClick={()=>setUnit('hourly')} />
                 </div>
             </div>
 
@@ -218,7 +222,7 @@ function SalaryComparisonCard({ results }: { results: AnalysisResult }) {
                                 color:      Math.abs(group.gapPct) >= 5 ? '#ef4444' : 'var(--color-pl-green)',
                                 border:     `1px solid ${Math.abs(group.gapPct) >= 5 ? 'rgba(239,68,68,0.3)' : 'rgba(52,211,153,0.25)'}`,
                             }}>
-                                Lücke {group.gapPct >= 0 ? '+' : ''}{group.gapPct.toFixed(1)}%
+                                {t('gap', { sign: group.gapPct >= 0 ? '+' : '', pct: group.gapPct.toFixed(1) })}
                             </span>
                         </div>
                         <div className="space-y-1.5">
@@ -250,8 +254,8 @@ function SalaryComparisonCard({ results }: { results: AnalysisResult }) {
             {/* Footnote */}
             <p className="text-xs pt-3" style={{ borderTop: '1px solid var(--color-pl-border)', color: 'var(--color-pl-text-tertiary)' }}>
                 {tier === 'base_only'
-                    ? 'Basis: Nur Grundgehalt (ohne Bonus, Überstunden & Sachleistungen) — die Lückenprozente beziehen sich auf die Gesamtvergütung.'
-                    : 'Gesamtvergütung: Grundgehalt + variable Vergütung + Überstunden & Sachleistungen — EU Art. 3 konform.'}
+                    ? t('footnoteBase')
+                    : t('footnoteTotal')}
             </p>
         </div>
     )
@@ -261,6 +265,8 @@ function SalaryComparisonCard({ results }: { results: AnalysisResult }) {
 // Pay Gap Breakdown — toggle Level / Bereich
 // ============================================================
 function PayGapBreakdownCard({ results }: { results: AnalysisResult }) {
+    const t = useTranslations('charts.payGapBreakdown')
+    const tC = useTranslations('charts')
     const [mode, setMode] = useState<'grade' | 'dept'>('grade')
     const rows = mode === 'grade'
         ? results.by_grade.map(g => ({
@@ -286,7 +292,7 @@ function PayGapBreakdownCard({ results }: { results: AnalysisResult }) {
                 <div className="flex items-center gap-2">
                     <Layers size={15} style={{ color: 'var(--color-pl-brand-light)' }} />
                     <h2 className="text-sm font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>
-                        Entgeltlücke nach {mode === 'grade' ? 'Vergütungsebene' : 'Bereich'}
+                        {t('title', { dimension: mode === 'grade' ? t('grade') : t('dept') })}
                     </h2>
                 </div>
                 <div className="flex rounded-lg overflow-hidden text-xs" style={{ border: '1px solid var(--color-pl-border)' }}>
@@ -295,14 +301,14 @@ function PayGapBreakdownCard({ results }: { results: AnalysisResult }) {
                             background: mode === m ? 'var(--theme-pl-action-border)' : 'transparent',
                             color:      mode === m ? 'var(--color-pl-brand-light)' : 'var(--color-pl-text-tertiary)',
                             fontWeight: mode === m ? 600 : 400,
-                        }}>{m === 'grade' ? 'Ebene' : 'Bereich'}</button>
+                        }}>{m === 'grade' ? t('toggleGrade') : t('toggleDept')}</button>
                     ))}
                 </div>
             </div>
             <div className="divide-y" style={{ borderColor: 'var(--color-pl-border)' }}>
                 {rows.length === 0 ? (
                     <div className="px-5 py-6 text-sm text-center" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                        Keine Daten vorhanden.
+                        {t('noData')}
                     </div>
                 ) : rows.map(row => {
                     const color = gapColor(row.gapPct, row.suppressed)
@@ -313,7 +319,7 @@ function PayGapBreakdownCard({ results }: { results: AnalysisResult }) {
                                 <div>
                                     <p className="text-sm font-medium" style={{ color: 'var(--color-pl-text-primary)' }}>{row.label}</p>
                                     <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                                        {row.count} MA{row.suppressed && ' · anonymisiert'}
+                                        {row.count} {tC('employeesAbbrev')}{row.suppressed && ' · ' + t('anonymised')}
                                     </p>
                                 </div>
                                 <span className="text-sm font-bold ml-4" style={{ color }}>
@@ -331,7 +337,7 @@ function PayGapBreakdownCard({ results }: { results: AnalysisResult }) {
                 })}
             </div>
             <div className="px-5 py-2 text-xs" style={{ color: 'var(--color-pl-text-tertiary)', borderTop: '1px solid var(--color-pl-border)' }}>
-                Bereinigter Median Gender Pay Gap (WIF). Gruppen &lt;5 MA anonymisiert.
+                {t('footnote')}
             </div>
         </div>
     )
@@ -352,28 +358,30 @@ function arrAvg(arr: number[]): number | null {
 }
 
 type SeriesKey = 'dots_male' | 'dots_female' | 'line_med_male' | 'line_avg_male' | 'line_med_female' | 'line_avg_female'
-const SERIES_META: { key: SeriesKey; label: string; color: string; dashArray?: string; dot: boolean }[] = [
-    { key: 'dots_male',       label: 'Männer',        color: C_MALE.dot,    dot: true  },
-    { key: 'dots_female',     label: 'Frauen',         color: C_FEMALE.dot,  dot: true  },
-    { key: 'line_med_male',   label: 'Median Männer',  color: C_MALE.solid,  dot: false },
-    { key: 'line_avg_male',   label: 'Mittelwert Männer', color: C_MALE.light,  dot: false, dashArray: '6 3' },
-    { key: 'line_med_female', label: 'Median Frauen',  color: C_FEMALE.solid,dot: false },
-    { key: 'line_avg_female', label: 'Mittelwert Frauen', color: C_FEMALE.light, dot: false, dashArray: '6 3' },
+const SERIES_META_KEYS: { key: SeriesKey; labelKey: string; color: string; dashArray?: string; dot: boolean }[] = [
+    { key: 'dots_male',       labelKey: 'male',        color: C_MALE.dot,    dot: true  },
+    { key: 'dots_female',     labelKey: 'female',       color: C_FEMALE.dot,  dot: true  },
+    { key: 'line_med_male',   labelKey: 'medianMale',   color: C_MALE.solid,  dot: false },
+    { key: 'line_avg_male',   labelKey: 'meanMale',     color: C_MALE.light,  dot: false, dashArray: '6 3' },
+    { key: 'line_med_female', labelKey: 'medianFemale', color: C_FEMALE.solid,dot: false },
+    { key: 'line_avg_female', labelKey: 'meanFemale',   color: C_FEMALE.light, dot: false, dashArray: '6 3' },
 ]
 
 // ============================================================
 // Dispersion Card — full-width scatter + filterable lines
 // ============================================================
 function DispersionCard({ points }: { points: DispersionPoint[] }) {
+    const t = useTranslations('charts.dispersion')
+    const seriesMeta = SERIES_META_KEYS.map(s => ({ ...s, label: t(s.labelKey as any) }))
     const [mode,    setMode]    = useState<'grade' | 'dept'>('grade')
     const [visible, setVisible] = useState<Set<SeriesKey>>(
-        new Set(SERIES_META.map(s => s.key) as SeriesKey[])
+        new Set(SERIES_META_KEYS.map(s => s.key) as SeriesKey[])
     )
     const toggleSeries = (key: SeriesKey) =>
         setVisible(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n })
 
     const getKey = (p: DispersionPoint) =>
-        mode === 'grade' ? (p.grade ?? 'Unbekannt') : (p.department ?? 'Unbekannt')
+        mode === 'grade' ? (p.grade ?? '—') : (p.department ?? '—')
 
     const groups = [...new Set(points.map(getKey))].sort()
 
@@ -422,7 +430,7 @@ function DispersionCard({ points }: { points: DispersionPoint[] }) {
         <div className="glass-card p-5">
             <div className="flex items-center justify-between mb-3">
                 <h2 className="text-sm font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>
-                    Gehaltsverteilung nach {mode === 'grade' ? 'Ebene' : 'Bereich'}
+                    {t('title', { dimension: mode === 'grade' ? t('grade') : t('dept') })}
                 </h2>
                 <div className="flex rounded-lg overflow-hidden text-xs" style={{ border: '1px solid var(--color-pl-border)' }}>
                     {(['grade','dept'] as const).map(m => (
@@ -430,14 +438,14 @@ function DispersionCard({ points }: { points: DispersionPoint[] }) {
                             background: mode===m ? 'var(--theme-pl-action-border)' : 'transparent',
                             color:      mode===m ? 'var(--color-pl-brand-light)' : 'var(--color-pl-text-tertiary)',
                             fontWeight: mode===m ? 600 : 400,
-                        }}>{m==='grade' ? 'Ebene' : 'Bereich'}</button>
+                        }}>{m==='grade' ? t('grade') : t('dept')}</button>
                     ))}
                 </div>
             </div>
 
             {groups.length === 0 ? (
                 <p className="text-xs text-center py-8" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                    Keine Daten (Mindestgröße pro Gruppe: 5 MA)
+                    {t('noData')}
                 </p>
             ) : (
                 <svg viewBox={`0 0 ${VB_W} ${svgH}`} className="w-full">
@@ -479,7 +487,7 @@ function DispersionCard({ points }: { points: DispersionPoint[] }) {
             )}
 
             <div className="flex flex-wrap gap-2 mt-3">
-                {SERIES_META.map(s => {
+                {seriesMeta.map(s => {
                     const on = visible.has(s.key)
                     return (
                         <button key={s.key} onClick={()=>toggleSeries(s.key)}
@@ -501,7 +509,7 @@ function DispersionCard({ points }: { points: DispersionPoint[] }) {
                 })}
             </div>
             <p className="text-xs mt-2" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                Jährliches Gesamtentgelt. Gruppen &lt;5 MA anonymisiert.
+                {t('footnote')}
             </p>
         </div>
     )
@@ -512,6 +520,8 @@ function DispersionCard({ points }: { points: DispersionPoint[] }) {
 // Reused by Dashboard Overview and Analysis page
 // ============================================================
 export function PayGapChartGrid({ results }: { results: AnalysisResult }) {
+    const t = useTranslations('charts.quartiles')
+    const tC = useTranslations('charts')
     return (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
 
@@ -520,24 +530,24 @@ export function PayGapChartGrid({ results }: { results: AnalysisResult }) {
                 <div className="flex items-start justify-between">
                     <div>
                         <h2 className="text-sm font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>
-                            Gehaltsquartile
+                            {t('title')}
                         </h2>
                         <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-accent)' }}>
-                            Gesamtentgelt (EU Art. 3)
+                            {t('subtitle')}
                         </p>
                     </div>
                     <div className="flex items-center gap-3 text-xs flex-shrink-0">
-                        <span className="flex items-center gap-1" style={{ color: C_FEMALE.solid }}><span>■</span> Frauen</span>
-                        <span className="flex items-center gap-1" style={{ color: C_MALE.solid   }}><span>■</span> Männer</span>
+                        <span className="flex items-center gap-1" style={{ color: C_FEMALE.solid }}><span>■</span> {t('female')}</span>
+                        <span className="flex items-center gap-1" style={{ color: C_MALE.solid   }}><span>■</span> {t('male')}</span>
                     </div>
                 </div>
                 <div className="space-y-3">
                     {[
-                        { label: 'Q4 — Oberstes Quartil',  ...results.quartiles.q4 },
-                        { label: 'Q3 — Oberes Quartil',    ...results.quartiles.q3 },
-                        { label: 'Q2 — Unteres Quartil',   ...results.quartiles.q2 },
-                        { label: 'Q1 — Unterstes Quartil', ...results.quartiles.q1 },
-                    ].map(q => <QuartileBar key={q.label} {...q} />)}
+                        { label: t('q4'),  ...results.quartiles.q4 },
+                        { label: t('q3'),    ...results.quartiles.q3 },
+                        { label: t('q2'),   ...results.quartiles.q2 },
+                        { label: t('q1'), ...results.quartiles.q1 },
+                    ].map(q => <QuartileBar key={q.label} {...q} empAbbrev={tC('employeesAbbrev')} />)}
                 </div>
             </div>
 

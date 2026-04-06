@@ -8,19 +8,22 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
+import { useTranslations, useFormatter } from 'next-intl'
 import { CalendarX2, BarChart3, FileText, ShieldCheck, Zap, Loader2 } from 'lucide-react'
 
-const FEATURES = [
-    { icon: BarChart3,   label: 'Entgeltanalysen & Berichte' },
-    { icon: FileText,    label: 'PDF & PowerPoint Export' },
-    { icon: Zap,         label: 'Assistent & Chatbot' },
-    { icon: ShieldCheck, label: 'EU-konforme Einzelfallanalyse' },
-]
-
 export default function TrialExpiredOverlay({ trialEndedAt }: { trialEndedAt: string }) {
+    const t = useTranslations('dashboard.expiredOverlay')
+    const format = useFormatter()
     const [loading, setLoading] = useState(false)
     const [error, setError]     = useState<string | null>(null)
     const overlayRef = useRef<HTMLDivElement>(null)
+
+    const FEATURES = [
+        { icon: BarChart3,   label: t('feature1') },
+        { icon: FileText,    label: t('feature2') },
+        { icon: Zap,         label: t('feature3') },
+        { icon: ShieldCheck, label: t('feature4') },
+    ]
 
     // Lock body scroll while overlay is mounted
     useEffect(() => {
@@ -28,7 +31,7 @@ export default function TrialExpiredOverlay({ trialEndedAt }: { trialEndedAt: st
         return () => { document.body.style.overflow = '' }
     }, [])
 
-    const endDate = new Date(trialEndedAt).toLocaleDateString('de-DE', {
+    const endDate = format.dateTime(new Date(trialEndedAt), {
         day: '2-digit', month: 'long', year: 'numeric',
     })
 
@@ -42,10 +45,10 @@ export default function TrialExpiredOverlay({ trialEndedAt }: { trialEndedAt: st
                 body:    JSON.stringify({ plan: 'license' }),
             })
             const data = await res.json()
-            if (!res.ok || !data.url) throw new Error(data.error ?? 'Stripe-Fehler')
+            if (!res.ok || !data.url) throw new Error(data.error ?? 'Stripe error')
             window.location.href = data.url
         } catch (e: unknown) {
-            setError(e instanceof Error ? e.message : 'Unbekannter Fehler')
+            setError(e instanceof Error ? e.message : String(e))
             setLoading(false)
         }
     }
@@ -96,10 +99,10 @@ export default function TrialExpiredOverlay({ trialEndedAt }: { trialEndedAt: st
                                 fontSize: 10.5, fontWeight: 700, letterSpacing: '0.1em',
                                 color: '#ef4444', textTransform: 'uppercase', marginBottom: 4,
                             }}>
-                                Testzeitraum beendet
+                                {t('badge')}
                             </div>
                             <div style={{ fontSize: 13, color: '#6e7681' }}>
-                                Abgelaufen am {endDate}
+                                {t('expiredOn', { date: endDate })}
                             </div>
                         </div>
                     </div>
@@ -110,15 +113,13 @@ export default function TrialExpiredOverlay({ trialEndedAt }: { trialEndedAt: st
                         fontSize: 25, fontWeight: 700,
                         color: '#f0f6fc', lineHeight: 1.3, letterSpacing: '-0.02em',
                     }}>
-                        Ihr Zugang ist abgelaufen
+                        {t('title')}
                     </h2>
                     <p style={{
                         margin: '0 0 24px',
                         fontSize: 13.5, color: '#8b949e', lineHeight: 1.65,
                     }}>
-                        Der Testzeitraum ist beendet. Lizenzieren Sie CompLens, um Ihre
-                        EU-Entgeltberichte rechtssicher zu erstellen und alle Funktionen
-                        vollständig zu nutzen.
+                        {t('body')}
                     </p>
 
                     {/* Feature pills */}
@@ -163,10 +164,10 @@ export default function TrialExpiredOverlay({ trialEndedAt }: { trialEndedAt: st
                     >
                         <div>
                             <div style={{ fontSize: 15, fontWeight: 700, color: '#93c5fd', marginBottom: 3 }}>
-                                CompLens Lizenz
+                                {t('licenseName')}
                             </div>
                             <div style={{ fontSize: 12, color: '#6e7681' }}>
-                                Unbegrenzte Uploads · Analysen · PDF & PPT Export
+                                {t('licenseFeatures')}
                             </div>
                         </div>
                         <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 20 }}>
@@ -176,10 +177,10 @@ export default function TrialExpiredOverlay({ trialEndedAt }: { trialEndedAt: st
                             ) : (
                                 <>
                                     <div style={{ fontSize: 15, fontWeight: 700, color: '#f0f6fc' }}>
-                                        € 5.990 / Jahr
+                                        {t('pricePerYear')}
                                     </div>
                                     <div style={{ fontSize: 11, color: '#3b82f6', marginTop: 3 }}>
-                                        zzgl. MwSt. · Jetzt upgraden
+                                        {t('priceVat')}
                                     </div>
                                 </>
                             )}
@@ -202,9 +203,9 @@ export default function TrialExpiredOverlay({ trialEndedAt }: { trialEndedAt: st
                         margin: '18px 0 0', textAlign: 'center',
                         fontSize: 11.5, color: '#4d5562',
                     }}>
-                        Fragen zur Lizenz?{' '}
+                        {t('licenseQuestion')}{' '}
                         <a href="/dashboard/help" style={{ color: '#3b82f6', textDecoration: 'none' }}>
-                            Support kontaktieren
+                            {t('contactSupport')}
                         </a>
                     </p>
                 </div>

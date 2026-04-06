@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdminRoleAction } from '@/lib/api/planGuard'
+import { getTranslations } from 'next-intl/server'
 import { EXPLANATION_CATEGORIES } from '@/app/(dashboard)/dashboard/import/constants'
 
 // ============================================================
@@ -20,9 +21,10 @@ export async function saveExplanation(params: {
     const authCheck = await requireAdminRoleAction()
     if ('error' in authCheck) return { error: authCheck.error }
 
+    const t = await getTranslations('errors')
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Nicht angemeldet.' }
+    if (!user) return { error: t('notLoggedIn') }
 
     const admin = createAdminClient()
 
@@ -31,7 +33,7 @@ export async function saveExplanation(params: {
         .select('org_id')
         .eq('id', params.analysisId)
         .single()
-    if (!analysis) return { error: 'Analyse nicht gefunden.' }
+    if (!analysis) return { error: t('analysisNotFound') }
 
     // Sum max_justifiable_pct across all selected categories
     const totalMaxPct = params.categories.reduce((sum, c) => {
@@ -76,9 +78,10 @@ export async function updateExplanationStatus(
     const authCheck = await requireAdminRoleAction()
     if ('error' in authCheck) return { error: authCheck.error }
 
+    const t = await getTranslations('errors')
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Nicht angemeldet.' }
+    if (!user) return { error: t('notLoggedIn') }
 
     const admin = createAdminClient()
     const { error } = await admin

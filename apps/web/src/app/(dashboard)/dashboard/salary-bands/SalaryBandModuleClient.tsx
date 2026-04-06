@@ -6,6 +6,7 @@ import {
     ChevronDown, ChevronRight, Landmark, TrendingUp,
     TrendingDown, Info, Plus, Trash2, BarChart2, Settings,
 } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import type { BandContext, BandGradeSummary, DatasetOption } from '@/lib/band/getBandContext'
 import {
     computeInternalBands,
@@ -41,7 +42,7 @@ function Tip({ text }: { text: string }) {
 // ============================================================
 // Market Benchmark form (per grade)
 // ============================================================
-function MarketBenchmarkForm({ grade, onSaved }: { grade: BandGradeSummary; onSaved: () => void }) {
+function MarketBenchmarkForm({ grade, onSaved, t }: { grade: BandGradeSummary; onSaved: () => void; t: (key: string, values?: Record<string, any>) => string }) {
     const [open, setOpen] = useState(false)
     const [source, setSource] = useState(grade.market_source ?? '')
     const [year,   setYear]   = useState(grade.market_year  ?? new Date().getFullYear())
@@ -75,13 +76,13 @@ function MarketBenchmarkForm({ grade, onSaved }: { grade: BandGradeSummary; onSa
                 style={{ color: 'var(--color-pl-text-tertiary)' }}
             >
                 {open ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-                Marktdaten
+                {t('marketData')}
                 {grade.market_p50 && (
                     <span className="ml-2 px-1.5 py-0.5 rounded text-xs font-semibold" style={{
                         background: marketRatio != null && marketRatio < 90 ? 'rgba(239,68,68,0.1)' : marketRatio != null && marketRatio > 110 ? 'rgba(139,92,246,0.1)' : 'rgba(52,211,153,0.1)',
                         color:      marketRatio != null && marketRatio < 90 ? 'var(--color-pl-red)'  : marketRatio != null && marketRatio > 110 ? '#8b5cf6'              : 'var(--color-pl-green)',
                     }}>
-                        Markt-Ratio: {marketRatio}%
+                        {t('marketRatio', { ratio: marketRatio })}
                     </span>
                 )}
             </button>
@@ -91,18 +92,18 @@ function MarketBenchmarkForm({ grade, onSaved }: { grade: BandGradeSummary; onSa
                     <div className="grid grid-cols-2 gap-2 mb-2">
                         <div>
                             <label className="text-xs mb-1 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                                Quelle (z.B. Kienbaum 2025)
+                                {t('sourceLabel')}
                             </label>
                             <input
                                 className="w-full px-2 py-1 text-xs rounded"
                                 style={{ background: 'var(--color-pl-surface-raised)', border: '1px solid var(--color-pl-border)', color: 'var(--color-pl-text-primary)' }}
                                 value={source}
                                 onChange={e => setSource(e.target.value)}
-                                placeholder="Kienbaum, Radford, StepStone …"
+                                placeholder={t('sourcePlaceholder')}
                             />
                         </div>
                         <div>
-                            <label className="text-xs mb-1 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>Jahr</label>
+                            <label className="text-xs mb-1 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('yearLabel')}</label>
                             <input type="number" min={2020} max={2030}
                                 className="w-full px-2 py-1 text-xs rounded"
                                 style={{ background: 'var(--color-pl-surface-raised)', border: '1px solid var(--color-pl-border)', color: 'var(--color-pl-text-primary)' }}
@@ -112,17 +113,17 @@ function MarketBenchmarkForm({ grade, onSaved }: { grade: BandGradeSummary; onSa
                         </div>
                     </div>
                     <div className="grid grid-cols-3 gap-2 mb-3">
-                        {[['P25', p25, setP25], ['P50 (Median)', p50, setP50], ['P75', p75, setP75]].map(([label, val, set]) => (
+                        {[['P25', p25, setP25, t('marketP25Label')], ['P50 (Median)', p50, setP50, t('marketP50Label')], ['P75', p75, setP75, t('marketP75Label')]].map(([label, val, set, displayLabel]) => (
                             <div key={label as string}>
                                 <label className="text-xs mb-1 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                                    Markt {label as string} (€/Jahr)
+                                    {displayLabel as string}
                                 </label>
                                 <input type="number" min={0} step={500}
                                     className="w-full px-2 py-1 text-xs rounded"
                                     style={{ background: 'var(--color-pl-surface-raised)', border: '1px solid var(--color-pl-border)', color: 'var(--color-pl-text-primary)' }}
                                     value={val as string}
                                     onChange={e => (set as React.Dispatch<React.SetStateAction<string>>)(e.target.value)}
-                                    placeholder="z.B. 72000"
+                                    placeholder={t('marketPlaceholder')}
                                 />
                             </div>
                         ))}
@@ -134,7 +135,7 @@ function MarketBenchmarkForm({ grade, onSaved }: { grade: BandGradeSummary; onSa
                         style={{ background: 'var(--color-pl-brand)', color: '#fff', opacity: saving || !source || !p50 ? 0.6 : 1 }}
                     >
                         {saving ? <Loader2 size={12} className="animate-spin" /> : ok ? <CheckCircle2 size={12} /> : null}
-                        {ok ? 'Gespeichert' : 'Speichern'}
+                        {ok ? t('saved') : t('saveButton')}
                     </button>
                 </div>
             )}
@@ -149,15 +150,19 @@ function DatasetPicker({
     datasets,
     selectedId,
     onChange,
+    datasetLabel,
+    empLabel,
 }: {
     datasets:   DatasetOption[]
     selectedId: string | null
     onChange:   (id: string) => void
+    datasetLabel: string
+    empLabel: string
 }) {
     if (datasets.length <= 1) return null
     return (
         <div className="flex items-center gap-2">
-            <span className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>Datensatz:</span>
+            <span className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>{datasetLabel}</span>
             <select
                 className="text-xs px-2 py-1 rounded-lg"
                 style={{ background: 'var(--color-pl-surface-raised)', border: '1px solid var(--color-pl-border)', color: 'var(--color-pl-text-primary)' }}
@@ -166,7 +171,7 @@ function DatasetPicker({
             >
                 {datasets.map(d => (
                     <option key={d.id} value={d.id}>
-                        {d.name}{d.reporting_year ? ` (${d.reporting_year})` : ''} — {d.employee_count} MA
+                        {d.name}{d.reporting_year ? ` (${d.reporting_year})` : ''} — {d.employee_count} {empLabel}
                     </option>
                 ))}
             </select>
@@ -181,6 +186,7 @@ function OnboardingCard({
     selectedDatasetId,
     onDatasetChange,
     onCreated,
+    t,
 }: {
     detectedGrades:    string[]
     namingScheme:      string | null
@@ -188,8 +194,9 @@ function OnboardingCard({
     selectedDatasetId: string | null
     onDatasetChange:   (id: string) => void
     onCreated:         () => void
+    t:                 (key: string, values?: Record<string, any>) => string
 }) {
-    const [name,      setName]      = useState(`Entgeltstruktur ${new Date().getFullYear()}`)
+    const [name,      setName]      = useState(t('defaultBandName', { year: new Date().getFullYear() }))
     const [isPending, startTransition] = useTransition()
     const [error,     setError]     = useState<string | null>(null)
 
@@ -197,7 +204,7 @@ function OnboardingCard({
         setError(null)
         startTransition(async () => {
             const res = await createBandFromDetectedGrades(name, detectedGrades)
-            if (!res.success) setError(res.error ?? 'Fehler beim Erstellen')
+            if (!res.success) setError(res.error ?? t('createError'))
             else onCreated()
         })
     }
@@ -211,32 +218,32 @@ function OnboardingCard({
                 </div>
                 <div className="flex-1">
                     <h2 className="text-base font-bold mb-1" style={{ color: 'var(--color-pl-text-primary)' }}>
-                        Entgeltgruppen erkannt
+                        {t('gradesDetected')}
                     </h2>
                     <p className="text-sm mb-3" style={{ color: 'var(--color-pl-text-secondary)' }}>
                         {detectedGrades.length > 0 ? (
                             <>
-                                <strong>{detectedGrades.length} Entgeltgruppen</strong> aus Ihren Mitarbeiterdaten gefunden:
+                                <strong>{t('gradesFoundPrefix', { count: detectedGrades.length })}</strong> {t('gradesFoundSuffix')}
                                 <span className="ml-1 font-semibold" style={{ color: 'var(--color-pl-brand-light)' }}>
                                     {detectedGrades.join(' · ')}
                                 </span>
-                                {namingScheme && <span className="ml-1 text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>· Schema: {namingScheme}</span>}
+                                {namingScheme && <span className="ml-1 text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>· {t('schemaLabel', { scheme: namingScheme })}</span>}
                             </>
                         ) : (
-                            'Keine Entgeltgruppen in den Mitarbeiterdaten gefunden. Bitte Daten importieren.'
+                            t('noGradesFound')
                         )}
                     </p>
 
                     {detectedGrades.length > 0 && (
                         <>
                             <div className="flex flex-wrap items-center gap-3 mb-3">
-                                <DatasetPicker datasets={datasets} selectedId={selectedDatasetId} onChange={onDatasetChange} />
+                                <DatasetPicker datasets={datasets} selectedId={selectedDatasetId} onChange={onDatasetChange} datasetLabel={t('dataset')} empLabel={t('employeesShort')} />
                                 <input
                                     className="flex-1 max-w-xs px-3 py-1.5 text-sm rounded-lg"
                                     style={{ background: 'var(--color-pl-surface-raised)', border: '1px solid var(--color-pl-border)', color: 'var(--color-pl-text-primary)' }}
                                     value={name}
                                     onChange={e => setName(e.target.value)}
-                                    placeholder="Name der Entgeltstruktur"
+                                    placeholder={t('bandNamePlaceholder')}
                                 />
                                 <button
                                     disabled={isPending || !name.trim()}
@@ -245,12 +252,11 @@ function OnboardingCard({
                                     style={{ background: 'var(--color-pl-brand)', color: '#fff', opacity: isPending || !name.trim() ? 0.7 : 1 }}
                                 >
                                     {isPending ? <Loader2 size={14} className="animate-spin" /> : <BarChart2 size={14} />}
-                                    Interne Bänder automatisch generieren
+                                    {t('generateBands')}
                                 </button>
                             </div>
                             <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                                Erstellt Entgeltbänder mit statistischen Werten (Min, P25, Median, P75, Max, ♀/♂-Median) aus Ihren Mitarbeiterdaten.
-                                Der Vorgang dauert ca. 1 Sekunde.
+                                {t('generateDesc')}
                             </p>
                             {error && <p className="text-xs mt-2" style={{ color: 'var(--color-pl-red)' }}>{error}</p>}
                         </>
@@ -271,6 +277,7 @@ export default function SalaryBandModuleClient({
 }: {
     initialContext: BandContext
 }) {
+    const t = useTranslations('salaryBands')
     const [ctx,    setCtx]    = useState<BandContext>(initialContext)
     const [tab,    setTab]    = useState<Tab>('overview')
     const [isPending, startTransition] = useTransition()
@@ -308,9 +315,9 @@ export default function SalaryBandModuleClient({
     }
 
     const TABS: { key: Tab; label: string }[] = [
-        { key: 'overview', label: 'Bandvisualisierung' },
-        { key: 'heatmap',  label: 'EU Art. 9 Compliance' },
-        { key: 'market',   label: 'Marktbenchmarks' },
+        { key: 'overview', label: t('tabOverview') },
+        { key: 'heatmap',  label: t('tabHeatmap') },
+        { key: 'market',   label: t('tabMarket') },
     ]
 
     // ── No bands yet ──────────────────────────────────────────
@@ -323,6 +330,7 @@ export default function SalaryBandModuleClient({
                 selectedDatasetId={selectedDatasetId}
                 onDatasetChange={setSelectedDatasetId}
                 onCreated={reload}
+                t={t}
             />
         )
     }
@@ -355,6 +363,8 @@ export default function SalaryBandModuleClient({
                         datasets={ctx.datasets}
                         selectedId={selectedDatasetId}
                         onChange={handleDatasetChange}
+                        datasetLabel={t('dataset')}
+                        empLabel={t('employeesShort')}
                     />
 
                     {/* Compliance badge */}
@@ -362,20 +372,20 @@ export default function SalaryBandModuleClient({
                         <span className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full"
                             style={{ background: 'rgba(239,68,68,0.1)', color: 'var(--color-pl-red)', border: '1px solid rgba(239,68,68,0.25)' }}>
                             <AlertTriangle size={12} />
-                            {total_non_compliant}/{total_grades} nicht konform (EU Art. 9)
+                            {t('nonCompliant', { count: total_non_compliant, total: total_grades })}
                         </span>
                     ) : (
                         <span className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full"
                             style={{ background: 'rgba(52,211,153,0.1)', color: 'var(--color-pl-green)', border: '1px solid rgba(52,211,153,0.25)' }}>
                             <CheckCircle2 size={12} />
-                            Alle {total_grades} Gruppen konform
+                            {t('allCompliant', { total: total_grades })}
                         </span>
                     )}
 
                     {/* Last computed */}
                     {lastComputedStr && (
                         <span className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                            Berechnet: {lastComputedStr}
+                            {t('computed', { date: lastComputedStr })}
                         </span>
                     )}
 
@@ -387,7 +397,7 @@ export default function SalaryBandModuleClient({
                         style={{ background: 'var(--color-pl-surface-raised)', border: '1px solid var(--color-pl-border)', color: 'var(--color-pl-text-secondary)' }}
                     >
                         {isPending ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
-                        Neu berechnen
+                        {t('recompute')}
                     </button>
                 </div>
             </div>
@@ -399,7 +409,7 @@ export default function SalaryBandModuleClient({
                     <AlertTriangle size={16} style={{ color: 'var(--color-pl-red)', flexShrink: 0 }} />
                     <div>
                         <p className="text-sm font-semibold" style={{ color: 'var(--color-pl-red)' }}>
-                            EU-Handlungsbedarf (Art. 9 & 10)
+                            {t('actionNeeded')}
                         </p>
                         <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-secondary)' }}>
                             {grades.filter(g => g.exceeds_5pct).map(g => (
@@ -409,7 +419,7 @@ export default function SalaryBandModuleClient({
                             ))}
                         </p>
                         <p className="text-xs mt-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                            Entgeltlücke ≥ 5% innerhalb derselben Gruppe. Arbeitgeber sind nach Art. 10 RL 2023/970 zur Begründung und Beseitigung verpflichtet.
+                            {t('actionNeededDesc')}
                         </p>
                     </div>
                 </div>
@@ -434,11 +444,10 @@ export default function SalaryBandModuleClient({
                 <div className="glass-card p-5">
                     <div className="mb-4">
                         <h2 className="text-sm font-semibold mb-0.5" style={{ color: 'var(--color-pl-text-primary)' }}>
-                            Interne Entgeltbänder
+                            {t('internalBands')}
                         </h2>
                         <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                            Berechnet aus importierten Mitarbeiterdaten · Bruttogehalt jährlich ·
-                            Bereinigter Interquartilbereich (P25–P75) · Grüne Quelle = EU-konformes intra-Gruppen-Entgelt
+                            {t('internalBandsDesc')}
                         </p>
                     </div>
                     <BandVisualizationChart grades={grades} />
@@ -449,10 +458,10 @@ export default function SalaryBandModuleClient({
                 <div className="glass-card p-5">
                     <div className="mb-4">
                         <h2 className="text-sm font-semibold mb-0.5" style={{ color: 'var(--color-pl-text-primary)' }}>
-                            EU Art. 9 Compliance — Entgelt nach Kategorie & Geschlecht
+                            {t('heatmapTitle')}
                         </h2>
                         <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                            Diese Tabelle entspricht der gesetzlich vorgeschriebenen Berichtspflicht für Arbeitgeber mit ≥ 100 Beschäftigten.
+                            {t('heatmapDesc')}
                         </p>
                     </div>
                     <ComplianceHeatmap grades={grades} />
@@ -463,11 +472,10 @@ export default function SalaryBandModuleClient({
                 <div className="glass-card p-5">
                     <div className="mb-4">
                         <h2 className="text-sm font-semibold mb-0.5" style={{ color: 'var(--color-pl-text-primary)' }}>
-                            Externer Marktbenchmark
+                            {t('marketTitle')}
                         </h2>
                         <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                            Tragen Sie externe Marktdaten (Kienbaum, Radford, StepStone etc.) je Entgeltgruppe ein.
-                            Die Markt-Ratio (intern ÷ Markt-P50) zeigt Ihre Wettbewerbsposition.
+                            {t('marketDesc')}
                         </p>
                     </div>
 
@@ -477,15 +485,15 @@ export default function SalaryBandModuleClient({
                                 <div className="flex items-center gap-3 mb-2">
                                     <span className="text-sm font-bold" style={{ color: 'var(--color-pl-text-primary)' }}>{g.job_grade}</span>
                                     <span className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                                        Intern Median: {eur(g.internal_median_base)}
+                                        {t('internalMedian', { value: eur(g.internal_median_base) })}
                                     </span>
                                     {g.market_p50 != null && (
                                         <span className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                                            · Markt P50: {eur(g.market_p50)} ({g.market_source}, {g.market_year})
+                                            · {t('marketP50Info', { value: eur(g.market_p50), source: g.market_source ?? '', year: g.market_year ?? '' })}
                                         </span>
                                     )}
                                 </div>
-                                <MarketBenchmarkForm grade={g} onSaved={reload} />
+                                <MarketBenchmarkForm grade={g} onSaved={reload} t={t} />
                             </div>
                         ))}
                     </div>

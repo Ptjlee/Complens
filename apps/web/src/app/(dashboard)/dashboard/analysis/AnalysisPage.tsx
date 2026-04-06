@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition, useCallback, useEffect, useRef } from 'react'
+import { useTranslations } from 'next-intl'
 import {
     Play, CheckCircle2, AlertTriangle, ChevronDown,
     BarChart3, Loader2, AlertCircle, TrendingDown, TrendingUp,
@@ -25,8 +26,9 @@ import ComplianceHeatmap     from '@/components/dashboard/ComplianceHeatmap'
 // ============================================================
 
 function GapBadge({ value, suppressed = false }: { value: number | null; suppressed?: boolean }) {
+    const t = useTranslations('analysis')
     if (suppressed || value === null) {
-        return <span className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>— anonymisiert</span>
+        return <span className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('anonymised')}</span>
     }
     const pct = value * 100
     const color = Math.abs(pct) >= 5 ? 'var(--color-pl-red)'
@@ -46,6 +48,7 @@ function GapBadge({ value, suppressed = false }: { value: number | null; suppres
 
 function DeptRow({ dept }: { dept: DepartmentResult }) {
     const [open, setOpen] = useState(false)
+    const t = useTranslations('analysis')
     const adjGap = dept.gap.adjusted_median ?? dept.gap.unadjusted_median
 
     return (
@@ -68,8 +71,8 @@ function DeptRow({ dept }: { dept: DepartmentResult }) {
                             {dept.department}
                         </p>
                         <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                            {dept.employee_count} Mitarbeitende
-                            {dept.suppressed ? ' · Zu wenige Daten (< 5)' : ` · ♀ ${dept.gap.female_count} ♂ ${dept.gap.male_count}`}
+                            {t('employeeCount', { count: dept.employee_count })}
+                            {dept.suppressed ? t('tooFewDataInline') : ` · ♀ ${dept.gap.female_count} ♂ ${dept.gap.male_count}`}
                         </p>
                     </div>
                 </div>
@@ -88,10 +91,10 @@ function DeptRow({ dept }: { dept: DepartmentResult }) {
             {open && !dept.suppressed && (
                 <div className="px-5 pb-4 grid grid-cols-2 gap-3">
                     {[
-                        { label: 'Unbereinigt (Median)', value: dept.gap.unadjusted_median },
-                        { label: 'Bereinigt (Median)', value: dept.gap.adjusted_median },
-                        { label: 'Unbereinigt (Mittelwert)', value: dept.gap.unadjusted_mean },
-                        { label: 'Bereinigt (Mittelwert)', value: dept.gap.adjusted_mean },
+                        { label: t('unadjustedMedian'), value: dept.gap.unadjusted_median },
+                        { label: t('adjustedMedian'), value: dept.gap.adjusted_median },
+                        { label: t('unadjustedMean'), value: dept.gap.unadjusted_mean },
+                        { label: t('adjustedMean'), value: dept.gap.adjusted_mean },
                     ].map(({ label, value }) => (
                         <div key={label} className="p-3 rounded-lg"
                             style={{ background: 'var(--theme-pl-action-ghost)', border: '1px solid var(--color-pl-border)' }}>
@@ -149,6 +152,7 @@ function DatasetPicker({
     selectedId: string
     onChange:   (id: string) => void
 }) {
+    const t = useTranslations('analysis')
     if (datasets.length === 0) return null
 
     return (
@@ -167,7 +171,7 @@ function DatasetPicker({
                 }}>
                 {datasets.map(d => (
                     <option key={d.id} value={d.id}>
-                        {d.name} · {d.reporting_year} · {d.employee_count ?? '?'} MA
+                        {d.name} · {d.reporting_year} · {d.employee_count ?? '?'} {t('maShort')}
                     </option>
                 ))}
             </select>
@@ -183,11 +187,11 @@ function DatasetPicker({
 // ============================================================
 
 const ALL_WIF = ['job_grade', 'employment_type', 'department', 'location'] as const
-const WIF_LABELS: Record<string, string> = {
-    job_grade:       'Entgeltgruppe',
-    employment_type: 'Beschäftigungsart',
-    department:      'Bereich / Abt.',
-    location:        'Standort',
+const WIF_LABEL_KEYS: Record<string, string> = {
+    job_grade:       'wifGrade',
+    employment_type: 'wifEmploymentType',
+    department:      'wifDepartment',
+    location:        'wifLocation',
 }
 
 // ============================================================
@@ -203,6 +207,7 @@ export default function AnalysisPageClient({
     isAdmin:     boolean
     bandContext?: BandContext
 }) {
+    const t = useTranslations('analysis')
     const [selectedId, setSelectedId]             = useState(datasets[0]?.id ?? '')
     const [analysis, setAnalysis]                 = useState<AnalysisData | null>(null)
     const [existingExplanations, setExplanations]  = useState<Explanation[]>([])
@@ -248,7 +253,7 @@ export default function AnalysisPageClient({
 
             if (data && existSorted !== null && existSorted !== recSorted) {
                 const ds   = datasets.find(d => d.id === datasetId)
-                const name = ds?.name ?? `Analyse ${ds?.reporting_year ?? new Date().getFullYear()}`
+                const name = ds?.name ?? t('analysisNameFallback', { year: ds?.reporting_year ?? new Date().getFullYear() })
                 const result = await runDatasetAnalysis(datasetId, name, 'replace', data.id, wifRec.recommended)
                 if (!result.error) {
                     const newData = await getAnalysisForDataset(datasetId) as AnalysisData | null
@@ -297,7 +302,7 @@ export default function AnalysisPageClient({
         const ds  = datasets.find(d => d.id === selectedId)
         // Name = user-provided dataset name (e.g. "PayData 2027") — no date suffix since
         // analyses are already distinguished by created_at in the UI.
-        const name = ds?.name ?? `Analyse ${ds?.reporting_year ?? new Date().getFullYear()}`
+        const name = ds?.name ?? t('analysisNameFallback', { year: ds?.reporting_year ?? new Date().getFullYear() })
         setRunError('')
         setShowRerunConfirm(false)
         startRunTransition(async () => {
@@ -324,13 +329,13 @@ export default function AnalysisPageClient({
     if (!datasets.length) {
         return (
             <div className="space-y-6">
-                <h1 className="text-xl font-bold" style={{ color: 'var(--color-pl-text-primary)' }}>Analyse</h1>
+                <h1 className="text-xl font-bold" style={{ color: 'var(--color-pl-text-primary)' }}>{t('title')}</h1>
                 <div className="glass-card p-10 text-center" style={{ borderStyle: 'dashed' }}>
                     <BarChart3 size={32} className="mx-auto mb-4" style={{ color: 'var(--color-pl-text-tertiary)' }} />
                     <p className="text-sm mb-4" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                        Importieren Sie zuerst einen Datensatz, bevor Sie eine Analyse starten.
+                        {t('noDatasets')}
                     </p>
-                    <a href="/dashboard/import" className="btn-primary">Daten importieren</a>
+                    <a href="/dashboard/import" className="btn-primary">{t('importDataBtn')}</a>
                 </div>
             </div>
         )
@@ -343,7 +348,7 @@ export default function AnalysisPageClient({
             {/* ── Top bar: title + dataset picker + run ── */}
             <div className="flex items-center gap-3 flex-wrap">
                 <div className="flex-1 min-w-0">
-                    <h1 className="text-xl font-bold" style={{ color: 'var(--color-pl-text-primary)' }}>Analyse</h1>
+                    <h1 className="text-xl font-bold" style={{ color: 'var(--color-pl-text-primary)' }}>{t('title')}</h1>
                     {analysis && (
                         <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>
                         {selectedDs?.name ?? analysis.name} · {selectedDs?.reporting_year ?? ''} · {new Date(analysis.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: 'numeric' })}
@@ -355,8 +360,8 @@ export default function AnalysisPageClient({
                 {results && (
                     <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${results.overall.exceeds_5pct ? 'status-red' : 'status-green'}`}>
                         {results.overall.exceeds_5pct
-                            ? <><ShieldAlert size={13} /> 5%-Schwelle überschritten</>
-                            : <><CheckCircle2 size={13} /> Unter 5%-Schwelle</>
+                            ? <><ShieldAlert size={13} /> {t('exceeds5pct')}</>
+                            : <><CheckCircle2 size={13} /> {t('within5pct')}</>
                         }
                     </div>
                 )}
@@ -364,7 +369,7 @@ export default function AnalysisPageClient({
                 {!isAdmin && (
                     <span className="text-xs px-2.5 py-1 rounded-full font-semibold"
                         style={{ background: 'rgba(245,158,11,0.12)', color: 'var(--color-pl-amber)', border: '1px solid rgba(245,158,11,0.25)' }}>
-                        Lesezugriff
+                        {t('readOnly')}
                     </span>
                 )}
             </div>
@@ -375,7 +380,7 @@ export default function AnalysisPageClient({
                 {/* Datensatz label — matches Dashboard style */}
                 <div className="flex items-center gap-2 flex-shrink-0" style={{ color: 'var(--color-pl-text-tertiary)' }}>
                     <Database size={14} />
-                    <span className="text-xs font-medium" style={{ color: 'var(--color-pl-text-secondary)' }}>Datensatz</span>
+                    <span className="text-xs font-medium" style={{ color: 'var(--color-pl-text-secondary)' }}>{t('dataset')}</span>
                 </div>
                 <div className="w-px self-stretch flex-shrink-0" style={{ background: 'var(--color-pl-border)' }} />
 
@@ -391,7 +396,7 @@ export default function AnalysisPageClient({
                     disabled={loadingAnalysis}
                     className="p-1.5 rounded-lg flex-shrink-0"
                     style={{ color: 'var(--color-pl-text-tertiary)' }}
-                    title="Aktualisieren"
+                    title={t('refresh')}
                     onMouseEnter={e => (e.currentTarget.style.background = 'var(--theme-pl-action-hover)')}
                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                     <RefreshCw size={15} className={loadingAnalysis ? 'animate-spin' : ''} />
@@ -412,10 +417,10 @@ export default function AnalysisPageClient({
                             color:       'var(--color-pl-text-secondary)',
                             opacity:     runPending ? 0.6 : 1,
                         }}
-                        title={analysis ? 'Neue Analyse berechnen (erstellt eine neue Version)' : 'Analyse starten'}>
+                        title={analysis ? t('rerunTooltipExisting') : t('startAnalysis')}>
                         {runPending
-                            ? <><Loader2 size={13} className="animate-spin" /> Läuft…</>
-                            : <><Play size={13} /> {analysis ? 'Neu analysieren' : 'Analyse starten'}</>
+                            ? <><Loader2 size={13} className="animate-spin" /> {t('running')}</>
+                            : <><Play size={13} /> {analysis ? t('rerunAnalysis') : t('startAnalysis')}</>
                         }
                     </button>
 
@@ -430,10 +435,10 @@ export default function AnalysisPageClient({
                             {analysis ? (
                                 <>
                                     <p className="text-xs font-semibold mb-1" style={{ color: 'var(--color-pl-text-primary)' }}>
-                                        Analyse neu berechnen?
+                                        {t('rerunConfirmTitle')}
                                     </p>
                                     <p className="text-xs mb-3" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                                        Wählen Sie, wie mit der bisherigen Analyse verfahren werden soll.
+                                        {t('rerunConfirmDesc')}
                                     </p>
 
                                     {/* Option 1 — Archive */}
@@ -448,10 +453,10 @@ export default function AnalysisPageClient({
                                         onMouseLeave={e => (e.currentTarget.style.background = 'var(--theme-pl-action-ghost)')}
                                     >
                                         <p className="text-xs font-semibold mb-0.5" style={{ color: 'var(--color-pl-text-primary)' }}>
-                                            📂 Neu berechnen &amp; Archivieren
+                                            📂 {t('archiveAndRerun')}
                                         </p>
                                         <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                                            Neue Version erstellen. Bisherige Analyse bleibt im Bericht-Archiv.
+                                            {t('archiveAndRerunDesc')}
                                         </p>
                                     </button>
 
@@ -467,30 +472,30 @@ export default function AnalysisPageClient({
                                         onMouseLeave={e => (e.currentTarget.style.background = 'var(--theme-pl-action-ghost)')}
                                     >
                                         <p className="text-xs font-semibold mb-0.5" style={{ color: 'var(--color-pl-text-primary)' }}>
-                                            ♻️ Ersetzen
+                                            ♻️ {t('replaceAnalysis')}
                                         </p>
                                         <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                                            Aktuelle Analyse überschreiben. Kein neuer Archiv-Eintrag.
+                                            {t('replaceAnalysisDesc')}
                                         </p>
                                     </button>
 
                                     <button onClick={() => setShowRerunConfirm(false)}
-                                        className="w-full btn-ghost text-xs py-1.5">Abbrechen</button>
+                                        className="w-full btn-ghost text-xs py-1.5">{t('cancel')}</button>
                                 </>
                             ) : (
                                 <>
                                     <p className="text-xs font-semibold mb-1" style={{ color: 'var(--color-pl-text-primary)' }}>
-                                        Analyse starten?
+                                        {t('startConfirmTitle')}
                                     </p>
                                     <p className="text-xs mb-3" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                                        Berechnet die Lohngefälleanalyse für den gewählten Datensatz.
+                                        {t('startConfirmDesc')}
                                     </p>
                                     <div className="flex gap-2">
                                         <button onClick={() => setShowRerunConfirm(false)}
-                                            className="flex-1 btn-ghost text-xs py-1.5">Abbrechen</button>
+                                            className="flex-1 btn-ghost text-xs py-1.5">{t('cancel')}</button>
                                         <button onClick={handleRerun}
                                             className="flex-1 btn-primary text-xs py-1.5">
-                                            Starten
+                                            {t('start')}
                                         </button>
                                     </div>
                                 </>
@@ -512,7 +517,7 @@ export default function AnalysisPageClient({
             {loadingAnalysis && (
                 <div className="glass-card p-8 flex items-center justify-center gap-3">
                     <Loader2 size={18} className="animate-spin" style={{ color: 'var(--color-pl-brand)' }} />
-                    <span className="text-sm" style={{ color: 'var(--color-pl-text-tertiary)' }}>Lade Analyseergebnisse…</span>
+                    <span className="text-sm" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('loadingResults')}</span>
                 </div>
             )}
 
@@ -521,10 +526,10 @@ export default function AnalysisPageClient({
                 <div className="glass-card p-10 text-center" style={{ borderStyle: 'dashed' }}>
                     <BarChart3 size={32} className="mx-auto mb-3" style={{ color: 'var(--color-pl-text-tertiary)' }} />
                     <p className="text-sm font-medium mb-1" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                        Noch keine Analyse für „{selectedDs?.name}"
+                        {t('noAnalysisFor', { name: selectedDs?.name ?? '' })}
                     </p>
                     <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                        Klicken Sie auf „Analyse starten", um die Berechnungen durchzuführen.
+                        {t('clickStartAnalysis')}
                     </p>
                 </div>
             )}
@@ -535,16 +540,16 @@ export default function AnalysisPageClient({
                     <div className="flex items-center justify-between mb-3">
                         <div>
                             <p className="text-xs font-semibold" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                                WIF-Faktoren für bereinigten Gender Pay Gap
+                                {t('wifTitle')}
                             </p>
                             <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                                Merkmale, die gleiche Arbeit definieren (EU Art. 9). Aktiv-/Deaktivieren Sie Faktoren – Änderungen werden mit „Neue Analyse" übernommen.
+                                {t('wifDescription')}
                             </p>
                         </div>
                         {selectedWif.length < ALL_WIF.length && (
                             <span className="text-xs px-2 py-0.5 rounded-full"
                                 style={{ background: 'rgba(245,158,11,0.15)', color: 'var(--color-pl-amber)', border: '1px solid rgba(245,158,11,0.3)' }}>
-                                Eingeschränkt
+                                {t('wifRestricted')}
                             </span>
                         )}
                     </div>
@@ -554,7 +559,7 @@ export default function AnalysisPageClient({
                             const isMandatory = factor === 'job_grade'
                             const stat = wifStats[factor]
                             const tooltip = isMandatory
-                                ? 'Entgeltgruppe ist gemäß EU Art. 9 obligatorisch'
+                                ? t('wifMandatoryTooltip')
                                 : stat?.reason ?? ''
                             return (
                                 <button key={factor} onClick={() => !isMandatory && toggleWif(factor)}
@@ -567,7 +572,7 @@ export default function AnalysisPageClient({
                                         cursor:     isMandatory ? 'not-allowed' : 'pointer',
                                         opacity:    isMandatory ? 1 : undefined,
                                     }}>
-                                    {active ? '✓ ' : ''}{WIF_LABELS[factor]}
+                                    {active ? '✓ ' : ''}{t(WIF_LABEL_KEYS[factor])}
                                     {isMandatory && <span style={{ fontSize: 9, marginLeft: 4, opacity: 0.7 }}>●</span>}
                                     {stat && !isMandatory && !stat.included && active === false && (
                                         <span style={{ fontSize: 9, marginLeft: 4, color: 'var(--color-pl-amber)' }}>⚠</span>
@@ -578,7 +583,7 @@ export default function AnalysisPageClient({
                     </div>
                     {selectedWif.length < 2 && (
                         <p className="text-xs mt-2" style={{ color: 'var(--color-pl-amber)' }}>
-                            ⚠ Mindestens 2 Faktoren empfohlen für methodisch valide Bereinigung (EU Art. 9).
+                            {t('wifMinWarning')}
                         </p>
                     )}
                 </div>
@@ -590,13 +595,13 @@ export default function AnalysisPageClient({
                     {(
                         isAdmin
                             ? [
-                                { id: 'overview',  label: 'Übersicht' },
-                                { id: 'employees', label: `Mitarbeitende (${results.individual_flags?.length ?? 0})` },
-                                ...(bandContext?.has_bands ? [{ id: 'bands', label: `Entgeltbänder (Art. 9)` }] : []),
+                                { id: 'overview',  label: t('overviewTabLabel') },
+                                { id: 'employees', label: t('employeesTabLabel', { count: results.individual_flags?.length ?? 0 }) },
+                                ...(bandContext?.has_bands ? [{ id: 'bands', label: t('bandsTabLabel') }] : []),
                               ]
                             : [
-                                { id: 'overview',  label: 'Übersicht' },
-                                ...(bandContext?.has_bands ? [{ id: 'bands', label: 'Entgeltbänder (Art. 9)' }] : []),
+                                { id: 'overview',  label: t('overviewTabLabel') },
+                                ...(bandContext?.has_bands ? [{ id: 'bands', label: t('bandsTabLabel') }] : []),
                               ]
                     ).map(tab => (
                         <button key={tab.id} onClick={() => setActiveTab(tab.id as 'overview' | 'employees' | 'bands')}
@@ -617,27 +622,27 @@ export default function AnalysisPageClient({
                     <div className="grid grid-cols-3 gap-4">
                         <div className="glass-card p-5">
                             <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                                Unbereinigter Gender Pay Gap (Median)
+                                {t('overviewUnadjustedTitle')}
                             </p>
                             <GapBadge value={results.overall.unadjusted_median} />
                             <div className="mt-3 pt-3 border-t grid grid-cols-2 gap-2 text-xs" style={{ borderColor: 'var(--color-pl-border)', color: 'var(--color-pl-text-secondary)' }}>
                                 <span>♀ {(results.overall.female_median_salary ?? 0).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €/h</span>
                                 <span>♂ {(results.overall.male_median_salary ?? 0).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €/h</span>
-                                <span style={{ color: 'var(--color-pl-text-tertiary)' }}>♀ {results.overall.female_count} Personen</span>
-                                <span style={{ color: 'var(--color-pl-text-tertiary)' }}>♂ {results.overall.male_count} Personen</span>
+                                <span style={{ color: 'var(--color-pl-text-tertiary)' }}>♀ {results.overall.female_count} {t('persons')}</span>
+                                <span style={{ color: 'var(--color-pl-text-tertiary)' }}>♂ {results.overall.male_count} {t('persons')}</span>
                             </div>
                         </div>
                         <div className="glass-card p-5">
                             <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                                Bereinigter Gender Pay Gap · EU Art. 9 (Median)
+                                {t('overviewAdjustedTitle')}
                             </p>
                             <GapBadge value={results.overall.adjusted_median} />
                             <div className="mt-3 pt-3 border-t text-xs space-y-1" style={{ borderColor: 'var(--color-pl-border)' }}>
                                 <p style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                                    WIF-Faktoren: <span style={{ color: 'var(--color-pl-text-secondary)' }}>{results.wif_factors_used.join(', ')}</span>
+                                    {t('wifFactorsLabel')}: <span style={{ color: 'var(--color-pl-text-secondary)' }}>{results.wif_factors_used.join(', ')}</span>
                                 </p>
                                 {results.hours_coverage_pct < 100 && (
-                                    <p style={{ color: 'var(--color-pl-amber)' }}>⚠ {results.hours_coverage_pct}% Stundendaten</p>
+                                    <p style={{ color: 'var(--color-pl-amber)' }}>{t('hoursWarning', { pct: results.hours_coverage_pct })}</p>
                                 )}
                                 {/* Bug 1 fix: show mismatch warning when UI selection differs from stored results */
                                 (() => {
@@ -646,7 +651,7 @@ export default function AnalysisPageClient({
                                     if (used === sel) return null
                                     return (
                                         <p className="mt-1 flex items-start gap-1" style={{ color: 'var(--color-pl-amber)' }}>
-                                            ⚠ WIF-Auswahl geändert – klicken Sie auf „Neue Analyse" (oben rechts), um das bereinigte Ergebnis zu aktualisieren.
+                                            {t('wifChangedWarning')}
                                         </p>
                                     )
                                 })()}
@@ -659,11 +664,11 @@ export default function AnalysisPageClient({
                                 return (
                                     <div className="glass-card p-5" style={{ opacity: 0.45 }}>
                                         <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: 'rgba(52,211,153,0.6)' }}>
-                                            Nach Begründungen
+                                            {t('afterExplanations')}
                                         </p>
                                         <p className="text-2xl font-bold" style={{ color: 'var(--color-pl-text-tertiary)' }}>—</p>
                                         <p className="text-xs mt-3 pt-3 border-t" style={{ borderColor: 'var(--color-pl-border)', color: 'var(--color-pl-text-tertiary)' }}>
-                                            Keine Begründungen erfasst
+                                            {t('noExplanations')}
                                         </p>
                                     </div>
                                 )
@@ -696,14 +701,14 @@ export default function AnalysisPageClient({
                                 return (
                                 <div className="glass-card p-5" style={{ border: `1px solid ${cardColor}` }}>
                                     <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: cardColor }}>
-                                        Nach Begründungen
+                                        {t('afterExplanations')}
                                     </p>
                                     <GapBadge value={medianResidual / 100} />
                                     <div className="mt-3 pt-3 border-t text-xs space-y-1" style={{ borderColor: cardColor }}>
                                         <p style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                                            {existingExplanations.length} von {flaggedNonOk.length} Pers. begründet
+                                            {t('personsExplained', { explained: existingExplanations.length, total: flaggedNonOk.length })}
                                         </p>
-                                        <p style={{ color: 'var(--color-pl-text-tertiary)' }}>Median Restlücke</p>
+                                        <p style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('medianResidual')}</p>
                                     </div>
                                 </div>
                                 )
@@ -713,11 +718,11 @@ export default function AnalysisPageClient({
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="glass-card p-4 flex items-center justify-between">
-                            <p className="text-xs" style={{ color: 'var(--color-pl-text-secondary)' }}>Unbereinigt (Mittelwert)</p>
+                            <p className="text-xs" style={{ color: 'var(--color-pl-text-secondary)' }}>{t('unadjustedMean')}</p>
                             <GapBadge value={results.overall.unadjusted_mean} />
                         </div>
                         <div className="glass-card p-4 flex items-center justify-between">
-                            <p className="text-xs" style={{ color: 'var(--color-pl-text-secondary)' }}>Bereinigt (Mittelwert)</p>
+                            <p className="text-xs" style={{ color: 'var(--color-pl-text-secondary)' }}>{t('adjustedMean')}</p>
                             <GapBadge value={results.overall.adjusted_mean} />
                         </div>
                     </div>
@@ -728,12 +733,12 @@ export default function AnalysisPageClient({
                             <AlertTriangle size={18} style={{ color: 'var(--color-pl-red)', flexShrink: 0, marginTop: 1 }} />
                             <div>
                                 <p className="text-sm font-semibold" style={{ color: 'var(--color-pl-red)' }}>
-                                    Gemeinsame Entgeltbewertung erforderlich (Art. 9 EU-Richtlinie)
+                                    {t('jointAssessmentRequired')}
                                 </p>
                                 <p className="text-xs mt-1" style={{ color: 'var(--color-pl-text-secondary)' }}>
                                     {results.departments_exceeding_5pct.length > 0
-                                        ? `Betroffene Bereiche: ${results.departments_exceeding_5pct.join(', ')}`
-                                        : 'Die Gesamtlücke überschreitet den Schwellenwert.'}
+                                        ? t('affectedAreas', { areas: results.departments_exceeding_5pct.join(', ') })
+                                        : t('overallExceedsThreshold')}
                                 </p>
                             </div>
                         </div>
@@ -763,7 +768,7 @@ export default function AnalysisPageClient({
                         <div className="flex items-center gap-2 mb-4">
                             <Landmark size={16} style={{ color: 'var(--color-pl-brand-light)' }} />
                             <h2 className="text-sm font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>
-                                Interne Entgeltbänder
+                                {t('internalBands')}
                             </h2>
                             <span className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
                                 · {bandContext.grades[0]?.band_name}
@@ -776,7 +781,7 @@ export default function AnalysisPageClient({
                         <div className="flex items-center gap-2 mb-4">
                             <Landmark size={16} style={{ color: 'var(--color-pl-brand-light)' }} />
                             <h2 className="text-sm font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>
-                                EU Art. 9 Compliance — Intra-Gruppen-Entgeltlücke
+                                {t('euArt9Compliance')}
                             </h2>
                         </div>
                         <ComplianceHeatmap grades={bandContext.grades} />

@@ -57,6 +57,7 @@ function KpiCard({ label, value, unit = '%', threshold, description, trend }: {
 
 // Band KPI card — links to /dashboard/salary-bands
 function BandKpiCard({ bandCtx }: { bandCtx: BandContext }) {
+    const t = useTranslations('dashboard')
     if (!bandCtx.has_bands) return null
     const compliant = bandCtx.total_grades - bandCtx.total_non_compliant
     const allOk     = bandCtx.total_non_compliant === 0
@@ -64,7 +65,7 @@ function BandKpiCard({ bandCtx }: { bandCtx: BandContext }) {
     return (
         <a href="/dashboard/salary-bands" className="glass-card p-5 block transition-all hover:ring-1 hover:ring-[var(--color-pl-brand)] cursor-pointer">
             <div className="flex items-start justify-between mb-3">
-                <p className="text-sm font-medium" style={{ color: 'var(--color-pl-text-secondary)' }}>Entgeltbänder</p>
+                <p className="text-sm font-medium" style={{ color: 'var(--color-pl-text-secondary)' }}>{t('kpi.salaryBands')}</p>
                 {allOk
                     ? <CheckCircle2 size={16} style={{ color: 'var(--color-pl-green)' }} />
                     : <AlertTriangle size={16} style={{ color: 'var(--color-pl-red)' }} />}
@@ -74,7 +75,7 @@ function BandKpiCard({ bandCtx }: { bandCtx: BandContext }) {
                 <span className="text-sm font-semibold" style={{ color: 'var(--color-pl-text-secondary)' }}>/{bandCtx.total_grades}</span>
             </div>
             <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                EU-konforme Gruppen (Art. 9)
+                {t('kpi.compliantGrades')}
             </p>
         </a>
     )
@@ -354,14 +355,13 @@ export default function DashboardOverview({ datasets, trend, role = 'admin', ban
                             <Landmark size={18} style={{ color: 'var(--color-pl-red)', flexShrink: 0, marginTop: 2 }} />
                             <div className="flex-1">
                                 <p className="text-sm font-semibold" style={{ color: 'var(--color-pl-red)' }}>
-                                    {bandContext.total_non_compliant} Entgeltgruppe{bandContext.total_non_compliant !== 1 ? 'n' : ''} übersteigen
-                                    den EU-Schwellenwert von 5% (Art. 9)
+                                    {t('bandAlert.title', { count: bandContext.total_non_compliant })}
                                 </p>
                                 <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-secondary)' }}>
                                     {bandContext.grades.filter(g => g.exceeds_5pct)
                                         .map(g => `${g.job_grade}: ${g.intra_grade_gap_pct != null ? (g.intra_grade_gap_pct > 0 ? '+' : '') + g.intra_grade_gap_pct.toFixed(1) + '%' : '?'}`)
                                         .join(' · ')}
-                                    {' '}&rarr; Maßnahmen empfohlen
+                                    {' '}&rarr; {t('bandAlert.actionsRecommended')}
                                 </p>
                             </div>
                             <ChevronRight size={16} style={{ color: 'var(--color-pl-text-tertiary)', flexShrink: 0, marginTop: 2 }} />
@@ -406,7 +406,7 @@ export default function DashboardOverview({ datasets, trend, role = 'admin', ban
                                 role === 'admin' ? (
                                     <a href="/dashboard/import" className="btn-primary flex-shrink-0 text-xs py-1.5 px-3">{t('onboarding.step1Btn')}</a>
                                 ) : (
-                                    <span className="text-xs font-semibold px-3 py-1.5 rounded-lg flex-shrink-0" style={{ background: 'var(--color-pl-surface-raised)', color: 'var(--color-pl-text-tertiary)' }}>Ausstehend</span>
+                                    <span className="text-xs font-semibold px-3 py-1.5 rounded-lg flex-shrink-0" style={{ background: 'var(--color-pl-surface-raised)', color: 'var(--color-pl-text-tertiary)' }}>{t('onboarding.step1Pending')}</span>
                                 )
                             ) : (
                                 <span className="text-xs font-semibold px-3 py-1.5 rounded-lg flex-shrink-0" style={{ background: 'rgba(52,211,153,0.1)', color: '#34d399' }}>{t('onboarding.step1Done')}</span>

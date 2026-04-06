@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import type { Lang } from '@/lib/i18n/translations'
+import { createAdminClient } from '@/lib/supabase/admin'
 
-const VALID_LANGS: Lang[] = ['de', 'en']
+const VALID_LANGS = ['de', 'en'] as const
+type Lang = (typeof VALID_LANGS)[number]
 
 /**
  * POST /api/profile/language
@@ -20,7 +21,9 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Invalid language' }, { status: 400 })
         }
 
-        const { error } = await supabase
+        // Use admin client to bypass RLS on organisation_members
+        const admin = createAdminClient()
+        const { error } = await admin
             .from('organisation_members')
             .update({ preferred_language: language })
             .eq('user_id', user.id)
@@ -30,7 +33,15 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: error.message }, { status: 500 })
         }
 
-        return NextResponse.json({ ok: true, language })
+        // Set NEXT_LOCALE cookie so next-intl picks up the language on SSR
+        const res = NextResponse.json({ ok: true, language })
+        res.cookies.set('NEXT_LOCALE', language, {
+            path: '/',
+            maxAge: 60 * 60 * 24 * 365,
+            sameSite: 'lax',
+            httpOnly: false,
+        })
+        return res
     } catch (err) {
         console.error('[profile/language]', err)
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

@@ -2,6 +2,7 @@
 
 import { Info } from 'lucide-react'
 import { useState } from 'react'
+import { useTranslations, useLocale } from 'next-intl'
 import type { BandGradeSummary } from '@/lib/band/getBandContext'
 
 // ── Tooltip ─────────────────────────────────────────────────
@@ -20,9 +21,6 @@ function Tip({ text }: { text: string }) {
         </span>
     )
 }
-
-const eur = (v: number | null) =>
-    v == null ? '—' : v.toLocaleString('de-DE', { maximumFractionDigits: 0 }) + ' €'
 
 const pct = (v: number | null) =>
     v == null ? '—' : `${v > 0 ? '+' : ''}${v.toFixed(1)}%`
@@ -57,6 +55,12 @@ export default function ComplianceHeatmap({
     grades:   BandGradeSummary[]
     compact?: boolean
 }) {
+    const t = useTranslations('salaryBands')
+    const locale = useLocale()
+
+    const eur = (v: number | null) =>
+        v == null ? '—' : v.toLocaleString(locale, { maximumFractionDigits: 0 }) + ' €'
+
     const nonCompliant = grades.filter(g => g.exceeds_5pct)
     const compliant    = grades.filter(g => !g.exceeds_5pct && g.internal_n != null)
     const noData       = grades.filter(g => g.internal_n == null || g.internal_n === 0)
@@ -68,15 +72,15 @@ export default function ComplianceHeatmap({
                 <div className="flex items-center justify-between mb-4">
                     <div>
                         <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                            EU-Richtlinie 2023/970 · Art. 9 — Entgeltberichterstattung nach Entgeltkategorien
+                            {t('euDirectiveRef')}
                         </p>
                     </div>
                     <div className="flex items-center gap-2">
                         <span className="text-xs font-semibold px-2 py-1 rounded-full" style={{ background: 'rgba(239,68,68,0.1)', color: 'var(--color-pl-red)' }}>
-                            {nonCompliant.length} nicht konform
+                            {t('nonCompliantBadge', { count: nonCompliant.length })}
                         </span>
                         <span className="text-xs font-semibold px-2 py-1 rounded-full" style={{ background: 'rgba(52,211,153,0.1)', color: 'var(--color-pl-green)' }}>
-                            {compliant.length} konform
+                            {t('compliantBadge', { count: compliant.length })}
                         </span>
                     </div>
                 </div>
@@ -88,39 +92,39 @@ export default function ComplianceHeatmap({
                     <thead>
                         <tr style={{ borderBottom: '2px solid var(--color-pl-border)' }}>
                             <th className="text-left pb-2 pr-3 font-semibold" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                                Gruppe
+                                {t('groupHeader')}
                             </th>
                             <th className="text-right pb-2 px-2 font-semibold" style={{ color: 'var(--color-pl-text-secondary)' }}>
                                 n
                             </th>
                             <th className="text-right pb-2 px-2 font-semibold" style={{ color: 'var(--color-pl-text-secondary)' }}>
                                 ♀ Median
-                                <Tip text="Medianeinkommen aller Frauen (Grundgehalt, brutto/jährlich). Quelle: importierte Mitarbeiterdaten." />
+                                <Tip text={t('femaleMedTip')} />
                             </th>
                             <th className="text-right pb-2 px-2 font-semibold" style={{ color: 'var(--color-pl-text-secondary)' }}>
                                 ♂ Median
-                                <Tip text="Medianeinkommen aller Männer (Grundgehalt, brutto/jährlich). Quelle: importierte Mitarbeiterdaten." />
+                                <Tip text={t('maleMedTip')} />
                             </th>
                             <th className="text-right pb-2 px-2 font-semibold" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                                Intra-Lücke
-                                <Tip text="Lohnlücke innerhalb derselben Entgeltgruppe: (♂ Median − ♀ Median) ÷ ♂ Median × 100. EU Art. 9 fordert Berichterstattung bei ≥ 5%." />
+                                {t('intraGapHeader')}
+                                <Tip text={t('intraGapTip')} />
                             </th>
                             {!compact && <>
                                 <th className="text-right pb-2 px-2 font-semibold" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                                    Compa ♀
-                                    <Tip text="Compa-Ratio Frauen = ♀ Median ÷ Bandmitte × 100. Werte unter 87,5% gelten als Untervergütungsrisiko (EU Art. 4)." />
+                                    {t('compaFemaleHeader')}
+                                    <Tip text={t('compaFemaleTip')} />
                                 </th>
                                 <th className="text-right pb-2 px-2 font-semibold" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                                    Compa ♂
-                                    <Tip text="Compa-Ratio Männer = ♂ Median ÷ Bandmitte × 100." />
+                                    {t('compaMaleHeader')}
+                                    <Tip text={t('compaMaleTip')} />
                                 </th>
                                 <th className="text-right pb-2 px-2 font-semibold" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                                    Markt P50
-                                    <Tip text="Externer Marktmedian (manuell eingetragen). Market Ratio = interner Median ÷ Markt P50 × 100." />
+                                    {t('marketP50Header')}
+                                    <Tip text={t('marketP50Tip')} />
                                 </th>
                             </>}
                             <th className="text-center pb-2 pl-3 font-semibold" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                                EU Status
+                                {t('euStatusHeader')}
                             </th>
                         </tr>
                     </thead>
@@ -178,7 +182,7 @@ export default function ComplianceHeatmap({
                                         </td>
                                         <td className="py-2.5 px-2 text-right" style={{ color: 'var(--color-pl-text-secondary)' }}>
                                             {g.market_p50 != null ? (
-                                                <span title={`Quelle: ${g.market_source ?? '?'} ${g.market_year ?? ''}`}>
+                                                <span title={t('sourceTooltip', { source: g.market_source ?? '?', year: g.market_year ?? '' })}>
                                                     {eur(g.market_p50)}
                                                 </span>
                                             ) : '—'}
@@ -188,11 +192,11 @@ export default function ComplianceHeatmap({
                                     {/* EU status */}
                                     <td className="py-2.5 pl-3 text-center">
                                         {!hasData ? (
-                                            <span title="Keine Mitarbeiterdaten" style={{ color: 'var(--color-pl-text-tertiary)' }}>—</span>
+                                            <span title={t('noEmployeeData')} style={{ color: 'var(--color-pl-text-tertiary)' }}>—</span>
                                         ) : compliant ? (
-                                            <span title="Lücke < 5% — konform" style={{ fontSize: 16 }}>🟢</span>
+                                            <span title={t('gapCompliant')} style={{ fontSize: 16 }}>🟢</span>
                                         ) : (
-                                            <span title={`Lücke ${pct(gap)} ≥ 5% — EU Art. 10 Handlungspflicht`} style={{ fontSize: 16 }}>🔴</span>
+                                            <span title={t('gapNonCompliant', { gap: pct(gap) })} style={{ fontSize: 16 }}>🔴</span>
                                         )}
                                     </td>
                                 </tr>
@@ -202,7 +206,7 @@ export default function ComplianceHeatmap({
                         {noData.length > 0 && grades.length === noData.length && (
                             <tr>
                                 <td colSpan={compact ? 6 : 9} className="py-6 text-center text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                                    Noch keine Mitarbeiterdaten berechnet. Klicken Sie auf „Interne Bänder berechnen".
+                                    {t('noDataComputed')}
                                 </td>
                             </tr>
                         )}
@@ -213,14 +217,11 @@ export default function ComplianceHeatmap({
             {!compact && (
                 <div className="mt-3 pt-3 space-y-1.5" style={{ borderTop: '1px solid var(--color-pl-border)' }}>
                     <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                        Gemäß Art. 9 RL 2023/970 sind Arbeitgeber mit ≥ 100 Beschäftigten verpflichtet, Entgeltinformationen
-                        nach Entgeltkategorie und Geschlecht zu veröffentlichen. Eine Lücke von ≥ 5% löst nach Art. 10
-                        eine Begründungspflicht aus.
+                        {t('euArt9Footer')}
                     </p>
                     {grades.some(g => g.auto_computed && (g.min_salary == null || g.min_salary === 0)) && (
                         <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                            * Compa-Ratio basiert auf dem internen Median als Referenzpunkt (kein manuelles Band definiert).
-                            Für präzisere Werte definieren Sie Bandgrenzen (Min/Mid/Max) im Entgeltband-Modul.
+                            {t('compaRatioNote')}
                         </p>
                     )}
                 </div>

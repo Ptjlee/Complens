@@ -2,11 +2,14 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getTranslations } from 'next-intl/server'
 
 export async function login(formData: FormData) {
     const supabase = await createClient()
+    const t = await getTranslations('auth')
 
     const data = {
         email: formData.get('email') as string,
@@ -16,7 +19,7 @@ export async function login(formData: FormData) {
     const { error } = await supabase.auth.signInWithPassword(data)
 
     if (error) {
-        return { error: 'E-Mail oder Passwort ungültig. Bitte prüfen Sie Ihre Eingaben.' }
+        return { error: t('errorInvalidCredentials') }
     }
 
     revalidatePath('/', 'layout')
@@ -26,6 +29,7 @@ export async function login(formData: FormData) {
 export async function signup(formData: FormData) {
     const supabase = await createClient()
     const admin    = createAdminClient()
+    const t = await getTranslations('auth')
 
     const email           = formData.get('email') as string
     const password        = formData.get('password') as string
@@ -36,16 +40,20 @@ export async function signup(formData: FormData) {
 
     const fullName = [firstName.trim(), lastName.trim()].filter(Boolean).join(' ')
 
+    // Read preferred language from cookie (set by LanguageSwitcher)
+    const cookieStore = await cookies()
+    const preferredLang = cookieStore.get('NEXT_LOCALE')?.value === 'en' ? 'en' : 'de'
+
     if (password !== confirmPassword) {
-        return { error: 'Die Passwörter stimmen nicht überein.' }
+        return { error: t('errorPasswordMismatch') }
     }
 
     if (password.length < 8) {
-        return { error: 'Das Passwort muss mindestens 8 Zeichen lang sein.' }
+        return { error: t('errorPasswordTooShort') }
     }
 
     if (!companyName) {
-        return { error: 'Bitte geben Sie den Unternehmensnamen an.' }
+        return { error: t('errorCompanyNameRequired') }
     }
 
     // ── 1. Create auth user ──────────────────────────────────────
@@ -53,9 +61,10 @@ export async function signup(formData: FormData) {
         email,
         password,
         options: {
-            data: { 
+            data: {
                 company_name: companyName,
                 full_name: fullName || undefined,
+                preferred_language: preferredLang,
             },
             emailRedirectTo: `${getURL()}auth/confirm`,
         },
@@ -63,19 +72,21 @@ export async function signup(formData: FormData) {
 
     if (authErr) {
         if (authErr.message.includes('already registered')) {
-            return { error: 'Diese E-Mail-Adresse ist bereits registriert. Bitte melden Sie sich an.' }
+            return { error: t('errorAlreadyRegistered') }
         }
-        return { error: 'Registrierung fehlgeschlagen. Bitte versuchen Sie es erneut.' }
+        return { error: t('errorSignupFailed') }
     }
 
+    // Supabase returns a fake user with empty identities[] for duplicate emails
+    // (email enumeration protection). Detect this and show a helpful message.
     const userId = authData.user?.id
-    if (!userId) {
-        return { error: 'Registrierung fehlgeschlagen. Bitte versuchen Sie es erneut.' }
+    if (!userId || (authData.user?.identities?.length ?? 0) === 0) {
+        return { error: t('errorAlreadyRegistered') }
     }
 
     // ── 2. Create organisation (service role — bypasses RLS) ─────
     const slug        = companyName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
-    const trialEndsAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+    const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
 
     const { data: org, error: orgErr } = await admin
         .from('organisations')
@@ -93,23 +104,23 @@ export async function signup(formData: FormData) {
 
     if (orgErr || !org) {
         console.error('[signup] org creation failed:', orgErr)
-        // Auth user was created — clean up is hard. Log and return error.
-        return { error: 'Konto wurde angelegt, aber die Organisation konnte nicht erstellt werden. Bitte kontaktieren Sie den Support.' }
+        return { error: t('errorOrgCreationFailed') }
     }
 
     // ── 3. Add user as admin member ──────────────────────────────
     const { error: memberErr } = await admin
         .from('organisation_members')
         .insert({
-            org_id:    org.id,
-            user_id:   userId,
-            role:      'admin',
-            full_name: fullName || null,
+            org_id:             org.id,
+            user_id:            userId,
+            role:               'admin',
+            full_name:          fullName || null,
+            preferred_language: preferredLang,
         })
 
     if (memberErr) {
         console.error('[signup] member insert failed:', memberErr)
-        return { error: 'Mitgliedschaft konnte nicht angelegt werden. Bitte kontaktieren Sie den Support.' }
+        return { error: t('errorMemberCreationFailed') }
     }
 
     // ── 4. Initialise onboarding progress ────────────────────────
@@ -154,8 +165,10 @@ const getURL = () => {
 }
 
 export async function resendVerification(email: string) {
+    const t = await getTranslations('auth')
+
     if (!email || !email.includes('@')) {
-        return { error: 'Ungültige E-Mail-Adresse.' }
+        return { error: t('errorInvalidEmail') }
     }
 
     const supabase = await createClient()
@@ -168,9 +181,8 @@ export async function resendVerification(email: string) {
     })
 
     if (error) {
-        return { error: 'E-Mail konnte nicht gesendet werden. Bitte versuchen Sie es später erneut.' }
+        return { error: t('errorEmailSendFailed') }
     }
 
     return { success: true }
 }
-

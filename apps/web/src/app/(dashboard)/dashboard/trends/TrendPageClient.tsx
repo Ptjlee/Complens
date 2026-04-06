@@ -5,6 +5,7 @@ import {
     TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, ArrowRight,
     BarChart3, ChevronDown, ChevronUp, GitCompare, Check, AlertCircle,
 } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import type { TrendPoint } from './page'
 
 // ─── Colour palette for comparison series ───────────────────────────────────
@@ -146,7 +147,7 @@ function LineChart({ xLabels, series, h = 200 }: {
 
 // ─── Department heatmap ──────────────────────────────────────────────────────
 
-function DeptHeatmap({ points }: { points: TrendPoint[] }) {
+function DeptHeatmap({ points, deptLabel }: { points: TrendPoint[]; deptLabel: string }) {
     const allDepts = Array.from(new Set(points.flatMap(p => p.deptGaps.map(d => d.dept)))).sort()
     if (allDepts.length === 0) return null
 
@@ -163,7 +164,7 @@ function DeptHeatmap({ points }: { points: TrendPoint[] }) {
             <table className="text-xs w-full border-collapse">
                 <thead>
                     <tr>
-                        <th className="text-left py-2 pr-4 font-medium" style={{ color: 'var(--color-pl-text-tertiary)', minWidth: '140px' }}>Bereich</th>
+                        <th className="text-left py-2 pr-4 font-medium" style={{ color: 'var(--color-pl-text-tertiary)', minWidth: '140px' }}>{deptLabel}</th>
                         {points.map(p => (
                             <th key={p.analysisId} className="px-2 py-2 font-medium text-center whitespace-nowrap"
                                 style={{ color: 'var(--color-pl-text-tertiary)', minWidth: '70px' }}>
@@ -198,7 +199,7 @@ function DeptHeatmap({ points }: { points: TrendPoint[] }) {
 
 // ─── Delta summary card ──────────────────────────────────────────────────────
 
-function DeltaCard({ label, from, to }: { label: string; from: number | null; to: number | null }) {
+function DeltaCard({ label, from, to, currentLabel, vsPrevLabel, prevLabel }: { label: string; from: number | null; to: number | null; currentLabel: string; vsPrevLabel: string; prevLabel: string }) {
     const d        = delta(from, to)
     const improved = d != null && d < 0
     const worsened = d != null && d > 0
@@ -210,18 +211,18 @@ function DeltaCard({ label, from, to }: { label: string; from: number | null; to
             <div className="flex items-end gap-3">
                 <div>
                     <p className="text-lg font-bold" style={{ color: gapColor(to) }}>{pctFmt(to)}</p>
-                    <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>aktuell</p>
+                    <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>{currentLabel}</p>
                 </div>
                 {d != null && (
                     <div className="flex items-center gap-1 pb-1"
                         style={{ color: improved ? 'var(--color-pl-green)' : worsened ? 'var(--color-pl-red)' : 'var(--color-pl-text-tertiary)' }}>
                         <Icon size={13} />
                         <span className="text-xs font-semibold">{pctFmt(d, 2)}</span>
-                        <span className="text-xs opacity-60">ggü. Vorjahr</span>
+                        <span className="text-xs opacity-60">{vsPrevLabel}</span>
                     </div>
                 )}
             </div>
-            <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>Vorjahr: {pctFmt(from)}</p>
+            <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>{prevLabel}</p>
         </div>
     )
 }
@@ -233,11 +234,13 @@ function DatasetSelector({
     selected,
     onChange,
     conflicts,
+    t,
 }: {
     all:       TrendPoint[]
     selected:  Set<string>
     onChange:  (next: Set<string>) => void
     conflicts: Map<number, TrendPoint[]>  // year → points that share it
+    t:         (key: string, values?: Record<string, string | number>) => string
 }) {
     const [open, setOpen] = useState(false)
 
@@ -273,17 +276,17 @@ function DatasetSelector({
                 <div className="flex items-center gap-2.5">
                     <span className="text-xs font-semibold uppercase tracking-wide"
                         style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                        Datensatz-Auswahl
+                        {t('datasetSelection')}
                     </span>
                     <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
                         style={{ background: 'rgba(99,102,241,0.15)', color: '#818cf8' }}>
-                        {selectedCount} / {all.length} aktiv
+                        {t('active', { count: selectedCount, total: all.length })}
                     </span>
                     {conflicts.size > 0 && (
                         <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium"
                             style={{ background: 'rgba(245,158,11,0.12)', color: '#f59e0b' }}>
                             <AlertCircle size={11} />
-                            {conflicts.size} Jahr-Konflikt{conflicts.size > 1 ? 'e' : ''} — letzter Stand wird verwendet
+                            {t('yearConflict', { count: conflicts.size })}
                         </span>
                     )}
                 </div>
@@ -293,17 +296,17 @@ function DatasetSelector({
                             <button onClick={e => { e.stopPropagation(); selectAll() }}
                                 className="text-xs px-2 py-1 rounded-md transition-colors"
                                 style={{ color: 'var(--color-pl-text-tertiary)', background: 'var(--theme-pl-action-hover)' }}>
-                                Alle
+                                {t('allButton')}
                             </button>
                             <button onClick={e => { e.stopPropagation(); selectSmart() }}
                                 className="text-xs px-2 py-1 rounded-md transition-colors"
                                 style={{ color: 'var(--color-pl-text-tertiary)', background: 'var(--theme-pl-action-hover)' }}>
-                                Standard
+                                {t('standardButton')}
                             </button>
                             <button onClick={e => { e.stopPropagation(); selectNone() }}
                                 className="text-xs px-2 py-1 rounded-md transition-colors"
                                 style={{ color: 'var(--color-pl-text-tertiary)', background: 'var(--theme-pl-action-hover)' }}>
-                                Keine
+                                {t('noneButton')}
                             </button>
                         </>
                     )}
@@ -365,7 +368,7 @@ function DatasetSelector({
                                     <span className="text-xs flex-shrink-0 flex items-center gap-1"
                                         style={{ color: '#f59e0b' }}>
                                         <AlertCircle size={11} />
-                                        {isLatestForYear ? 'wird verwendet' : 'wird übersprungen'}
+                                        {isLatestForYear ? t('usedLabel') : t('skippedLabel')}
                                     </span>
                                 )}
                             </button>
@@ -380,6 +383,7 @@ function DatasetSelector({
 // ─── Main Client Component ────────────────────────────────────────────────────
 
 export default function TrendPageClient({ points }: { points: TrendPoint[] }) {
+    const t = useTranslations('trends')
     const [activeTab,      setActiveTab]      = useState<'overview' | 'departments' | 'grades'>('overview')
     const [comparisonMode, setComparisonMode] = useState(false)
     const [selectedIds,    setSelectedIds]    = useState<Set<string>>(() => buildSmartDefault(points))
@@ -460,7 +464,7 @@ export default function TrendPageClient({ points }: { points: TrendPoint[] }) {
                 )
                 if (adjValues.some(v => v != null)) {
                     seriesArr.push({
-                        label: `${name} (bereinigt)`,
+                        label: `${name} (${t('adjusted')})`,
                         color: PALETTE[colIdx % PALETTE.length],
                         values: adjValues,
                     })
@@ -474,19 +478,19 @@ export default function TrendPageClient({ points }: { points: TrendPoint[] }) {
             return {
                 xLabels: chartPoints.map(p => p.year),
                 series: [
-                    { label: 'Unbereinigt (Median)',    color: '#f87171',             values: chartPoints.map(p => p.unadjustedMedian) },
-                    { label: 'Bereinigt (Median)',        color: '#60a5fa',             values: chartPoints.map(p => p.adjustedMedian)   },
-                    { label: 'Unbereinigt (Mittelwert)', color: 'rgba(248,113,113,0.45)', values: chartPoints.map(p => p.unadjustedMean)   },
-                    { label: 'Bereinigt (Mittelwert)',   color: 'rgba(96,165,250,0.45)',  values: chartPoints.map(p => p.adjustedMean)     },
+                    { label: t('unadjustedMedian'),    color: '#f87171',             values: chartPoints.map(p => p.unadjustedMedian) },
+                    { label: t('adjustedMedian'),        color: '#60a5fa',             values: chartPoints.map(p => p.adjustedMedian)   },
+                    { label: t('unadjustedMean'), color: 'rgba(248,113,113,0.45)', values: chartPoints.map(p => p.unadjustedMean)   },
+                    { label: t('adjustedMean'),   color: 'rgba(96,165,250,0.45)',  values: chartPoints.map(p => p.adjustedMean)     },
                 ] satisfies Series[],
             }
         }
     }, [chartPoints, comparisonMode])
 
     const TABS = [
-        { id: 'overview',    label: 'Übersicht'       },
-        { id: 'departments', label: 'Bereiche'        },
-        { id: 'grades',      label: 'Entgeltgruppen'  },
+        { id: 'overview',    label: t('overviewTab')       },
+        { id: 'departments', label: t('departmentsTab')    },
+        { id: 'grades',      label: t('gradesTab')         },
     ] as const
 
     // ── Empty state ─────────────────────────────────────────────────────────────
@@ -495,18 +499,18 @@ export default function TrendPageClient({ points }: { points: TrendPoint[] }) {
         return (
             <div className="space-y-6">
                 <div>
-                    <h1 className="text-xl font-bold" style={{ color: 'var(--color-pl-text-primary)' }}>Trendanalyse</h1>
+                    <h1 className="text-xl font-bold" style={{ color: 'var(--color-pl-text-primary)' }}>{t('title')}</h1>
                     <p className="text-sm mt-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                        Entwicklung der Entgeltlücken über mehrere Berichtsjahre
+                        {t('subtitle')}
                     </p>
                 </div>
                 <div className="glass-card p-12 text-center" style={{ borderStyle: 'dashed' }}>
                     <BarChart3 size={36} className="mx-auto mb-3" style={{ color: 'var(--color-pl-text-tertiary)' }} />
                     <p className="text-sm font-medium mb-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                        Noch keine abgeschlossenen Analysen
+                        {t('noAnalyses')}
                     </p>
                     <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                        Führen Sie mindestens eine Analyse durch, um Trendauswertungen zu sehen.
+                        {t('noAnalysesHint')}
                     </p>
                 </div>
             </div>
@@ -518,11 +522,11 @@ export default function TrendPageClient({ points }: { points: TrendPoint[] }) {
     if (chartPoints.length === 0) {
         return (
             <div className="space-y-6">
-                <h1 className="text-xl font-bold" style={{ color: 'var(--color-pl-text-primary)' }}>Trendanalyse</h1>
-                <DatasetSelector all={points} selected={selectedIds} onChange={setSelectedIds} conflicts={conflicts} />
+                <h1 className="text-xl font-bold" style={{ color: 'var(--color-pl-text-primary)' }}>{t('title')}</h1>
+                <DatasetSelector all={points} selected={selectedIds} onChange={setSelectedIds} conflicts={conflicts} t={t} />
                 <div className="glass-card p-10 text-center" style={{ borderStyle: 'dashed' }}>
                     <p className="text-sm" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                        Wählen Sie mindestens einen Datensatz aus.
+                        {t('selectDataset')}
                     </p>
                 </div>
             </div>
@@ -540,12 +544,12 @@ export default function TrendPageClient({ points }: { points: TrendPoint[] }) {
             <div className="flex items-start justify-between gap-4">
                 <div>
                     <h1 className="text-xl font-bold" style={{ color: 'var(--color-pl-text-primary)' }}>
-                        Trendanalyse
+                        {t('title')}
                     </h1>
                     <p className="text-sm mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>
                         {chartPoints.length === 1
-                            ? `${latest.year} · 1 Analyse · ${latest.totalEmployees} Mitarbeitende`
-                            : `${chartPoints[0].year}–${latest.year} · ${chartPoints.length} Datenpunkte · ${latest.totalEmployees} Mitarbeitende (aktuell)`
+                            ? t('singlePointInfo', { year: latest.year, employees: latest.totalEmployees })
+                            : t('multiPointInfo', { fromYear: chartPoints[0].year, toYear: latest.year, count: chartPoints.length, employees: latest.totalEmployees })
                         }
                     </p>
                 </div>
@@ -553,7 +557,7 @@ export default function TrendPageClient({ points }: { points: TrendPoint[] }) {
                     {/* Comparison mode toggle */}
                     <button
                         onClick={() => setComparisonMode(v => !v)}
-                        title="Vergleichsmodus: jeden Datensatz als eigene Linie darstellen"
+                        title={t('comparisonModeTooltip')}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
                         style={{
                             background: comparisonMode ? 'rgba(129,140,248,0.15)' : 'var(--theme-pl-action-hover)',
@@ -561,12 +565,12 @@ export default function TrendPageClient({ points }: { points: TrendPoint[] }) {
                             color: comparisonMode ? '#818cf8' : 'var(--color-pl-text-tertiary)',
                         }}>
                         <GitCompare size={13} />
-                        Vergleichsmodus
+                        {t('comparisonMode')}
                     </button>
                     <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${latest.exceeds5pct ? 'status-red' : 'status-green'}`}>
                         {latest.exceeds5pct
-                            ? <><AlertTriangle size={12} /> 5%-Schwelle überschritten</>
-                            : <><CheckCircle2 size={12} /> Unter 5%-Schwelle</>
+                            ? <><AlertTriangle size={12} /> {t('exceeds5pct')}</>
+                            : <><CheckCircle2 size={12} /> {t('within5pct')}</>
                         }
                     </div>
                 </div>
@@ -578,15 +582,16 @@ export default function TrendPageClient({ points }: { points: TrendPoint[] }) {
                 selected={selectedIds}
                 onChange={setSelectedIds}
                 conflicts={conflicts}
+                t={t}
             />
 
             {/* Delta KPI cards — only when enough points */}
             {chartPoints.length >= 2 && !comparisonMode && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <DeltaCard label="Unbereinigt (Median)"    from={prev?.unadjustedMedian ?? null} to={latest.unadjustedMedian} />
-                    <DeltaCard label="Bereinigt (Median)"      from={prev?.adjustedMedian   ?? null} to={latest.adjustedMedian}   />
-                    <DeltaCard label="Unbereinigt (Mittelwert)" from={prev?.unadjustedMean  ?? null} to={latest.unadjustedMean}   />
-                    <DeltaCard label="Bereinigt (Mittelwert)"   from={prev?.adjustedMean    ?? null} to={latest.adjustedMean}     />
+                    <DeltaCard label={t('unadjustedMedian')}    from={prev?.unadjustedMedian ?? null} to={latest.unadjustedMedian} currentLabel={t('current')} vsPrevLabel={t('vsPrevYear')} prevLabel={t('prevYear', { value: pctFmt(prev?.unadjustedMedian ?? null) })} />
+                    <DeltaCard label={t('adjustedMedian')}      from={prev?.adjustedMedian   ?? null} to={latest.adjustedMedian}   currentLabel={t('current')} vsPrevLabel={t('vsPrevYear')} prevLabel={t('prevYear', { value: pctFmt(prev?.adjustedMedian ?? null) })} />
+                    <DeltaCard label={t('unadjustedMean')} from={prev?.unadjustedMean  ?? null} to={latest.unadjustedMean}   currentLabel={t('current')} vsPrevLabel={t('vsPrevYear')} prevLabel={t('prevYear', { value: pctFmt(prev?.unadjustedMean ?? null) })} />
+                    <DeltaCard label={t('adjustedMean')}   from={prev?.adjustedMean    ?? null} to={latest.adjustedMean}     currentLabel={t('current')} vsPrevLabel={t('vsPrevYear')} prevLabel={t('prevYear', { value: pctFmt(prev?.adjustedMean ?? null) })} />
                 </div>
             )}
 
@@ -610,12 +615,12 @@ export default function TrendPageClient({ points }: { points: TrendPoint[] }) {
                 <div className="space-y-4">
                     <div className="glass-card p-5">
                         <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                            Entgeltlücke im Zeitverlauf
+                            {t('gapOverTime')}
                         </p>
                         <p className="text-xs mb-4" style={{ color: 'var(--color-pl-text-tertiary)' }}>
                             {comparisonMode
-                                ? 'Jeder Datensatz als eigene Linie · bereinigt und unbereinigt'
-                                : 'Rote gestrichelte Linie = 5%-Schwelle (Art. 9 EU RL 2023/970)'
+                                ? t('comparisonDesc')
+                                : t('defaultDesc')
                             }
                         </p>
                         {xLabels.length >= 2
@@ -623,8 +628,8 @@ export default function TrendPageClient({ points }: { points: TrendPoint[] }) {
                             : (
                                 <div className="py-8 text-center text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
                                     {comparisonMode
-                                        ? 'Bitte wählen Sie mindestens 2 Datensätze für einen Trendvergleich.'
-                                        : 'Mindestens 2 Berichtsjahre für einen Trendvergleich erforderlich.'
+                                        ? t('comparisonNeedMore')
+                                        : t('defaultNeedMore')
                                     }
                                 </div>
                             )
@@ -643,12 +648,12 @@ export default function TrendPageClient({ points }: { points: TrendPoint[] }) {
                     {/* Year-by-year data table */}
                     <div className="glass-card p-5 overflow-x-auto">
                         <p className="text-xs font-semibold uppercase tracking-wide mb-4" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                            {comparisonMode ? 'Datensatz-Vergleich' : 'Jahresvergleich'}
+                            {comparisonMode ? t('datasetComparison') : t('yearComparison')}
                         </p>
                         <table className="text-xs w-full border-collapse">
                             <thead>
                                 <tr className="border-b" style={{ borderColor: 'var(--color-pl-border)' }}>
-                                    {['Jahr', 'Datensatz', 'Unbereign. (Med.)', 'Bereign. (Med.)', 'Unbereign. (MW)', 'Bereign. (MW)', 'MA', 'F', 'M', '> 5%'].map(h => (
+                                    {[t('tableYear'), t('tableDataset'), t('tableUnadjMedian'), t('tableAdjMedian'), t('tableUnadjMean'), t('tableAdjMean'), t('tableEmployees'), t('tableFemale'), t('tableMale'), t('tableExceeds')].map(h => (
                                         <th key={h} className="py-2 px-3 text-left font-medium"
                                             style={{ color: 'var(--color-pl-text-tertiary)' }}>{h}</th>
                                     ))}
@@ -664,7 +669,7 @@ export default function TrendPageClient({ points }: { points: TrendPoint[] }) {
                                                 background:  isLatest ? 'rgba(99,102,241,0.06)' : 'transparent',
                                             }}>
                                             <td className="py-2 px-3 font-bold" style={{ color: 'var(--color-pl-text-primary)' }}>
-                                                {p.year} {isLatest && <span className="text-xs ml-1 opacity-50">(aktuell)</span>}
+                                                {p.year} {isLatest && <span className="text-xs ml-1 opacity-50">({t('current')})</span>}
                                             </td>
                                             <td className="py-2 px-3" style={{ color: 'var(--color-pl-text-secondary)', maxWidth: '140px' }}>
                                                 <div className="flex items-center gap-1.5">
@@ -699,12 +704,12 @@ export default function TrendPageClient({ points }: { points: TrendPoint[] }) {
             {activeTab === 'departments' && (
                 <div className="glass-card p-5">
                     <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                        Bereinigte Entgeltlücke je Bereich im Zeitverlauf
+                        {t('deptHeatTitle')}
                     </p>
                     <p className="text-xs mb-5" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                        Farbe: grün &lt; 2% · orange 2–5% · rot &gt; 5% · Median (Bereiche mit weniger als 5 MA anonymisiert)
+                        {t('deptHeatDesc')}
                     </p>
-                    <DeptHeatmap points={chartPoints} />
+                    <DeptHeatmap points={chartPoints} deptLabel={t('deptColumn')} />
                 </div>
             )}
 
@@ -712,17 +717,17 @@ export default function TrendPageClient({ points }: { points: TrendPoint[] }) {
             {activeTab === 'grades' && (
                 <div className="glass-card p-5">
                     <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                        Bereinigte Entgeltlücke je Entgeltgruppe im Zeitverlauf
+                        {t('gradeHeatTitle')}
                     </p>
                     <p className="text-xs mb-5" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                        Farbe: grün &lt; 2% · orange 2–5% · rot &gt; 5%
+                        {t('gradeHeatDesc')}
                     </p>
                     <div className="overflow-x-auto">
                         <table className="text-xs w-full border-collapse">
                             <thead>
                                 <tr>
                                     <th className="text-left py-2 pr-4 font-medium"
-                                        style={{ color: 'var(--color-pl-text-tertiary)', minWidth: '100px' }}>Gruppe</th>
+                                        style={{ color: 'var(--color-pl-text-tertiary)', minWidth: '100px' }}>{t('gradeColumn')}</th>
                                     {chartPoints.map(p => (
                                         <th key={p.analysisId} className="px-2 py-2 font-medium text-center"
                                             style={{ color: 'var(--color-pl-text-tertiary)', minWidth: '70px' }}>

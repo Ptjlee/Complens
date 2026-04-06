@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
+import { getTranslations } from 'next-intl/server'
 
 export async function GET(request: NextRequest) {
     const { searchParams, origin } = new URL(request.url)
@@ -19,8 +20,11 @@ export async function GET(request: NextRequest) {
         return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`)
     }
 
+    const t = await getTranslations('auth')
     const user = sessionData.user
-    const companyName = (user.user_metadata?.company_name as string | undefined) ?? 'Meine Organisation'
+    const companyName   = (user.user_metadata?.company_name as string | undefined) ?? t('defaultOrgName')
+    const fullName      = (user.user_metadata?.full_name as string | undefined) ?? null
+    const preferredLang = (user.user_metadata?.preferred_language as string | undefined) === 'en' ? 'en' : 'de'
 
     // Use the admin client (service role) to provision the tenant —
     // RLS cannot apply here because the org row doesn't exist yet.
@@ -42,9 +46,9 @@ export async function GET(request: NextRequest) {
             .slice(0, 50)
         const uniqueSlug = `${slug}-${Date.now()}`
 
-        // 2. Create the organisation (trial plan, 7 days)
+        // 2. Create the organisation (trial plan, 14 days)
         const trialEndsAt = new Date()
-        trialEndsAt.setDate(trialEndsAt.getDate() + 7)
+        trialEndsAt.setDate(trialEndsAt.getDate() + 14)
 
         const { data: org, error: orgError } = await admin
             .from('organisations')
@@ -53,7 +57,9 @@ export async function GET(request: NextRequest) {
                 slug: uniqueSlug,
                 plan: 'trial',
                 trial_ends_at: trialEndsAt.toISOString(),
-                ai_enabled: true, // Trial gets full PayLens AI access
+                ai_enabled: true,
+                country: 'DE',
+                max_users: 2,
             })
             .select('id')
             .single()
@@ -67,6 +73,8 @@ export async function GET(request: NextRequest) {
                 org_id: org.id,
                 user_id: user.id,
                 role: 'admin',
+                full_name: fullName,
+                preferred_language: preferredLang,
             })
 
             // 4. Seed onboarding progress at step 1

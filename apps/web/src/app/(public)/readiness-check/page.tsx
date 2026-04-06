@@ -3,8 +3,12 @@
 import Link from 'next/link'
 import { ArrowRight, BarChart3, CheckCircle2, ShieldAlert } from 'lucide-react'
 import { Logo } from '@/components/ui/Logo'
+import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher'
+import { useTranslations } from 'next-intl'
 
 export default function ReadinessCheckPage() {
+    const t = useTranslations('readinessCheck')
+
     return (
         <div className="min-h-screen bg-[#0c0f1a] font-sans">
             {/* Header */}
@@ -14,6 +18,7 @@ export default function ReadinessCheckPage() {
                         <Logo size={32} />
                         <span className="text-lg font-bold text-white tracking-tight">CompLens</span>
                     </Link>
+                    <LanguageSwitcher />
                 </div>
             </header>
 
@@ -21,25 +26,25 @@ export default function ReadinessCheckPage() {
                 {/* Hero Section */}
                 <section className="relative py-20 lg:py-32 overflow-hidden">
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-[#5b61ff]/20 blur-[120px] rounded-full pointer-events-none" />
-                    
+
                     <div className="max-w-4xl mx-auto px-4 text-center relative z-10">
 
-                        
+
                         <h1 className="text-4xl md:text-6xl font-extrabold text-white tracking-tight mb-6 leading-tight">
-                            Riskiert Ihr Gender Pay Gap eine <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-[#5b61ff]">gemeinsame Entgeltbewertung?</span>
+                            {t('heroTitle')} <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-[#5b61ff]">{t('heroTitleHighlight')}</span>
                         </h1>
-                        
+
                         <p className="text-lg md:text-xl text-[#a1a1aa] mb-10 max-w-2xl mx-auto leading-relaxed">
-                            Mit der neuen EU-Entgelttransparenzrichtlinie löst ein unbereinigter Gap von über 5% massive finanzielle Risiken aus und kehrt die Beweislast zum Arbeitgeber um.
+                            {t('heroDescription')}
                         </p>
 
-                        <Link 
+                        <Link
                             href="/apply"
                             className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-[#5b61ff] to-[#7b81ff] text-white font-semibold text-lg px-8 py-4 rounded-xl shadow-[0_0_40px_rgba(91,97,255,0.4)] hover:scale-105 transition-transform duration-300"
                         >
-                            Kostenlosen Readiness Check starten <ArrowRight size={20} />
+                            {t('heroCta')} <ArrowRight size={20} />
                         </Link>
-                        <p className="mt-4 text-sm text-[#6e7185]">Sichere, sofortige Berechnung basierend auf Ihren anonymisierten Daten.</p>
+                        <p className="mt-4 text-sm text-[#6e7185]">{t('heroSubtext')}</p>
                     </div>
                 </section>
 
@@ -51,19 +56,19 @@ export default function ReadinessCheckPage() {
                                 <div className="w-12 h-12 bg-[#1e2336] rounded-xl flex items-center justify-center mb-6">
                                     <BarChart3 className="text-[#5b61ff]" size={24} />
                                 </div>
-                                <h3 className="text-xl font-bold text-white mb-3">Sofortige Berechnung</h3>
+                                <h3 className="text-xl font-bold text-white mb-3">{t('featureInstantTitle')}</h3>
                                 <p className="text-[#a1a1aa] text-sm leading-relaxed">
-                                    Laden Sie einfach hoch, was Sie haben — ganz ohne Vorarbeit. CompLens erkennt und bereinigt unstrukturierte Daten automatisch, ordnet Jobtitel ein und liefert Ihnen das Ergebnis in unter 5 Minuten.
+                                    {t('featureInstantDesc')}
                                 </p>
                             </div>
-                            
+
                             <div className="p-8 bg-[#0c0f1a] rounded-2xl border border-[#1e2336]">
                                 <div className="w-12 h-12 bg-[#1e2336] rounded-xl flex items-center justify-center mb-6">
                                     <ShieldAlert className="text-red-500" size={24} />
                                 </div>
-                                <h3 className="text-xl font-bold text-white mb-3">Risikoanalyse</h3>
+                                <h3 className="text-xl font-bold text-white mb-3">{t('featureRiskTitle')}</h3>
                                 <p className="text-[#a1a1aa] text-sm leading-relaxed">
-                                    Identifizieren Sie Lohnlücken je Berufsgruppe – aufgeschlüsselt in Festgehalt und variable Vergütung. Gaps über 5% können Sie direkt mit richtlinienkonformen Begründungen dokumentieren und rechtssicher erklären.
+                                    {t('featureRiskDesc')}
                                 </p>
                             </div>
 
@@ -72,17 +77,17 @@ export default function ReadinessCheckPage() {
                                 <div className="w-12 h-12 bg-[#1e2336] rounded-xl flex items-center justify-center mb-6 relative z-10">
                                     <CheckCircle2 className="text-[#4ade80]" size={24} />
                                 </div>
-                                <h3 className="text-xl font-bold text-white mb-3 relative z-10">EU-konformer Bericht</h3>
+                                <h3 className="text-xl font-bold text-white mb-3 relative z-10">{t('featureReportTitle')}</h3>
                                 <p className="text-[#a1a1aa] text-sm leading-relaxed relative z-10">
-                                    Generieren Sie auf Knopfdruck einen einreichungsfertigen Bericht nach Artikel 9 der EU-Entgelttransparenzrichtlinie — vollständig in dem von Ihrer Behörde geforderten Format.
+                                    {t('featureReportDesc')}
                                 </p>
                             </div>
                         </div>
 
                         <div className="mt-20 text-center">
-                            <p className="text-2xl font-semibold text-white mb-6">Entwickelt von HR-Experten für HR-Leader.</p>
+                            <p className="text-2xl font-semibold text-white mb-6">{t('builtByExperts')}</p>
                             <Link href="/apply" className="inline-block text-[#5b61ff] font-medium hover:underline">
-                                Starten Sie jetzt Ihre Anfrage &rarr;
+                                {t('startApplication')} &rarr;
                             </Link>
                         </div>
                     </div>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useTransition } from 'react'
+import { useTranslations } from 'next-intl'
 import { Bell, MessageSquare, Globe, LogOut, Settings, ChevronDown } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 import { routing } from '@/i18n/routing'
@@ -18,7 +19,8 @@ interface HeaderProps {
 }
 
 export default function Header({ user, fullName }: HeaderProps) {
-    const rawInitials = fullName?.trim() 
+    const t = useTranslations('header')
+    const rawInitials = fullName?.trim()
         ? fullName.trim().split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
         : user.email?.slice(0, 2).toUpperCase()
     const initials = rawInitials || 'CL'
@@ -88,11 +90,10 @@ export default function Header({ user, fullName }: HeaderProps) {
             {/* Right: actions */}
             <div className="flex items-center gap-3">
                 <ThemeToggle />
-                
 
 
                 {showSupport && <SupportTicketModal onClose={() => setShowSupport(false)} />}
-                
+
                 {/* Support trigger */}
                 <button
                     onClick={() => setShowSupport(true)}
@@ -102,17 +103,17 @@ export default function Header({ user, fullName }: HeaderProps) {
                         border: '1px solid color-mix(in srgb, var(--color-pl-accent) 30%, transparent)',
                         color: 'var(--color-pl-accent)',
                     }}
-                    title="Support kontaktieren"
+                    title={t('supportContact')}
                 >
                     <MessageSquare size={13} />
-                    Support
+                    {t('support')}
                 </button>
 
                 {/* Notifications */}
                 <button
                     className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
                     style={{ color: 'var(--color-pl-text-secondary)' }}
-                    title="Benachrichtigungen"
+                    title={t('notifications')}
                 >
                     <Bell size={16} />
                 </button>
@@ -162,7 +163,7 @@ export default function Header({ user, fullName }: HeaderProps) {
                                 borderBottom: '1px solid var(--color-pl-border)',
                             }}>
                                 <div style={{ fontSize: 11, color: 'var(--color-pl-text-sub)', marginBottom: 2 }}>
-                                    Angemeldet als
+                                    {t('loggedInAs')}
                                 </div>
                                 <div style={{
                                     fontSize: 13, fontWeight: 600,
@@ -190,7 +191,7 @@ export default function Header({ user, fullName }: HeaderProps) {
                                 onMouseLeave={e => (e.currentTarget.style.background = 'none')}
                             >
                                 <Settings size={15} />
-                                Einstellungen
+                                {t('settings')}
                             </Link>
 
                             {/* Logout */}
@@ -209,7 +210,7 @@ export default function Header({ user, fullName }: HeaderProps) {
                                 onMouseLeave={e => (e.currentTarget.style.background = 'none')}
                             >
                                 <LogOut size={15} />
-                                {isPending ? 'Abmelden…' : 'Abmelden'}
+                                {isPending ? t('loggingOut') : t('logout')}
                             </button>
                         </div>
                     )}

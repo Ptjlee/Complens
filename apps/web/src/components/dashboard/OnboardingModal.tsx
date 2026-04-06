@@ -1,194 +1,189 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { useTranslations } from 'next-intl'
 import { advanceOnboardingStep, completeOnboarding } from '@/app/(dashboard)/dashboard/onboarding/actions'
 import { Upload, BarChart2, FileText, CheckCircle, X, ChevronRight, ChevronLeft } from 'lucide-react'
 import { Logo } from '@/components/ui/Logo'
 
 // ── Step definitions ─────────────────────────────────────────────────────────
 
-const STEPS = [
-    {
-        id: 1,
-        icon: <span style={{ fontSize: 38 }}>👋</span>,
-        badge: 'Willkommen',
-        title: 'Willkommen bei CompLens',
-        subtitle: 'EU Pay Transparency — einfach gemacht',
-        body: (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <p style={{ color: 'var(--color-pl-text-sub)', fontSize: 14, lineHeight: 1.6 }}>
-                    CompLens hilft Ihnen, die{' '}
-                    <strong style={{ color: 'var(--color-pl-text)' }}>EU Pay Transparency Directive 2023/970</strong>{' '}
-                    vollständig zu erfüllen — automatisiert, DSGVO-konform und in wenigen Minuten.
-                </p>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 4 }}>
-                    {[
-                        { icon: '📊', text: 'Gender Pay Gap berechnen (bereinigt & unbereinigt)' },
-                        { icon: '🔬', text: 'WIF-Analyse nach EU Art. 9' },
-                        { icon: '📄', text: 'PDF & PPT-Berichte auf Knopfdruck' },
-                        { icon: '🛡️', text: 'DSGVO-konform — Server in Frankfurt' },
-                    ].map(({ icon, text }) => (
-                        <div key={text} style={{
-                            background: 'var(--color-pl-surface)',
-                            border: '1px solid var(--color-pl-border)',
-                            borderRadius: 8,
-                            padding: '10px 12px',
-                            display: 'flex',
-                            gap: 8,
-                            alignItems: 'flex-start',
-                        }}>
-                            <span style={{ fontSize: 18, flexShrink: 0 }}>{icon}</span>
-                            <span style={{ fontSize: 12, color: 'var(--color-pl-text-sub)', lineHeight: 1.5 }}>{text}</span>
-                        </div>
-                    ))}
-                </div>
-                <div style={{
-                    background: 'rgba(59,130,246,0.08)',
-                    border: '1px solid rgba(59,130,246,0.25)',
-                    borderRadius: 8,
-                    padding: '10px 14px',
-                    fontSize: 12,
-                    color: '#60a5fa',
-                    lineHeight: 1.6,
-                    marginTop: 4,
-                }}>
-                    💡 <strong>Tipp:</strong> Die meisten Unternehmen benötigen nur 3 Klicks, um ihren ersten Bericht zu erstellen.
-                </div>
-            </div>
-        ),
-    },
-    {
-        id: 2,
-        icon: <Upload size={38} color="var(--color-pl-brand)" />,
-        badge: 'Schritt 1',
-        title: 'Datensatz hochladen',
-        subtitle: 'Ihre Lohndaten — sicher und clever importiert',
-        body: (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <p style={{ color: 'var(--color-pl-text-sub)', fontSize: 14, lineHeight: 1.6 }}>
-                    Laden Sie eine <strong style={{ color: 'var(--color-pl-text)' }}>CSV oder Excel-Datei</strong> mit Ihren Lohndaten hoch.
-                    CompLens erkennt automatisch, welche Spalte welchem Feld entspricht — ohne manuelle Vorbereitung.
-                </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {[
-                        { num: '1', label: 'Import öffnen', desc: 'Menü links → „Datensatz importieren"' },
-                        { num: '2', label: 'Datei hochladen', desc: 'CSV, XLSX — bis zu 10.000 Mitarbeitende' },
-                        { num: '3', label: 'Spalten prüfen', desc: 'Automatisches Mapping — Sie bestätigen' },
-                        { num: '4', label: 'Speichern', desc: 'Datensatz wird DSGVO-konform gespeichert' },
-                    ].map(({ num, label, desc }) => (
-                        <div key={num} style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                            <div style={{
-                                width: 26, height: 26, borderRadius: '50%',
-                                background: 'var(--color-pl-brand)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                fontSize: 12, fontWeight: 700, color: '#fff', flexShrink: 0,
-                            }}>{num}</div>
-                            <div>
-                                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-pl-text)' }}>{label}</div>
-                                <div style={{ fontSize: 12, color: 'var(--color-pl-text-sub)' }}>{desc}</div>
+function useSteps() {
+    const t = useTranslations('onboarding')
+
+    return [
+        {
+            id: 1,
+            icon: <span style={{ fontSize: 38 }}>👋</span>,
+            badge: t('step1Badge'),
+            title: t('step1Title'),
+            subtitle: t('step1Subtitle'),
+            body: (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <p style={{ color: 'var(--color-pl-text-sub)', fontSize: 14, lineHeight: 1.6 }}>
+                        {t.rich('step1Body', { strong: (chunks) => <strong>{chunks}</strong> })}
+                    </p>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 4 }}>
+                        {[
+                            { icon: '📊', text: t('step1Feature1') },
+                            { icon: '🔬', text: t('step1Feature2') },
+                            { icon: '📄', text: t('step1Feature3') },
+                            { icon: '🛡️', text: t('step1Feature4') },
+                        ].map(({ icon, text }) => (
+                            <div key={text} style={{
+                                background: 'var(--color-pl-surface)',
+                                border: '1px solid var(--color-pl-border)',
+                                borderRadius: 8,
+                                padding: '10px 12px',
+                                display: 'flex',
+                                gap: 8,
+                                alignItems: 'flex-start',
+                            }}>
+                                <span style={{ fontSize: 18, flexShrink: 0 }}>{icon}</span>
+                                <span style={{ fontSize: 12, color: 'var(--color-pl-text-sub)', lineHeight: 1.5 }}>{text}</span>
                             </div>
-                        </div>
-                    ))}
-                </div>
-                <div style={{
-                    background: 'rgba(52,211,153,0.08)', border: '1px solid rgba(52,211,153,0.25)',
-                    borderRadius: 8, padding: '8px 12px', fontSize: 12, color: '#34d399',
-                }}>
-                    ✓ Pflichtfelder: Mitarbeiter-ID, Geschlecht, Vergütung, Arbeitsstunden
-                </div>
-            </div>
-        ),
-    },
-    {
-        id: 3,
-        icon: <BarChart2 size={38} color="var(--color-pl-brand)" />,
-        badge: 'Schritt 2',
-        title: 'Erste Analyse starten',
-        subtitle: 'Gender Pay Gap — bereinigt nach EU Art. 9',
-        body: (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <p style={{ color: 'var(--color-pl-text-sub)', fontSize: 14, lineHeight: 1.6 }}>
-                    Wählen Sie Ihren Datensatz und die{' '}
-                    <strong style={{ color: 'var(--color-pl-text)' }}>Wage Influencing Factors (WIF)</strong>,
-                    nach denen der Entgelt-Gap bereinigt werden soll.
-                </p>
-                <div style={{
-                    background: 'var(--color-pl-surface)',
-                    border: '1px solid var(--color-pl-border)',
-                    borderRadius: 8, padding: 14,
-                }}>
-                    <div style={{ fontSize: 12, color: 'var(--color-pl-text-sub)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                        WIF-Faktoren (empfohlen)
-                    </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                        {['Berufsgruppe / Job Family', 'Erfahrungsjahre', 'Standort', 'Vollzeit / Teilzeit', 'Entgeltgruppe'].map(f => (
-                            <span key={f} style={{
-                                background: 'rgba(59,130,246,0.12)',
-                                border: '1px solid rgba(59,130,246,0.25)',
-                                borderRadius: 4, padding: '3px 8px',
-                                fontSize: 11, color: '#60a5fa',
-                            }}>{f}</span>
                         ))}
                     </div>
+                    <div style={{
+                        background: 'rgba(59,130,246,0.08)',
+                        border: '1px solid rgba(59,130,246,0.25)',
+                        borderRadius: 8,
+                        padding: '10px 14px',
+                        fontSize: 12,
+                        color: '#60a5fa',
+                        lineHeight: 1.6,
+                        marginTop: 4,
+                    }}>
+                        💡 {t.rich('step1Tip', { strong: (chunks) => <strong>{chunks}</strong> })}
+                    </div>
                 </div>
-                <div style={{
-                    background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)',
-                    borderRadius: 8, padding: '8px 12px', fontSize: 12, color: '#f59e0b',
-                }}>
-                    ⚠ Bereiche mit &lt;5 Mitarbeitenden werden anonymisiert (DSGVO Art. 17)
+            ),
+        },
+        {
+            id: 2,
+            icon: <Upload size={38} color="var(--color-pl-brand)" />,
+            badge: t('step2Badge'),
+            title: t('step2Title'),
+            subtitle: t('step2Subtitle'),
+            body: (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                    <p style={{ color: 'var(--color-pl-text-sub)', fontSize: 14, lineHeight: 1.6 }}>
+                        {t.rich('step2Body', { strong: (chunks) => <strong>{chunks}</strong> })}
+                    </p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {[
+                            { num: '1', label: t('step2Item1Label'), desc: t('step2Item1Desc') },
+                            { num: '2', label: t('step2Item2Label'), desc: t('step2Item2Desc') },
+                            { num: '3', label: t('step2Item3Label'), desc: t('step2Item3Desc') },
+                            { num: '4', label: t('step2Item4Label'), desc: t('step2Item4Desc') },
+                        ].map(({ num, label, desc }) => (
+                            <div key={num} style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                                <div style={{
+                                    width: 26, height: 26, borderRadius: '50%',
+                                    background: 'var(--color-pl-brand)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    fontSize: 12, fontWeight: 700, color: '#fff', flexShrink: 0,
+                                }}>{num}</div>
+                                <div>
+                                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-pl-text)' }}>{label}</div>
+                                    <div style={{ fontSize: 12, color: 'var(--color-pl-text-sub)' }}>{desc}</div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <div style={{
+                        background: 'rgba(52,211,153,0.08)', border: '1px solid rgba(52,211,153,0.25)',
+                        borderRadius: 8, padding: '8px 12px', fontSize: 12, color: '#34d399',
+                    }}>
+                        {t('step2Required')}
+                    </div>
                 </div>
-                <p style={{ fontSize: 12, color: 'var(--color-pl-text-sub)', lineHeight: 1.5 }}>
-                    CompLens berechnet automatisch den unbereinigten und bereinigten Gender Pay Gap (Median + Mittelwert)
-                    sowie die 5%-Schwelle nach EU Art. 9 Abs. 1c.
-                </p>
-            </div>
-        ),
-    },
-    {
-        id: 4,
-        icon: <FileText size={38} color="var(--color-pl-brand)" />,
-        badge: 'Schritt 3',
-        title: 'Bericht lesen & exportieren',
-        subtitle: 'PDF & PowerPoint — direkt einreichbereit',
-        body: (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <p style={{ color: 'var(--color-pl-text-sub)', fontSize: 14, lineHeight: 1.6 }}>
-                    Ihr Bericht enthält alle Angaben nach{' '}
-                    <strong style={{ color: 'var(--color-pl-text)' }}>EU-Richtlinie 2023/970 Art. 9</strong>{' '}
-                    — bereit für Betriebsrat, Behörde oder Vorstand.
-                </p>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                    {[
-                        { icon: '📄', fmt: 'PDF', desc: 'Vollständiger Bericht mit Methodik und Einzelfallanalyse' },
-                        { icon: '📊', fmt: 'PowerPoint', desc: '9-Folien-Präsentation — CompLens gebrandete, druckfertig' },
-                    ].map(({ icon, fmt, desc }) => (
-                        <div key={fmt} style={{
-                            background: 'var(--color-pl-surface)',
-                            border: '1px solid var(--color-pl-border)',
-                            borderRadius: 8, padding: '12px 14px',
-                        }}>
-                            <div style={{ fontSize: 24, marginBottom: 6 }}>{icon}</div>
-                            <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--color-pl-text)', marginBottom: 4 }}>{fmt}</div>
-                            <div style={{ fontSize: 11, color: 'var(--color-pl-text-sub)', lineHeight: 1.5 }}>{desc}</div>
+            ),
+        },
+        {
+            id: 3,
+            icon: <BarChart2 size={38} color="var(--color-pl-brand)" />,
+            badge: t('step3Badge'),
+            title: t('step3Title'),
+            subtitle: t('step3Subtitle'),
+            body: (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                    <p style={{ color: 'var(--color-pl-text-sub)', fontSize: 14, lineHeight: 1.6 }}>
+                        {t.rich('step3Body', { strong: (chunks) => <strong>{chunks}</strong> })}
+                    </p>
+                    <div style={{
+                        background: 'var(--color-pl-surface)',
+                        border: '1px solid var(--color-pl-border)',
+                        borderRadius: 8, padding: 14,
+                    }}>
+                        <div style={{ fontSize: 12, color: 'var(--color-pl-text-sub)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                            {t('step3WifLabel')}
                         </div>
-                    ))}
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                            {[t('step3Wif1'), t('step3Wif2'), t('step3Wif3'), t('step3Wif4'), t('step3Wif5')].map(f => (
+                                <span key={f} style={{
+                                    background: 'rgba(59,130,246,0.12)',
+                                    border: '1px solid rgba(59,130,246,0.25)',
+                                    borderRadius: 4, padding: '3px 8px',
+                                    fontSize: 11, color: '#60a5fa',
+                                }}>{f}</span>
+                            ))}
+                        </div>
+                    </div>
+                    <div style={{
+                        background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)',
+                        borderRadius: 8, padding: '8px 12px', fontSize: 12, color: '#f59e0b',
+                    }}>
+                        {t('step3Warning')}
+                    </div>
+                    <p style={{ fontSize: 12, color: 'var(--color-pl-text-sub)', lineHeight: 1.5 }}>
+                        {t('step3Footer')}
+                    </p>
                 </div>
-                <div style={{
-                    background: 'rgba(52,211,153,0.08)', border: '1px solid rgba(52,211,153,0.25)',
-                    borderRadius: 8, padding: '10px 14px',
-                    display: 'flex', gap: 10, alignItems: 'center',
-                }}>
-                    <CheckCircle size={18} color="#34d399" />
-                    <span style={{ fontSize: 13, color: '#34d399', fontWeight: 600 }}>
-                        Sie sind bereit! Starten Sie jetzt mit Ihrem ersten Bericht.
-                    </span>
+            ),
+        },
+        {
+            id: 4,
+            icon: <FileText size={38} color="var(--color-pl-brand)" />,
+            badge: t('step4Badge'),
+            title: t('step4Title'),
+            subtitle: t('step4Subtitle'),
+            body: (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                    <p style={{ color: 'var(--color-pl-text-sub)', fontSize: 14, lineHeight: 1.6 }}>
+                        {t.rich('step4Body', { strong: (chunks) => <strong>{chunks}</strong> })}
+                    </p>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                        {[
+                            { icon: '📄', fmt: 'PDF', desc: t('step4PdfDesc') },
+                            { icon: '📊', fmt: 'PowerPoint', desc: t('step4PptDesc') },
+                        ].map(({ icon, fmt, desc }) => (
+                            <div key={fmt} style={{
+                                background: 'var(--color-pl-surface)',
+                                border: '1px solid var(--color-pl-border)',
+                                borderRadius: 8, padding: '12px 14px',
+                            }}>
+                                <div style={{ fontSize: 24, marginBottom: 6 }}>{icon}</div>
+                                <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--color-pl-text)', marginBottom: 4 }}>{fmt}</div>
+                                <div style={{ fontSize: 11, color: 'var(--color-pl-text-sub)', lineHeight: 1.5 }}>{desc}</div>
+                            </div>
+                        ))}
+                    </div>
+                    <div style={{
+                        background: 'rgba(52,211,153,0.08)', border: '1px solid rgba(52,211,153,0.25)',
+                        borderRadius: 8, padding: '10px 14px',
+                        display: 'flex', gap: 10, alignItems: 'center',
+                    }}>
+                        <CheckCircle size={18} color="#34d399" />
+                        <span style={{ fontSize: 13, color: '#34d399', fontWeight: 600 }}>
+                            {t('step4Ready')}
+                        </span>
+                    </div>
                 </div>
-            </div>
-        ),
-    },
-]
-
-const TOTAL = STEPS.length
+            ),
+        },
+    ]
+}
 
 // ── Component ────────────────────────────────────────────────────────────────
 
@@ -197,6 +192,10 @@ interface OnboardingModalProps {
 }
 
 export default function OnboardingModal({ initialStep }: OnboardingModalProps) {
+    const t = useTranslations('onboarding')
+    const STEPS = useSteps()
+    const TOTAL = STEPS.length
+
     const [step, setStep] = useState(Math.max(1, Math.min(initialStep, TOTAL)))
     const [dismissed, setDismissed] = useState(false)
     const canGoBack = step > 1
@@ -273,7 +272,7 @@ export default function OnboardingModal({ initialStep }: OnboardingModalProps) {
                             background: 'var(--color-pl-bg)',
                             border: '1px solid var(--color-pl-border)',
                             borderRadius: 4, padding: '1px 7px',
-                        }}>Einrichtung</span>
+                        }}>{t('setup')}</span>
                     </div>
 
                     {/* Step pills */}
@@ -357,7 +356,7 @@ export default function OnboardingModal({ initialStep }: OnboardingModalProps) {
                                 }}
                             >
                                 <ChevronLeft size={15} />
-                                Zurück
+                                {t('back')}
                             </button>
                         )}
                         {step > 1 && (
@@ -370,7 +369,7 @@ export default function OnboardingModal({ initialStep }: OnboardingModalProps) {
                                     padding: '8px 12px',
                                 }}
                             >
-                                Überspringen
+                                {t('skip')}
                             </button>
                         )}
                         {step === 1 && <div />}
@@ -393,11 +392,11 @@ export default function OnboardingModal({ initialStep }: OnboardingModalProps) {
                         {isLast ? (
                             <>
                                 <CheckCircle size={16} />
-                                Los geht&apos;s!
+                                {t('letsGo')}
                             </>
                         ) : (
                             <>
-                                Weiter
+                                {t('next')}
                                 <ChevronRight size={16} />
                             </>
                         )}

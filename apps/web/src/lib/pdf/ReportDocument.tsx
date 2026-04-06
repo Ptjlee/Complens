@@ -38,10 +38,13 @@ function gapColor(val: number | null): string {
     return abs >= 5 ? RED : abs >= 2 ? AMBER : GREEN
 }
 
-function hrFmt(val: number | null): string {
+function hrFmt(val: number | null, locale = 'de'): string {
     if (val === null || val === 0) return '—'
-    return val.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €/h'
+    return val.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €/h'
 }
+
+// ── Label type for i18n ─────────────────────────────────────
+export type ReportLabels = Record<string, string>
 
 // ── Styles ───────────────────────────────────────────────────
 const s = StyleSheet.create({
@@ -190,10 +193,11 @@ const s = StyleSheet.create({
 })
 
 // ── Inner page wrapper ────────────────────────────────────────
-function InnerPage({ orgName, reportYear, isSample, children }: {
+function InnerPage({ orgName, reportYear, isSample, labels, children }: {
     orgName: string
     reportYear: number
     isSample?: boolean
+    labels: ReportLabels
     children: React.ReactNode
 }) {
     return (
@@ -202,26 +206,26 @@ function InnerPage({ orgName, reportYear, isSample, children }: {
                 {/* Client org name — prominent left */}
                 <Text style={{ ...s.pageHeaderLogo, fontSize: 10, fontFamily: 'Helvetica-Bold' }}>{orgName}</Text>
                 {/* CompLens — subtle right */}
-                <Text style={{ ...s.pageHeaderRight, fontSize: 7, color: '#94a3b8' }}>Entgeltbericht {reportYear} · erstellt mit CompLens</Text>
+                <Text style={{ ...s.pageHeaderRight, fontSize: 7, color: '#94a3b8' }}>{(labels.headerSubtitle || 'Pay Equity Report {year} · generated with CompLens').replace('{year}', String(reportYear))}</Text>
             </View>
             <View style={s.content}>
                 {children}
             </View>
             <View style={s.footer} fixed>
-                <Text style={s.footerTxt}>{orgName} · Entgeltbericht {reportYear} · EU 2023/970</Text>
-                <Text style={s.footerTxt} render={({ pageNumber, totalPages }) => `Seite ${pageNumber} von ${totalPages}`} />
+                <Text style={s.footerTxt}>{(labels.footerLine || '{orgName} · Pay Equity Report {year} · EU 2023/970').replace('{orgName}', orgName).replace('{year}', String(reportYear))}</Text>
+                <Text style={s.footerTxt} render={({ pageNumber, totalPages }) => (labels.pageXofY || 'Page {page} of {total}').replace('{page}', String(pageNumber)).replace('{total}', String(totalPages))} />
             </View>
-            {/* MUSTER overlaid LAST so it renders on top of all content */}
+            {/* Watermark overlaid LAST so it renders on top of all content */}
             {isSample && (
                 <>
                     <View style={{ position: 'absolute', top: 80,  left: 50, zIndex: 9999, opacity: 1 }}>
-                        <Text style={{ fontSize: 110, color: 'rgba(220, 38, 38, 0.55)', fontFamily: 'Helvetica-Bold', transform: 'rotate(-40deg)' }}>MUSTER</Text>
+                        <Text style={{ fontSize: 110, color: 'rgba(220, 38, 38, 0.55)', fontFamily: 'Helvetica-Bold', transform: 'rotate(-40deg)' }}>{labels.sampleWatermark || 'SAMPLE'}</Text>
                     </View>
                     <View style={{ position: 'absolute', top: 320, left: 50, zIndex: 9999, opacity: 1 }}>
-                        <Text style={{ fontSize: 110, color: 'rgba(220, 38, 38, 0.55)', fontFamily: 'Helvetica-Bold', transform: 'rotate(-40deg)' }}>MUSTER</Text>
+                        <Text style={{ fontSize: 110, color: 'rgba(220, 38, 38, 0.55)', fontFamily: 'Helvetica-Bold', transform: 'rotate(-40deg)' }}>{labels.sampleWatermark || 'SAMPLE'}</Text>
                     </View>
                     <View style={{ position: 'absolute', top: 560, left: 50, zIndex: 9999, opacity: 1 }}>
-                        <Text style={{ fontSize: 110, color: 'rgba(220, 38, 38, 0.55)', fontFamily: 'Helvetica-Bold', transform: 'rotate(-40deg)' }}>MUSTER</Text>
+                        <Text style={{ fontSize: 110, color: 'rgba(220, 38, 38, 0.55)', fontFamily: 'Helvetica-Bold', transform: 'rotate(-40deg)' }}>{labels.sampleWatermark || 'SAMPLE'}</Text>
                     </View>
                 </>
             )}
@@ -230,21 +234,20 @@ function InnerPage({ orgName, reportYear, isSample, children }: {
 }
 
 // ── Locked upgrade page (trial/expired, page 5+) ──────────────
-function LockedPage({ orgName, reportYear, sampleMode }: { orgName: string; reportYear: number; sampleMode: 'trial' | 'expired' }) {
+function LockedPage({ orgName, reportYear, sampleMode, labels }: { orgName: string; reportYear: number; sampleMode: 'trial' | 'expired'; labels: ReportLabels }) {
+    const watermark = labels.sampleWatermark || 'SAMPLE'
     const headline = sampleMode === 'expired'
-        ? 'Testzeitraum abgelaufen'
-        : 'Bericht im Testmodus eingeschränkt'
+        ? (labels.lockedExpiredTitle || 'Trial period expired')
+        : (labels.lockedTrialTitle || 'Report restricted in trial mode')
     const body = sampleMode === 'expired'
-        ? 'Ihr Testzeitraum ist beendet. Diese und alle weiteren Seiten sind gesperrt.\n' +
-          'Lizenzieren Sie CompLens, um den vollständigen EU-Entgeltbericht herunterzuladen und rechtssicher einzusetzen.'
-        : 'Diese und alle weiteren Seiten sind im Testmodus gesperrt.\n' +
-          'Lizenzieren Sie CompLens, um den vollständigen EU-Entgeltbericht herunterzuladen und rechtssicher einzusetzen.'
+        ? (labels.lockedExpiredBody || 'Your trial period has ended. This and all subsequent pages are locked.\nLicence CompLens to download the full EU pay equity report.')
+        : (labels.lockedTrialBody || 'This and all subsequent pages are locked in trial mode.\nLicence CompLens to download the full EU pay equity report.')
     return (
         <Page size="A4" style={s.page}>
             {/* Header */}
             <View style={s.pageHeader}>
                 <Text style={s.pageHeaderLogo}>CompLens</Text>
-                <Text style={s.pageHeaderRight}>{orgName} · Entgeltbericht {reportYear}</Text>
+                <Text style={s.pageHeaderRight}>{orgName} · {(labels.payReportYear || 'Pay Equity Report {year}').replace('{year}', String(reportYear))}</Text>
             </View>
 
             {/* Locked content area */}
@@ -285,26 +288,26 @@ function LockedPage({ orgName, reportYear, sampleMode }: { orgName: string; repo
                         fontSize: 11, fontFamily: 'Helvetica-Bold',
                         color: WHITE, textAlign: 'center',
                     }}>
-                        Jetzt upgraden – Vollständigen Bericht auf complens.de freischalten
+                        {labels.lockedCta || 'Upgrade now — Unlock the full report at complens.de'}
                     </Text>
                 </View>
             </View>
 
-            {/* MUSTER watermark on top */}
+            {/* Watermark on top */}
             <View style={{ position: 'absolute', top: 80,  left: 50, zIndex: 9999 }}>
-                <Text style={{ fontSize: 110, color: 'rgba(220, 38, 38, 0.55)', fontFamily: 'Helvetica-Bold', transform: 'rotate(-40deg)' }}>MUSTER</Text>
+                <Text style={{ fontSize: 110, color: 'rgba(220, 38, 38, 0.55)', fontFamily: 'Helvetica-Bold', transform: 'rotate(-40deg)' }}>{watermark}</Text>
             </View>
             <View style={{ position: 'absolute', top: 320, left: 50, zIndex: 9999 }}>
-                <Text style={{ fontSize: 110, color: 'rgba(220, 38, 38, 0.55)', fontFamily: 'Helvetica-Bold', transform: 'rotate(-40deg)' }}>MUSTER</Text>
+                <Text style={{ fontSize: 110, color: 'rgba(220, 38, 38, 0.55)', fontFamily: 'Helvetica-Bold', transform: 'rotate(-40deg)' }}>{watermark}</Text>
             </View>
             <View style={{ position: 'absolute', top: 560, left: 50, zIndex: 9999 }}>
-                <Text style={{ fontSize: 110, color: 'rgba(220, 38, 38, 0.55)', fontFamily: 'Helvetica-Bold', transform: 'rotate(-40deg)' }}>MUSTER</Text>
+                <Text style={{ fontSize: 110, color: 'rgba(220, 38, 38, 0.55)', fontFamily: 'Helvetica-Bold', transform: 'rotate(-40deg)' }}>{watermark}</Text>
             </View>
 
             {/* Footer */}
             <View style={s.footer} fixed>
-                <Text style={s.footerTxt}>CompLens — EU Entgelttransparenz 2023/970</Text>
-                <Text style={s.footerTxt} render={({ pageNumber, totalPages }) => `Seite ${pageNumber} von ${totalPages}`} />
+                <Text style={s.footerTxt}>{labels.lockedFooter || 'CompLens — EU Pay Transparency 2023/970'}</Text>
+                <Text style={s.footerTxt} render={({ pageNumber, totalPages }) => (labels.pageXofY || 'Page {page} of {total}').replace('{page}', String(pageNumber)).replace('{total}', String(totalPages))} />
             </View>
         </Page>
     )
@@ -329,19 +332,23 @@ export type RemPlan = {
     }>
 }
 
-const ACTION_LABELS: Record<string, string> = {
-    salary_increase:      'Gehaltserhöhung',
-    job_reclassification: 'Neueinstufung',
-    promotion:            'Beförderung',
-    bonus_adjustment:     'Bonusanpassung',
-    review:               'Überprüfung',
+function getActionLabels(labels: ReportLabels): Record<string, string> {
+    return {
+        salary_increase:      labels.actionSalaryIncrease || 'Salary Increase',
+        job_reclassification: labels.actionJobReclassification || 'Job Reclassification',
+        promotion:            labels.actionPromotion || 'Promotion',
+        bonus_adjustment:     labels.actionBonusAdjustment || 'Bonus Adjustment',
+        review:               labels.actionReview || 'Review',
+    }
 }
 
-const HORIZON_LABELS: Record<string, string> = {
-    '6m':   '0 – 6 Monate',
-    '1y':   '6 – 12 Monate',
-    '1.5y': '12 – 18 Monate',
-    '2-3y': '2 – 3 Jahre',
+function getHorizonLabels(labels: ReportLabels): Record<string, string> {
+    return {
+        '6m':   labels.horizon6mFull || '0 – 6 months',
+        '1y':   labels.horizon1yFull || '6 – 12 months',
+        '1.5y': labels.horizon15yFull || '12 – 18 months',
+        '2-3y': labels.horizon2to3yFull || '2 – 3 years',
+    }
 }
 
 export type ReportDocumentProps = {
@@ -349,6 +356,8 @@ export type ReportDocumentProps = {
     orgName:                 string
     reportName:              string
     createdAt:               string
+    locale?:                 string
+    labels?:                 ReportLabels
     reportNotes?:            string | null
     sections?:               Set<string> | null
     signatories?:            [string, string, string]
@@ -372,13 +381,17 @@ export type ReportDocumentProps = {
 export function ReportDocument({
     result, orgName, reportName, createdAt, reportNotes, explanations,
     sections, signatories, explanationAdjustedGap, remediationPlans = [],
-    isSample, sampleMode, bandGrades = [],
+    isSample, sampleMode, bandGrades = [], locale: pdfLocale, labels: rawLabels,
 }: ReportDocumentProps) {
     // Helper: is a section enabled? (null/undefined = all enabled)
     const show = (key: string) => !sections || sections.has(key)
-    const sigs = signatories ?? ['HR-Leitung', 'Geschäftsführung', 'Arbeitnehmervertretung']
+    const loc  = pdfLocale ?? 'de'
+    const L    = rawLabels ?? {} as ReportLabels
+    const sigs = signatories ?? [L.sigHrLead || 'HR Lead', L.sigManagement || 'Management', L.sigWorksCouncil || 'Employee Representatives']
     const year   = result.reporting_year
-    const date   = new Date(createdAt).toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' })
+    const date   = new Date(createdAt).toLocaleDateString(loc, { day: '2-digit', month: 'long', year: 'numeric' })
+    const ACTION_LABELS  = getActionLabels(L)
+    const HORIZON_LABELS = getHorizonLabels(L)
     const over   = result.overall
     // Base open/explained on flagged employees (individuals with |gap| ≥ 5%)
     // Employees with no explanation record at all count as "open"
@@ -411,10 +424,10 @@ export function ReportDocument({
 
     return (
         <Document
-            title={`Entgeltbericht ${year} — ${orgName}`}
+            title={(L.pdfDocTitle || 'Pay Equity Report {year} — {orgName}').replace('{year}', String(year)).replace('{orgName}', orgName)}
             author="CompLens"
             subject="EU Pay Transparency Report — Art. 9"
-            language="de"
+            language={L.pdfDocLanguage || loc}
         >
             {/* ── COVER PAGE ─────────────────────────────────── */}
             <Page size="A4" style={s.page}>
@@ -422,9 +435,9 @@ export function ReportDocument({
                     {/* EU badge + tiny CompLens attribution */}
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                         <View style={s.coverBadge}>
-                            <Text style={s.coverBadgeTxt}>EU ENTGELTTRANSPARENZ — ART. 9</Text>
+                            <Text style={s.coverBadgeTxt}>{L.euBadge || 'EU PAY TRANSPARENCY — ART. 9'}</Text>
                         </View>
-                        <Text style={{ fontSize: 7, color: '#94a3b8' }}>Erstellt mit CompLens</Text>
+                        <Text style={{ fontSize: 7, color: '#94a3b8' }}>{L.createdWithCompLens || 'Generated with CompLens'}</Text>
                     </View>
 
                     {/* Title block — org name as the hero */}
@@ -433,30 +446,30 @@ export function ReportDocument({
                             {orgName}
                         </Text>
                         <Text style={s.coverTitle}>
-                            Entgelt{'\n'}gleichheits{'\n'}bericht
+                            {L.coverReportTitle || 'Pay\nEquity\nReport'}
                         </Text>
-                        <Text style={s.coverMeta}>Berichtszeitraum: {year} · Erstellt: {date}</Text>
+                        <Text style={s.coverMeta}>{(L.coverReportPeriod || 'Reporting period: {year} · Generated: {date}').replace('{year}', String(year)).replace('{date}', date)}</Text>
                         <Text style={{ ...s.coverMeta, marginTop: 8 }}>{reportName}</Text>
                     </View>
 
                     {/* Footer — legal ref only */}
                     <View>
                         <Text style={s.coverFooter}>
-                            Konform mit EU-Richtlinie 2023/970 und EntgTranspG
+                            {L.coverCompliance || 'Compliant with EU Directive 2023/970 and national transposition'}
                         </Text>
                     </View>
                 </View>
-                {/* MUSTER after cover content — renders ON TOP of everything */}
+                {/* Watermark after cover content — renders ON TOP of everything */}
                 {isSample && (
                     <>
                         <View style={{ position: 'absolute', top: 100, left: 50, zIndex: 9999 }}>
-                            <Text style={{ fontSize: 110, color: 'rgba(220, 38, 38, 0.55)', fontFamily: 'Helvetica-Bold', transform: 'rotate(-40deg)' }}>MUSTER</Text>
+                            <Text style={{ fontSize: 110, color: 'rgba(220, 38, 38, 0.55)', fontFamily: 'Helvetica-Bold', transform: 'rotate(-40deg)' }}>{L.sampleWatermark || 'SAMPLE'}</Text>
                         </View>
                         <View style={{ position: 'absolute', top: 370, left: 50, zIndex: 9999 }}>
-                            <Text style={{ fontSize: 110, color: 'rgba(220, 38, 38, 0.55)', fontFamily: 'Helvetica-Bold', transform: 'rotate(-40deg)' }}>MUSTER</Text>
+                            <Text style={{ fontSize: 110, color: 'rgba(220, 38, 38, 0.55)', fontFamily: 'Helvetica-Bold', transform: 'rotate(-40deg)' }}>{L.sampleWatermark || 'SAMPLE'}</Text>
                         </View>
                         <View style={{ position: 'absolute', top: 630, left: 50, zIndex: 9999 }}>
-                            <Text style={{ fontSize: 110, color: 'rgba(220, 38, 38, 0.55)', fontFamily: 'Helvetica-Bold', transform: 'rotate(-40deg)' }}>MUSTER</Text>
+                            <Text style={{ fontSize: 110, color: 'rgba(220, 38, 38, 0.55)', fontFamily: 'Helvetica-Bold', transform: 'rotate(-40deg)' }}>{L.sampleWatermark || 'SAMPLE'}</Text>
                         </View>
                     </>
                 )}
@@ -464,10 +477,10 @@ export function ReportDocument({
 
             {/* ── EXECUTIVE SUMMARY ──────────────────────────── */}
             {show('executiveSummary') && (
-            <InnerPage orgName={orgName} reportYear={year} isSample={isSample}>
-                <Text style={s.sectionTitle}>Executive Summary</Text>
+            <InnerPage orgName={orgName} reportYear={year} isSample={isSample} labels={L}>
+                <Text style={s.sectionTitle}>{L.executiveSummary || 'Executive Summary'}</Text>
                 <Text style={s.sectionSubtitle}>
-                    Gesamtergebnis der Entgeltanalyse nach EU-Richtlinie 2023/970 Art. 9
+                    {L.summarySubtitle || 'Overall result of the pay analysis per EU Directive 2023/970 Art. 9'}
                 </Text>
                 <View style={s.divider} />
 
@@ -475,20 +488,19 @@ export function ReportDocument({
                 {over.exceeds_5pct ? (
                     <View style={s.alertRed}>
                         <Text style={{ ...s.alertTitle, color: RED }}>
-                            ⚠ 5%-Schwelle überschritten — Gemeinsame Entgeltbewertung erforderlich
+                            {'⚠ ' + (L.alertExceeded || '5% threshold exceeded — Joint pay assessment required')}
                         </Text>
                         <Text style={s.alertText}>
-                            Gemäß Art. 9 Abs. 1 Buchstabe c muss eine gemeinsame Bewertung der Entgeltstrukturen
-                            durchgeführt werden. Die Arbeitnehmervertretung ist einzubeziehen.
+                            {L.alertExceededBody || 'Under Art. 9(1)(c), a joint assessment of pay structures must be carried out. Employee representatives must be involved.'}
                         </Text>
                     </View>
                 ) : (
                     <View style={s.alertGreen}>
                         <Text style={{ ...s.alertTitle, color: GREEN }}>
-                            ✓ Entgeltlücke unterhalb der 5%-Schwelle
+                            {'✓ ' + (L.alertBelowTitle || 'Pay gap below the 5% threshold')}
                         </Text>
                         <Text style={s.alertText}>
-                            Kein unmittelbarer Handlungsbedarf nach Art. 9 Abs. 1. Jährliche Überprüfung empfohlen.
+                            {L.alertBelowBody || 'No immediate action required under Art. 9(1). Annual review recommended.'}
                         </Text>
                     </View>
                 )}
@@ -496,66 +508,66 @@ export function ReportDocument({
                 {/* ── Row 1: Organisation data ── */}
                 <View style={s.kpiRow}>
                     <View style={s.kpiCard}>
-                        <Text style={s.kpiLabel}>MITARBEITENDE</Text>
+                        <Text style={s.kpiLabel}>{L.kpiEmployees || 'EMPLOYEES'}</Text>
                         <Text style={{ ...s.kpiValue, color: NAVY }}>{result.total_employees}</Text>
                         <Text style={s.kpiDesc}>F {over.female_count} · M {over.male_count}</Text>
                     </View>
                     <View style={s.kpiCard}>
-                        <Text style={s.kpiLabel}>ANALYSE-DATUM</Text>
+                        <Text style={s.kpiLabel}>{L.kpiAnalysisDate || 'ANALYSIS DATE'}</Text>
                         <Text style={{ ...s.kpiValue, color: NAVY, fontSize: 15 }}>{date}</Text>
-                        <Text style={s.kpiDesc}>Berichtsjahr {year}</Text>
+                        <Text style={s.kpiDesc}>{(L.kpiReportingYear || 'Reporting year {year}').replace('{year}', String(year))}</Text>
                     </View>
                     <View style={s.kpiCard}>
-                        <Text style={s.kpiLabel}>VOLLZEIT-REFERENZ</Text>
-                        <Text style={{ ...s.kpiValue, color: NAVY, fontSize: 15 }}>{result.standard_weekly_hours}h/Wo</Text>
-                        <Text style={s.kpiDesc}>Stundenabdeckung: {result.hours_coverage_pct}%</Text>
+                        <Text style={s.kpiLabel}>{L.kpiFullTimeRef || 'FULL-TIME REFERENCE'}</Text>
+                        <Text style={{ ...s.kpiValue, color: NAVY, fontSize: 15 }}>{(L.kpiHoursPerWeek || '{hours}h/wk').replace('{hours}', String(result.standard_weekly_hours))}</Text>
+                        <Text style={s.kpiDesc}>{(L.kpiHoursCoverage || 'Hours coverage: {pct}%').replace('{pct}', String(result.hours_coverage_pct))}</Text>
                     </View>
                 </View>
 
-                {/* ── Row 2: Pflicht-GPG (Median) — Art. 9 mandatory ── */}
+                {/* ── Row 2: Mandatory GPG (Median) — Art. 9 ── */}
                 <View style={{ marginTop: 6, marginBottom: 2 }}>
                     <Text style={{ fontSize: 6.5, color: MUTED, fontFamily: 'Helvetica-Bold', letterSpacing: 0.8, marginBottom: 4 }}>
-                        PFLICHTANGABEN NACH ART. 9 EU-RL 2023/970
+                        {L.kpiMandatoryArt9 || 'MANDATORY DISCLOSURES PER ART. 9 EU DIR. 2023/970'}
                     </Text>
                 </View>
                 <View style={s.kpiRow}>
                     <View style={s.kpiCard}>
-                        <Text style={s.kpiLabel}>ENTGELTLÜCKE UNBEREINIGT (MEDIAN) · ART. 9</Text>
+                        <Text style={s.kpiLabel}>{L.kpiUnadjustedMedianArt9 || 'UNADJUSTED PAY GAP (MEDIAN) · ART. 9'}</Text>
                         <Text style={{ ...s.kpiValue, color: gapColor(over.unadjusted_median) }}>
                             {pct(over.unadjusted_median)}
                         </Text>
-                        <Text style={s.kpiDesc}>Rohes Lohngefälle · Mittelwert: {pct(over.unadjusted_mean)}</Text>
+                        <Text style={s.kpiDesc}>{(L.kpiRawGap || 'Raw pay gap · Mean: {mean}').replace('{mean}', pct(over.unadjusted_mean))}</Text>
                     </View>
                     <View style={s.kpiCard}>
-                        <Text style={s.kpiLabel}>STRUKTURELL BEREINIGT (MEDIAN) · ART. 9</Text>
+                        <Text style={s.kpiLabel}>{L.kpiAdjustedMedianArt9 || 'STRUCTURALLY ADJUSTED (MEDIAN) · ART. 9'}</Text>
                         <Text style={{ ...s.kpiValue, color: gapColor(over.adjusted_median) }}>
                             {pct(over.adjusted_median)}
                         </Text>
                         <Text style={s.kpiDesc}>WIF: {result.wif_factors_used.join(', ')}</Text>
                     </View>
                     <View style={s.kpiCard}>
-                        <Text style={s.kpiLabel}>NACH BEGRÜNDUNGEN (MEDIAN) · ART. 10</Text>
+                        <Text style={s.kpiLabel}>{L.kpiAfterExplArt10 || 'AFTER JUSTIFICATIONS (MEDIAN) · ART. 10'}</Text>
                         <Text style={{ ...s.kpiValue, color: explanationAdjustedGap != null ? gapColor(explanationAdjustedGap) : MUTED }}>
                             {explanationAdjustedGap != null ? pct(explanationAdjustedGap) : '—'}
                         </Text>
                         <Text style={s.kpiDesc}>
                             {explanations.filter(e => e.status === 'explained').length > 0
-                                ? `Nach ${explanations.filter(e => e.status === 'explained').length} Begründungen (Art. 18)`
-                                : 'Keine abgeschlossenen Begründungen'}
+                                ? (L.afterNExplanations || 'After {count} justifications (Art. 18)').replace('{count}', String(explanations.filter(e => e.status === 'explained').length))
+                                : (L.noCompletedExplanations || 'No completed justifications')}
                         </Text>
                     </View>
                 </View>
 
-                {/* ── Row 3: Mittelwerte + Variable Vergütung ── */}
+                {/* ── Row 3: Means + Variable Pay ── */}
                 <View style={s.kpiRow}>
                     <View style={s.kpiCard}>
-                        <Text style={s.kpiLabel}>UNBEREINIGT (MITTELWERT)</Text>
+                        <Text style={s.kpiLabel}>{L.kpiUnadjustedMean || 'UNADJUSTED (MEAN)'}</Text>
                         <Text style={{ ...s.kpiValue, color: gapColor(over.unadjusted_mean), fontSize: 15 }}>
                             {pct(over.unadjusted_mean)}
                         </Text>
                     </View>
                     <View style={s.kpiCard}>
-                        <Text style={s.kpiLabel}>BEREINIGT (MITTELWERT)</Text>
+                        <Text style={s.kpiLabel}>{L.kpiAdjustedMean || 'ADJUSTED (MEAN)'}</Text>
                         <Text style={{ ...s.kpiValue, color: gapColor(over.adjusted_mean), fontSize: 15 }}>
                             {pct(over.adjusted_mean)}
                         </Text>
@@ -570,47 +582,47 @@ export function ReportDocument({
                         const mPct = mTotal > 0 ? ((mVar / mTotal) * 100).toFixed(0) : '—'
                         return (
                             <View style={s.kpiCard}>
-                                <Text style={s.kpiLabel}>VARIABLE VERGÜT. · ART. 9(1)C</Text>
+                                <Text style={s.kpiLabel}>{L.kpiVariablePayArt9 || 'VARIABLE PAY · ART. 9(1)(C)'}</Text>
                                 <Text style={{ ...s.kpiValue, fontSize: 15, color: NAVY }}>F {fPct}%</Text>
                                 <Text style={{ ...s.kpiValue, fontSize: 15, color: NAVY, marginTop: 1 }}>M {mPct}%</Text>
-                                <Text style={s.kpiDesc}>Anteil mit var. Entgelt nach Geschlecht</Text>
+                                <Text style={s.kpiDesc}>{L.kpiVariablePayDesc || 'Share receiving variable pay by gender'}</Text>
                             </View>
                         )
                     })()}
                 </View>
 
-                {/* ── Row 4: Stundenlohn-Mediane ── */}
+                {/* ── Row 4: Hourly pay medians ── */}
                 <View style={s.kpiRow}>
                     <View style={s.kpiCard}>
-                        <Text style={s.kpiLabel}>MEDIAN STUNDENLOHN FRAUEN</Text>
+                        <Text style={s.kpiLabel}>{L.kpiMedianHourlyFemale || 'MEDIAN HOURLY PAY WOMEN'}</Text>
                         <Text style={{ ...s.kpiValue, color: NAVY, fontSize: 15 }}>
-                            {hrFmt(over.female_median_salary)}
+                            {hrFmt(over.female_median_salary, loc)}
                         </Text>
                     </View>
                     <View style={s.kpiCard}>
-                        <Text style={s.kpiLabel}>MEDIAN STUNDENLOHN MÄNNER</Text>
+                        <Text style={s.kpiLabel}>{L.kpiMedianHourlyMale || 'MEDIAN HOURLY PAY MEN'}</Text>
                         <Text style={{ ...s.kpiValue, color: NAVY, fontSize: 15 }}>
-                            {hrFmt(over.male_median_salary)}
+                            {hrFmt(over.male_median_salary, loc)}
                         </Text>
                     </View>
                     <View style={s.kpiCard}>
-                        <Text style={s.kpiLabel}>DIFFERENZ (MEDIAN)</Text>
+                        <Text style={s.kpiLabel}>{L.kpiDifferenceMedian || 'DIFFERENCE (MEDIAN)'}</Text>
                         <Text style={{ ...s.kpiValue, color: gapColor(over.unadjusted_median), fontSize: 15 }}>
-                            {hrFmt(over.male_median_salary - over.female_median_salary)}
+                            {hrFmt(over.male_median_salary - over.female_median_salary, loc)}
                         </Text>
-                        <Text style={s.kpiDesc}>Absoluter Unterschied €/Std.</Text>
+                        <Text style={s.kpiDesc}>{L.absoluteDiffHourly || 'Absolute difference EUR/hr'}</Text>
                     </View>
                 </View>
 
                 {/* Methodology note */}
-                <Text style={s.sectionTitle}>Methodik</Text>
+                <Text style={s.sectionTitle}>{L.methodologyTitle || 'Methodology'}</Text>
                 <View style={s.divider} />
                 <View style={{ flexDirection: 'row', gap: 16 }}>
                     {[
-                        { label: 'Berechnungsbasis', value: 'Bruttostundenverdienst (Art. 3 EU 2023/970)' },
-                        { label: 'WIF-Faktoren', value: result.wif_factors_used.join(', ') },
-                        { label: 'Vollzeit-Referenz', value: `${result.standard_weekly_hours}h/Woche` },
-                        { label: 'Stundenabdeckung', value: `${result.hours_coverage_pct}%` },
+                        { label: L.methodBasis || 'Calculation basis', value: L.methodBasisValue || 'Gross hourly earnings (Art. 3 EU 2023/970)' },
+                        { label: L.methodWif || 'WIF factors', value: result.wif_factors_used.join(', ') },
+                        { label: L.methodFullTime || 'Full-time reference', value: (L.methodFullTimeValue || '{hours}h/week').replace('{hours}', String(result.standard_weekly_hours)) },
+                        { label: L.methodHoursCoverage || 'Hours coverage', value: `${result.hours_coverage_pct}%` },
                     ].map(({ label, value }) => (
                         <View key={label} style={{ flex: 1, backgroundColor: SURFACE, borderRadius: 6, padding: 10, borderWidth: 1, borderColor: BORDER }}>
                             <Text style={{ fontSize: 7, color: MUTED, fontFamily: 'Helvetica-Bold', marginBottom: 3 }}>{label}</Text>
@@ -624,8 +636,8 @@ export function ReportDocument({
 
             {/* ── HR NOTES — own page so it never strands ─────────────── */}
             {show('executiveSummary') && !!reportNotes && (
-            <InnerPage orgName={orgName} reportYear={year} isSample={isSample}>
-                <Text style={s.sectionTitle}>HR-Anmerkungen</Text>
+            <InnerPage orgName={orgName} reportYear={year} isSample={isSample} labels={L}>
+                <Text style={s.sectionTitle}>{L.hrNotesTitle || 'HR Notes'}</Text>
                 <View style={s.divider} />
                 <View style={{
                     backgroundColor: SURFACE, borderRadius: 8,
@@ -638,21 +650,21 @@ export function ReportDocument({
 
             {/* ── DEPARTMENT BREAKDOWN ───────────────────────── */}
             {show('departments') && (
-            <InnerPage orgName={orgName} reportYear={year} isSample={isSample}>
-                <Text style={s.sectionTitle}>Entgeltlücken nach Bereich</Text>
+            <InnerPage orgName={orgName} reportYear={year} isSample={isSample} labels={L}>
+                <Text style={s.sectionTitle}>{L.deptTitle || 'Pay Gaps by Department'}</Text>
                 <Text style={s.sectionSubtitle}>
-                    Bereinigte Entgeltlücke (Median) je Bereich · Bereiche mit &lt; 5 MA anonymisiert
+                    {L.deptSubtitlePdf || 'Adjusted pay gap (median) per department · Departments with < 5 employees anonymised'}
                 </Text>
                 <View style={s.divider} />
 
                 <View style={s.tableHeader}>
-                    <Text style={{ ...s.tableHeaderTxt, flex: 2.5 }}>Bereich</Text>
-                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>MA</Text>
-                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>F</Text>
-                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>M</Text>
-                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>Unbereinigt</Text>
-                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>Bereinigt</Text>
-                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>Nach Begr.</Text>
+                    <Text style={{ ...s.tableHeaderTxt, flex: 2.5 }}>{L.colDepartment || 'Department'}</Text>
+                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>{L.colEmployees || 'Emp.'}</Text>
+                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>{L.colFemale || 'F'}</Text>
+                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>{L.colMale || 'M'}</Text>
+                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>{L.colUnadjusted || 'Unadjusted'}</Text>
+                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>{L.colAdjusted || 'Adjusted'}</Text>
+                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>{L.colAfterExplShort || 'After Justif.'}</Text>
                     <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>&gt; 5%</Text>
                 </View>
                 {result.by_department.map((d, i) => (
@@ -662,7 +674,7 @@ export function ReportDocument({
                         <Text style={{ ...s.tableCellR }}>{d.suppressed ? '—' : d.gap.female_count}</Text>
                         <Text style={{ ...s.tableCellR }}>{d.suppressed ? '—' : d.gap.male_count}</Text>
                         <Text style={{ ...s.tableCellR, color: d.suppressed ? MUTED : gapColor(d.gap.unadjusted_median) }}>
-                            {d.suppressed ? 'anonymisiert' : pct(d.gap.unadjusted_median)}
+                            {d.suppressed ? (L.colAnonymised || 'anonymised') : pct(d.gap.unadjusted_median)}
                         </Text>
                         <Text style={{ ...s.tableCellR, color: d.suppressed ? MUTED : gapColor(d.gap.adjusted_median), fontFamily: 'Helvetica-Bold' }}>
                             {d.suppressed ? '—' : pct(d.gap.adjusted_median)}
@@ -673,7 +685,7 @@ export function ReportDocument({
                             return <Text style={{ ...s.tableCellR, color: nb != null ? gapColor(nb) : MUTED }}>{nb != null ? pct(nb) : '—'}</Text>
                         })()}
                         <Text style={{ ...s.tableCellR, color: d.gap.exceeds_5pct ? RED : GREEN }}>
-                            {d.suppressed ? '—' : d.gap.exceeds_5pct ? 'Ja' : 'Nein'}
+                            {d.suppressed ? '—' : d.gap.exceeds_5pct ? (L.yes || 'Yes') : (L.no || 'No')}
                         </Text>
                     </View>
                 ))}
@@ -682,10 +694,10 @@ export function ReportDocument({
 
             {/* ── SALARY BANDS & COMPA-RATIO — EU Art. 9 ──── */}
             {show('salaryBands') && bandGrades.length > 0 && (
-            <InnerPage orgName={orgName} reportYear={year} isSample={isSample}>
-                <Text style={s.sectionTitle}>Entgeltbänder & Compa-Ratio</Text>
+            <InnerPage orgName={orgName} reportYear={year} isSample={isSample} labels={L}>
+                <Text style={s.sectionTitle}>{L.salaryBandsTitle || 'Salary Bands & Compa-Ratio'}</Text>
                 <Text style={s.sectionSubtitle}>
-                    EU-Richtlinie 2023/970 Art. 9 — Entgeltberichterstattung nach Entgeltkategorie und Geschlecht
+                    {L.salaryBandsSubtitle || 'EU Directive 2023/970 Art. 9 — Pay reporting by pay category and gender'}
                 </Text>
                 <View style={s.divider} />
 
@@ -697,19 +709,19 @@ export function ReportDocument({
                     return (
                         <View style={s.kpiRow}>
                             <View style={s.kpiCard}>
-                                <Text style={s.kpiLabel}>ENTGELTGRUPPEN GESAMT</Text>
+                                <Text style={s.kpiLabel}>{L.kpiGradesTotal || 'PAY GRADES TOTAL'}</Text>
                                 <Text style={{ ...s.kpiValue, color: NAVY }}>{bandGrades.length}</Text>
                                 <Text style={s.kpiDesc}>{bandGrades[0]?.band_name ?? ''}</Text>
                             </View>
                             <View style={s.kpiCard}>
-                                <Text style={s.kpiLabel}>EU-KONFORM (&lt; 5%)</Text>
+                                <Text style={s.kpiLabel}>{L.kpiEuCompliant || 'EU-COMPLIANT (< 5%)'}</Text>
                                 <Text style={{ ...s.kpiValue, color: compliant === totalWithData ? GREEN : AMBER }}>{compliant}</Text>
-                                <Text style={s.kpiDesc}>Intra-Gruppen-Lücke unter Schwellenwert</Text>
+                                <Text style={s.kpiDesc}>{L.kpiEuCompliantDesc || 'Intra-grade gap below threshold'}</Text>
                             </View>
                             <View style={s.kpiCard}>
-                                <Text style={s.kpiLabel}>HANDLUNGSBEDARF (≥ 5%)</Text>
+                                <Text style={s.kpiLabel}>{L.kpiActionRequired || 'ACTION REQUIRED (≥ 5%)'}</Text>
                                 <Text style={{ ...s.kpiValue, color: nonCompliant > 0 ? RED : GREEN }}>{nonCompliant}</Text>
-                                <Text style={s.kpiDesc}>Art. 10 Begründungspflicht</Text>
+                                <Text style={s.kpiDesc}>{L.kpiActionRequiredDesc || 'Art. 10 justification obligation'}</Text>
                             </View>
                         </View>
                     )
@@ -717,17 +729,17 @@ export function ReportDocument({
 
                 {/* Art. 9 compliance table */}
                 <Text style={{ fontSize: 9.5, fontFamily: 'Helvetica-Bold', color: NAVY, marginBottom: 8, marginTop: 4 }}>
-                    Entgelt nach Kategorie und Geschlecht (Art. 9 EU-RL 2023/970)
+                    {L.salaryByCategoryTitle || 'Pay by Category and Gender (Art. 9 EU Dir. 2023/970)'}
                 </Text>
                 <View style={s.tableHeader}>
-                    <Text style={{ ...s.tableHeaderTxt, flex: 1 }}>Gruppe</Text>
-                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>n</Text>
-                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>Median F.</Text>
-                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>Median M.</Text>
-                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>Intra-Luecke</Text>
-                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>Compa F</Text>
-                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>Compa M</Text>
-                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right', flex: 0.8 }}>EU</Text>
+                    <Text style={{ ...s.tableHeaderTxt, flex: 1 }}>{L.colGroup || 'Grade'}</Text>
+                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>{L.colN || 'n'}</Text>
+                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>{L.colMedianF || 'Median F.'}</Text>
+                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>{L.colMedianM || 'Median M.'}</Text>
+                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>{L.colIntraGap || 'Intra-gap'}</Text>
+                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>{L.colCompaF || 'Compa F'}</Text>
+                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>{L.colCompaM || 'Compa M'}</Text>
+                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right', flex: 0.8 }}>{L.colEu || 'EU'}</Text>
                 </View>
                 {bandGrades.map((g, i) => {
                     const gap    = g.intra_grade_gap_pct
@@ -738,7 +750,7 @@ export function ReportDocument({
                     const compaM = g.internal_male_median && g.mid_salary && g.mid_salary > 0
                         ? Math.round(g.internal_male_median  / g.mid_salary * 100) : null
                     const toEur = (v: number | null) => v == null ? '—'
-                        : v.toLocaleString('de-DE', { maximumFractionDigits: 0 }) + ' €'
+                        : v.toLocaleString(loc, { maximumFractionDigits: 0 }) + ' €'
                     return (
                         <View key={g.id} style={{ ...s.tableRow, backgroundColor: i % 2 === 0 ? WHITE : SURFACE }}>
                             <Text style={{ ...s.tableCellBold, flex: 1 }}>{g.job_grade}</Text>
@@ -754,17 +766,14 @@ export function ReportDocument({
                             </Text>
                             <Text style={{ ...s.tableCellR, flex: 0.8, fontFamily: 'Helvetica-Bold',
                                 color: g.internal_n == null ? MUTED : g.exceeds_5pct ? RED : GREEN }}>
-                                {g.internal_n == null ? '—' : g.exceeds_5pct ? 'n.k.' : 'ok'}
+                                {g.internal_n == null ? '—' : g.exceeds_5pct ? (L.euNotCompliant || 'n.c.') : (L.euCompliant || 'ok')}
                             </Text>
                         </View>
                     )
                 })}
 
                 <Text style={{ fontSize: 7.5, color: MUTED, marginTop: 14, lineHeight: 1.5 }}>
-                    Gemäß Art. 9 EU-RL 2023/970 müssen Arbeitgeber mit ≥ 100 Beschäftigten Entgeltinformationen nach
-                    Entgeltkategorie und Geschlecht veröffentlichen. Eine Intra-Gruppen-Lücke ≥ 5% löst nach Art. 10
-                    eine Begründungspflicht aus. Compa-Ratio = Median ÷ Bandmitte × 100.
-                    Alle Werte: Bruttogehalt jährlich in EUR. Quelle: importierte Mitarbeiterdaten.
+                    {L.salaryBandsFootnote || 'Per Art. 9 EU Dir. 2023/970, employers with 100+ employees must publish pay information by pay category and gender. An intra-grade gap of 5% or more triggers justification obligations under Art. 10. Compa-Ratio = Median / Band midpoint x 100. All values: gross annual salary in EUR. Source: imported employee data.'}
                 </Text>
             </InnerPage>
             )}
@@ -772,31 +781,31 @@ export function ReportDocument({
 
             {/* ── PAGE 5+ LOCKED FOR TRIAL ──────────────────── */}
             {isSample ? (
-                <LockedPage orgName={orgName} reportYear={year} sampleMode={sampleMode ?? 'trial'} />
+                <LockedPage orgName={orgName} reportYear={year} sampleMode={sampleMode ?? 'trial'} labels={L} />
             ) : (
             <>
 
             {/* ── GRADE & QUARTILE ───────────────────────────── */}
             {(show('grades') || show('quartiles')) && (
-            <InnerPage orgName={orgName} reportYear={year} isSample={isSample}>
+            <InnerPage orgName={orgName} reportYear={year} isSample={isSample} labels={L}>
                 {/* Grade breakdown — only show old gap table if no band data exists */}
                 {show('grades') && result.by_grade.length > 0 && bandGrades.length === 0 && (
                     <>
-                        <Text style={s.sectionTitle}>Entgeltlücken nach Entgeltgruppe</Text>
+                        <Text style={s.sectionTitle}>{L.gradeGapTitle || 'Pay Gaps by Pay Grade'}</Text>
                         <View style={s.divider} />
                         <View style={s.tableHeader}>
-                            <Text style={{ ...s.tableHeaderTxt, flex: 2 }}>Entgeltgruppe</Text>
-                            <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>MA</Text>
-                            <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>Unbereinigt</Text>
-                            <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>Bereinigt</Text>
-                            <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>Nach Begr.</Text>
+                            <Text style={{ ...s.tableHeaderTxt, flex: 2 }}>{L.colGrade || 'Pay Grade'}</Text>
+                            <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>{L.colEmployees || 'Emp.'}</Text>
+                            <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>{L.colUnadjusted || 'Unadjusted'}</Text>
+                            <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>{L.colAdjusted || 'Adjusted'}</Text>
+                            <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>{L.colAfterExplShort || 'After Justif.'}</Text>
                         </View>
                         {result.by_grade.map((g, i) => (
                             <View key={g.grade} style={{ ...s.tableRow, backgroundColor: i % 2 === 0 ? WHITE : '#f8fafc' }}>
                                 <Text style={{ ...s.tableCellBold, flex: 2 }}>{g.grade}</Text>
                                 <Text style={s.tableCellR}>{g.employee_count}</Text>
                                 <Text style={{ ...s.tableCellR, color: g.suppressed ? MUTED : gapColor(g.gap.unadjusted_median) }}>
-                                    {g.suppressed ? 'anonymisiert' : pct(g.gap.unadjusted_median)}
+                                    {g.suppressed ? (L.colAnonymised || 'anonymised') : pct(g.gap.unadjusted_median)}
                                 </Text>
                                 <Text style={{ ...s.tableCellR, color: g.suppressed ? MUTED : gapColor(g.gap.adjusted_median), fontFamily: 'Helvetica-Bold' }}>
                                     {g.suppressed ? '—' : pct(g.gap.adjusted_median)}
@@ -814,21 +823,21 @@ export function ReportDocument({
                 {/* Quartile analysis */}
                 {show('quartiles') && (
                 <>
-                <Text style={{ ...s.sectionTitle, marginTop: 28 }}>Quartilsanalyse</Text>
-                <Text style={s.sectionSubtitle}>Geschlechterverteilung in den vier Gehaltsquartilen</Text>
+                <Text style={{ ...s.sectionTitle, marginTop: 28 }}>{L.quartileTitle || 'Quartile Analysis'}</Text>
+                <Text style={s.sectionSubtitle}>{L.quartileSubtitle || 'Gender distribution across the four salary quartiles'}</Text>
                 <View style={s.divider} />
                 <View style={s.tableHeader}>
-                    <Text style={{ ...s.tableHeaderTxt, flex: 2 }}>Quartil</Text>
-                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>Frauen %</Text>
-                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>Männer %</Text>
-                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>Anzahl</Text>
+                    <Text style={{ ...s.tableHeaderTxt, flex: 2 }}>{L.colQuartile || 'Quartile'}</Text>
+                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>{L.colFemalePct || 'Women %'}</Text>
+                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>{L.colMalePct || 'Men %'}</Text>
+                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>{L.colCount || 'Count'}</Text>
                 </View>
                 {(['q1', 'q2', 'q3', 'q4'] as const).map((q, i) => {
                     const qData = result.quartiles[q]
-                    const labels = ['Q1 (niedrigstes Quartil)', 'Q2', 'Q3', 'Q4 (höchstes Quartil)']
+                    const qLabels = [L.q1LabelFull || 'Q1 (lowest quartile)', L.q2Label || 'Q2', L.q3Label || 'Q3', L.q4LabelFull || 'Q4 (highest quartile)']
                     return (
                         <View key={q} style={{ ...s.tableRow, backgroundColor: i % 2 === 0 ? WHITE : '#f8fafc' }}>
-                            <Text style={{ ...s.tableCellBold, flex: 2 }}>{labels[i]}</Text>
+                            <Text style={{ ...s.tableCellBold, flex: 2 }}>{qLabels[i]}</Text>
                             <Text style={{ ...s.tableCellR, color: qData.female_pct < 30 ? RED : TEXT }}>{qData.female_pct}%</Text>
                             <Text style={s.tableCellR}>{qData.male_pct}%</Text>
                             <Text style={s.tableCellR}>{qData.count}</Text>
@@ -842,40 +851,40 @@ export function ReportDocument({
 
             {/* ── EXPLANATIONS ───────────────────────────────── */}
             {show('explanations') && explanations.length > 0 && (
-                <InnerPage orgName={orgName} reportYear={year} isSample={isSample}>
-                    <Text style={s.sectionTitle}>Begründungen nach EU Art. 10</Text>
+                <InnerPage orgName={orgName} reportYear={year} isSample={isSample} labels={L}>
+                    <Text style={s.sectionTitle}>{L.explTitle || 'Justifications per EU Art. 10'}</Text>
                     <Text style={s.sectionSubtitle}>
-                        Dokumentierte individuelle Entgeltabweichungen mit objektiven Rechtfertigungsgründen
+                        {L.explSubtitle || 'Documented individual pay deviations with objective justification grounds'}
                     </Text>
                     <View style={s.divider} />
 
                     {/* Summary */}
                     <View style={s.kpiRow}>
                         <View style={s.kpiCard}>
-                            <Text style={s.kpiLabel}>GESAMT AUFFÄLLIG</Text>
+                            <Text style={s.kpiLabel}>{L.kpiFlagged || 'TOTAL FLAGGED'}</Text>
                             <Text style={{ ...s.kpiValue, color: NAVY }}>{flaggedEmployees.length}</Text>
-                            <Text style={s.kpiDesc}>Pers. mit |Lücke| ≥ 5%</Text>
+                            <Text style={s.kpiDesc}>{L.kpiFlaggedDesc || 'Persons with |gap| >= 5%'}</Text>
                         </View>
                         <View style={s.kpiCard}>
-                            <Text style={s.kpiLabel}>ERKLÄRT</Text>
+                            <Text style={s.kpiLabel}>{L.kpiExplained || 'EXPLAINED'}</Text>
                             <Text style={{ ...s.kpiValue, color: GREEN }}>{explainedCount}</Text>
-                            <Text style={s.kpiDesc}>Art. 10 dokumentiert</Text>
+                            <Text style={s.kpiDesc}>{L.kpiExplainedDesc || 'Art. 10 documented'}</Text>
                         </View>
                         <View style={s.kpiCard}>
-                            <Text style={s.kpiLabel}>OFFEN</Text>
+                            <Text style={s.kpiLabel}>{L.kpiOpen || 'OPEN'}</Text>
                             <Text style={{ ...s.kpiValue, color: openCount > 0 ? RED : GREEN }}>{openCount}</Text>
-                            <Text style={s.kpiDesc}>Noch keine Begründung</Text>
+                            <Text style={s.kpiDesc}>{L.kpiOpenDesc || 'No justification yet'}</Text>
                         </View>
                         <View style={s.kpiCard}>
-                            <Text style={s.kpiLabel}>ABGELEHNT</Text>
+                            <Text style={s.kpiLabel}>{L.kpiDismissed || 'DISMISSED'}</Text>
                             <Text style={{ ...s.kpiValue, color: MUTED }}>{dismissedEmployeeIds.size}</Text>
-                            <Text style={s.kpiDesc}>Begründung abgelehnt</Text>
+                            <Text style={s.kpiDesc}>{L.kpiDismissedDesc || 'Justification dismissed'}</Text>
                         </View>
                     </View>
 
                     {/* Category usage */}
                     <Text style={{ fontSize: 10, fontFamily: 'Helvetica-Bold', color: NAVY, marginBottom: 8 }}>
-                        Angewendete Kategorien
+                        {L.appliedCategoriesTitle || 'Applied Categories'}
                     </Text>
                     {EXPLANATION_CATEGORIES.map(cat => {
                         const count = explanations.filter(e =>
@@ -885,7 +894,7 @@ export function ReportDocument({
                         return (
                             <View key={cat.key} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4, borderBottomWidth: 1, borderBottomColor: BORDER }}>
                                 <Text style={{ fontSize: 9, color: TEXT }}>{cat.label}</Text>
-                                <Text style={{ fontSize: 9, color: MUTED }}>{count}× angewandt · bis {cat.max_justifiable_pct}% erklärbar</Text>
+                                <Text style={{ fontSize: 9, color: MUTED }}>{(L.timesAppliedPdf || '{count}x applied · up to {pct}% justifiable').replace('{count}', String(count)).replace('{pct}', String(cat.max_justifiable_pct))}</Text>
                             </View>
                         )
                     })}
@@ -894,14 +903,14 @@ export function ReportDocument({
                     {explanations.filter(e => e.status === 'explained').length > 0 && (
                         <>
                             <Text style={{ fontSize: 10, fontFamily: 'Helvetica-Bold', color: NAVY, marginTop: 16, marginBottom: 8 }}>
-                                Einzelfall-Übersicht (anonymisiert) — Art. 10
+                                {L.caseOverviewTitle || 'Individual Case Overview (anonymised) — Art. 10'}
                             </Text>
                             <View style={s.tableHeader} fixed>
-                                <Text style={{ ...s.tableHeaderTxt, flex: 1.2 }}>ID</Text>
-                                <Text style={{ ...s.tableHeaderTxt, flex: 2.5 }}>Kategorie(n)</Text>
-                                <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>Beansprucht</Text>
-                                <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>Restlücke</Text>
-                                <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>Status</Text>
+                                <Text style={{ ...s.tableHeaderTxt, flex: 1.2 }}>{L.colId || 'ID'}</Text>
+                                <Text style={{ ...s.tableHeaderTxt, flex: 2.5 }}>{L.colCategoriesPdf || 'Category(ies)'}</Text>
+                                <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>{L.colClaimed || 'Claimed'}</Text>
+                                <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>{L.colResidualGap || 'Residual Gap'}</Text>
+                                <Text style={{ ...s.tableHeaderTxt, textAlign: 'right' }}>{L.colStatusExpl || 'Status'}</Text>
                             </View>
                             {explanations
                                 .filter(e => e.status === 'explained')
@@ -925,7 +934,7 @@ export function ReportDocument({
                                             <Text style={{ ...s.tableCellR, fontSize: 8, color: parseFloat(residual) > 5 ? RED : parseFloat(residual) > 2 ? AMBER : GREEN }}>
                                                 {residual}
                                             </Text>
-                                            <Text style={{ ...s.tableCellR, fontSize: 8, color: GREEN }}>Erklärt</Text>
+                                            <Text style={{ ...s.tableCellR, fontSize: 8, color: GREEN }}>{L.statusExplainedPdf || 'Explained'}</Text>
                                         </View>
                                     )
                                 })}
@@ -936,10 +945,10 @@ export function ReportDocument({
 
             {/* ── REMEDIATION PLAN SUMMARY — Art. 11 ────────── */}
             {show('remediation') && remediationPlans.length > 0 && (
-            <InnerPage orgName={orgName} reportYear={year} isSample={isSample}>
-                <Text style={s.sectionTitle}>Maßnahmenplan — Art. 11</Text>
+            <InnerPage orgName={orgName} reportYear={year} isSample={isSample} labels={L}>
+                <Text style={s.sectionTitle}>{L.remediationTitle || 'Remediation Plan — Art. 11'}</Text>
                 <Text style={s.sectionSubtitle}>
-                    Dokumentierte Maßnahmen zur Beseitigung von Entgeltlücken gem. EU-RL 2023/970 Art. 11
+                    {L.remediationSubtitle || 'Documented measures to close pay gaps per EU Dir. 2023/970 Art. 11'}
                 </Text>
                 <View style={s.divider} />
 
@@ -951,15 +960,15 @@ export function ReportDocument({
                         const open   = remediationPlans.filter(p => p.status === 'open' || p.status === 'in_progress').length
                         return (<>
                             <View style={s.kpiCard}>
-                                <Text style={s.kpiLabel}>AKTIVE PLÄNE GESAMT</Text>
+                                <Text style={s.kpiLabel}>{L.kpiActivePlans || 'TOTAL ACTIVE PLANS'}</Text>
                                 <Text style={{ ...s.kpiValue, color: NAVY }}>{active}</Text>
                             </View>
                             <View style={s.kpiCard}>
-                                <Text style={s.kpiLabel}>ABGESCHLOSSEN</Text>
+                                <Text style={s.kpiLabel}>{L.kpiCompleted || 'COMPLETED'}</Text>
                                 <Text style={{ ...s.kpiValue, color: GREEN }}>{done}</Text>
                             </View>
                             <View style={s.kpiCard}>
-                                <Text style={s.kpiLabel}>OFFEN / IN ARBEIT</Text>
+                                <Text style={s.kpiLabel}>{L.kpiOpenInProgress || 'OPEN / IN PROGRESS'}</Text>
                                 <Text style={{ ...s.kpiValue, color: open > 0 ? AMBER : GREEN }}>{open}</Text>
                             </View>
                         </>)
@@ -968,7 +977,7 @@ export function ReportDocument({
 
                 {/* Action type breakdown */}
                 <Text style={{ fontSize: 10, fontFamily: 'Helvetica-Bold', color: NAVY, marginBottom: 8 }}>
-                    Maßnahmentypen
+                    {L.actionTypesTitle || 'Action Types'}
                 </Text>
                 {Object.entries(ACTION_LABELS).map(([key, label]) => {
                     const count = remediationPlans.filter(p => p.action_type === key).length
@@ -976,14 +985,14 @@ export function ReportDocument({
                     return (
                         <View key={key} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4, borderBottomWidth: 1, borderBottomColor: BORDER }}>
                             <Text style={{ fontSize: 9, color: TEXT }}>{label}</Text>
-                            <Text style={{ fontSize: 9, color: MUTED }}>{count} {count === 1 ? 'Plan' : 'Pläne'}</Text>
+                            <Text style={{ fontSize: 9, color: MUTED }}>{count} {count === 1 ? (L.planSingular || 'plan') : (L.planPlural || 'plans')}</Text>
                         </View>
                     )
                 })}
 
                 {/* Horizon breakdown */}
                 <Text style={{ fontSize: 10, fontFamily: 'Helvetica-Bold', color: NAVY, marginTop: 16, marginBottom: 8 }}>
-                    Zeithorizont der Maßnahmen
+                    {L.horizonTitle || 'Time Horizons of Measures'}
                 </Text>
                 {Object.entries(HORIZON_LABELS).map(([key, label]) => {
                     const count = remediationPlans.flatMap(p => p.plan_steps ?? []).filter(s => s.horizon === key).length
@@ -991,22 +1000,22 @@ export function ReportDocument({
                     return (
                         <View key={key} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4, borderBottomWidth: 1, borderBottomColor: BORDER }}>
                             <Text style={{ fontSize: 9, color: TEXT }}>{label}</Text>
-                            <Text style={{ fontSize: 9, color: MUTED }}>{count} {count === 1 ? 'Schritt' : 'Schritte'}</Text>
+                            <Text style={{ fontSize: 9, color: MUTED }}>{count} {count === 1 ? (L.stepSingular || 'step') : (L.stepPlural || 'steps')}</Text>
                         </View>
                     )
                 })}
 
                 {/* Per-plan detail table — 6 columns: MA-Ref | Horizont | Beschreibung | Gehaltserhöh. | Bonus Ziel | Status */}
                 <Text style={{ fontSize: 10, fontFamily: 'Helvetica-Bold', color: NAVY, marginTop: 16, marginBottom: 6 }}>
-                    Detailübersicht Maßnahmen
+                    {L.detailOverviewTitle || 'Detailed Measures Overview'}
                 </Text>
                 <View style={s.tableHeader} fixed>
-                    <Text style={{ ...s.tableHeaderTxt, flex: 0.9 }}>MA-Ref.</Text>
-                    <Text style={{ ...s.tableHeaderTxt, flex: 0.8 }}>Horizont</Text>
-                    <Text style={{ ...s.tableHeaderTxt, flex: 2.8 }}>Beschreibung</Text>
-                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right', flex: 1.2 }}>Gehaltserhöh.</Text>
-                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right', flex: 1.1 }}>Bonus Ziel</Text>
-                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right', flex: 0.8 }}>Status</Text>
+                    <Text style={{ ...s.tableHeaderTxt, flex: 0.9 }}>{L.colEmployeeRef || 'Emp. Ref.'}</Text>
+                    <Text style={{ ...s.tableHeaderTxt, flex: 0.8 }}>{L.colHorizon || 'Horizon'}</Text>
+                    <Text style={{ ...s.tableHeaderTxt, flex: 2.8 }}>{L.colDescription || 'Description'}</Text>
+                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right', flex: 1.2 }}>{L.colSalaryIncrease || 'Salary Incr.'}</Text>
+                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right', flex: 1.1 }}>{L.colBonusTarget || 'Bonus Target'}</Text>
+                    <Text style={{ ...s.tableHeaderTxt, textAlign: 'right', flex: 0.8 }}>{L.colStatus || 'Status'}</Text>
                 </View>
                 {remediationPlans.flatMap((p, pi) =>
                     (p.plan_steps ?? []).map((step, si) => {
@@ -1016,10 +1025,11 @@ export function ReportDocument({
                         const isBonus  = stepType === 'bonus_adjustment'
                         const isSalary = stepType === 'salary_increase'
                         const salaryVal = (isSalary && step.target_salary != null)
-                            ? `${step.target_salary.toLocaleString('de-DE')} €/J.` : '—'
+                            ? `${step.target_salary.toLocaleString(loc)} ${L.perYear || 'EUR/yr'}` : '—'
                         const bonusVal  = (isBonus && step.target_salary != null)
-                            ? `${step.target_salary.toLocaleString('de-DE')} €` : '—'
-                        const statusLabel = ({ open: 'Offen', in_progress: 'Laufend', completed: 'Fertig', dismissed: 'Abgel.' } as Record<string,string>)[step.status ?? p.status ?? ''] ?? (step.status ?? p.status ?? '—')
+                            ? `${step.target_salary.toLocaleString(loc)} €` : '—'
+                        const STATUS_MAP: Record<string, string> = { open: L.statusOpen || 'Open', in_progress: L.statusInProgress || 'In progress', completed: L.statusCompleted || 'Done', dismissed: L.statusDismissed || 'Dism.' }
+                        const statusLabel = STATUS_MAP[step.status ?? p.status ?? ''] ?? (step.status ?? p.status ?? '—')
                         const statusColor = p.status === 'completed' ? GREEN : p.status === 'dismissed' ? MUTED : AMBER
                         const isEven = (pi + si) % 2 === 0
                         return (
@@ -1036,39 +1046,34 @@ export function ReportDocument({
                 )}
 
                 <Text style={{ fontSize: 7.5, color: MUTED, marginTop: 14, lineHeight: 1.5 }}>
-                    Gem. Art. 11 EU-RL 2023/970: Arbeitgeber mit bereinigter Entgeltlücke über 5% müssen
-                    gemeinsame Entgeltbewertung und Maßnahmen dokumentieren.
+                    {L.remediationFootnote || 'Per Art. 11 EU Dir. 2023/970: Employers whose adjusted pay gap exceeds 5% must document joint pay assessments and remediation measures.'}
                 </Text>
             </InnerPage>
             )}
 
             {show('declaration') && (
-            <InnerPage orgName={orgName} reportYear={year}>
-                <Text style={s.sectionTitle}>Rechtliche Erklärung</Text>
-                <Text style={s.sectionSubtitle}>Art. 9 EU-Richtlinie 2023/970 — Berichtspflicht</Text>
+            <InnerPage orgName={orgName} reportYear={year} labels={L}>
+                <Text style={s.sectionTitle}>{L.declarationTitle || 'Legal Declaration'}</Text>
+                <Text style={s.sectionSubtitle}>{L.declarationSubtitle || 'Art. 9 EU Directive 2023/970 — Reporting Obligation'}</Text>
                 <View style={s.divider} />
 
                 <View style={{ fontSize: 9, color: TEXT, lineHeight: 1.6, gap: 10 }}>
                     <Text style={{ fontSize: 9, color: TEXT, lineHeight: 1.6 }}>
-                        {orgName} bestätigt, dass vorliegender Bericht gemäß EU-Richtlinie 2023/970 und
-                        EntgTranspG erstellt wurde. Die ausgewiesenen Daten basieren auf {result.total_employees} Beschäftigten
-                        (Datenstand: {year}).
+                        {(L.declarationConfirm || '{orgName} confirms that this report has been prepared in accordance with EU Directive 2023/970. The reported data covers {count} employees (data as at {year}).').replace('{orgName}', orgName).replace('{count}', String(result.total_employees)).replace('{year}', String(year))}
                     </Text>
                     <Text style={{ fontSize: 9, color: TEXT, lineHeight: 1.6, marginTop: 8 }}>
-                        Entgeltlücke (Drei-Stufen-Darstellung gemäß Art. 9 und 10 EU 2023/970):{`\n`}
-                        · Unbereinigt: {pct(over.unadjusted_median)} (Median) / {pct(over.unadjusted_mean)} (Mittelwert){`\n`}
-                        · Strukturell bereinigt (Art. 9, WIF-Methode): {pct(over.adjusted_median)} (Median){`\n`}
-                        · Erklärt bereinigt nach individueller Begründung (Art. 10): {explanationAdjustedGap != null ? pct(explanationAdjustedGap) : 'Keine Begründungen dokumentiert'}
+                        {L.declarationThreeStage || 'Pay gap (three-stage breakdown per Art. 9 and 10, EU 2023/970):'}{`\n`}
+                        · {(L.declarationUnadjusted || 'Unadjusted: {median} (median) / {mean} (mean)').replace('{median}', pct(over.unadjusted_median)).replace('{mean}', pct(over.unadjusted_mean))}{`\n`}
+                        · {(L.declarationAdjusted || 'Structurally adjusted (Art. 9, WIF method): {median} (median)').replace('{median}', pct(over.adjusted_median))}{`\n`}
+                        · {(L.declarationExplained || 'Explanation-adjusted after individual justification (Art. 10): {value}').replace('{value}', explanationAdjustedGap != null ? pct(explanationAdjustedGap) : (L.declarationNoExplanations || 'No justifications documented'))}
                     </Text>
                     <Text style={{ fontSize: 9, color: TEXT, lineHeight: 1.6, marginTop: 8 }}>
                         {over.exceeds_5pct
-                            ? 'Der bereinigte Schwellenwert von 5% wird überschritten. Eine gemeinsame Entgeltbewertung gemäß Art. 9 Abs. 1 lit. c wird eingeleitet. Die Arbeitnehmervertretung ist einzubeziehen.'
-                            : 'Der bereinigte Schwellenwert von 5% wird nicht überschritten. Kein unmittelbarer gesetzlicher Handlungsbedarf.'}
+                            ? (L.declarationExceeded || 'The adjusted pay gap exceeds the 5% threshold. A joint pay assessment under Art. 9(1)(c) will be initiated. Employee representatives must be involved.')
+                            : (L.declarationNotExceeded || 'The adjusted pay gap is within the 5% threshold. No immediate legal action required.')}
                     </Text>
                     <Text style={{ fontSize: 8, color: MUTED, lineHeight: 1.6, marginTop: 8 }}>
-                        Hinweis: Verstöße gegen das Entgelttransparenzgebot können gemäß §§ 17–21 EntgTranspG sowie
-                        Art. 23 EU 2023/970 zu Sanktionen und voller Entschädigungspflicht einschließlich
-                        Nachzahlungen und immateriellen Schadensersatz führen. Beweislast liegt beim Arbeitgeber.
+                        {L.declarationSanctions || 'Note: Breaches of pay transparency requirements may lead to sanctions under Art. 23, EU Dir. 2023/970, including full compensation for back-pay and non-material damages. The burden of proof lies with the employer.'}
                     </Text>
                 </View>
 
@@ -1079,7 +1084,7 @@ export function ReportDocument({
                         <View key={sig} style={{ flex: 1 }}>
                             <View style={{ height: 1, backgroundColor: SLATE2, marginBottom: 6 }} />
                             <Text style={{ fontSize: 8, color: MUTED }}>{sig}</Text>
-                            <Text style={{ fontSize: 7, color: '#94a3b8', marginTop: 2 }}>Datum, Unterschrift</Text>
+                            <Text style={{ fontSize: 7, color: '#94a3b8', marginTop: 2 }}>{L.declarationDateSignature || 'Date, Signature'}</Text>
                         </View>
                     ))}
                 </View>

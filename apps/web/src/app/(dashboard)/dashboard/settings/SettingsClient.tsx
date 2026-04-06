@@ -7,25 +7,15 @@ import {
     Check, AlertTriangle, ChevronRight, Crown, Zap, Users, FileDown, Globe,
 } from 'lucide-react'
 import { signOut } from '@/app/(auth)/actions'
+import { trackCheckoutStarted, trackPaymentComplete } from '@/lib/analytics'
 import TeamPanel from './TeamPanel'
 import SalaryBandsPanel from './SalaryBandsPanel'
-import { useTranslation } from '@/lib/i18n/LanguageContext'
-import type { Lang } from '@/lib/i18n/translations'
-
-const PLAN_LABELS: Record<string, { label: string; badge: string; color: string }> = {
-    trial:      { label: '7-Tage Testversion', badge: 'TEST',   color: '#f59e0b' },
-    free:       { label: 'Testversion',        badge: 'TEST',   color: '#f59e0b' },
-    licensed:   { label: 'CompLens Lizenz',    badge: 'LIZENZ', color: 'var(--color-pl-brand)' },
-    license:    { label: 'CompLens Lizenz',    badge: 'LIZENZ', color: 'var(--color-pl-brand)' },
-}
-
-function planInfo(plan: string | null) {
-    return PLAN_LABELS[plan ?? ''] ?? PLAN_LABELS.trial
-}
+import { useTranslations, useFormatter, useLocale } from 'next-intl'
 
 // ─── Upgrade to license button ────────────────────────────────
 
 function UpgradeButton() {
+    const t = useTranslations('settings')
     const [loading, setLoading] = useState(false)
     const [err, setErr]         = useState<string | null>(null)
 
@@ -39,10 +29,11 @@ function UpgradeButton() {
                 body:    JSON.stringify({ plan: 'license' }),
             })
             const data = await res.json()
-            if (!res.ok || !data.url) throw new Error(data.error ?? 'Stripe-Fehler')
+            if (!res.ok || !data.url) throw new Error(data.error ?? t('stripeError'))
+            trackCheckoutStarted()
             window.location.href = data.url
         } catch (e: unknown) {
-            setErr(e instanceof Error ? e.message : 'Fehler')
+            setErr(e instanceof Error ? e.message : t('errorGeneric'))
             setLoading(false)
         }
     }
@@ -62,7 +53,7 @@ function UpgradeButton() {
                 }}
             >
                 <Crown size={14} />
-                {loading ? 'Weiterleitung…' : 'Lizenz kaufen'}
+                {loading ? t('redirecting') : t('buyLicense')}
             </button>
             {err && <p className="text-xs mt-2" style={{ color: '#ef4444' }}>{err}</p>}
         </div>
@@ -72,6 +63,7 @@ function UpgradeButton() {
 // ─── Manage subscription (Stripe Customer Portal) ─────────────
 
 function ManageSubscriptionButton() {
+    const t = useTranslations('settings')
     const [loading, setLoading] = useState(false)
     const [err, setErr]         = useState<string | null>(null)
 
@@ -81,10 +73,10 @@ function ManageSubscriptionButton() {
         try {
             const res  = await fetch('/api/stripe/portal', { method: 'POST' })
             const data = await res.json()
-            if (!res.ok || !data.url) throw new Error(data.error ?? 'Stripe-Fehler')
+            if (!res.ok || !data.url) throw new Error(data.error ?? t('stripeError'))
             window.location.href = data.url
         } catch (e: unknown) {
-            setErr(e instanceof Error ? e.message : 'Fehler')
+            setErr(e instanceof Error ? e.message : t('errorGeneric'))
             setLoading(false)
         }
     }
@@ -104,7 +96,7 @@ function ManageSubscriptionButton() {
                 }}
             >
                 <CreditCard size={14} />
-                {loading ? 'Weiterleitung…' : 'Abonnement verwalten'}
+                {loading ? t('redirecting') : t('manageSubscription')}
             </button>
             {err && <p className="text-xs mt-2" style={{ color: '#ef4444' }}>{err}</p>}
         </div>
@@ -113,6 +105,7 @@ function ManageSubscriptionButton() {
 
 
 function AddOnButton() {
+    const t = useTranslations('settings')
     const [loading, setLoading] = useState(false)
     const [err, setErr]         = useState<string | null>(null)
 
@@ -126,10 +119,10 @@ function AddOnButton() {
                 body:    JSON.stringify({ plan: 'additional_access' }),
             })
             const data = await res.json()
-            if (!res.ok || !data.url) throw new Error(data.error ?? 'Stripe-Fehler')
+            if (!res.ok || !data.url) throw new Error(data.error ?? t('stripeError'))
             window.location.href = data.url
         } catch (e: unknown) {
-            setErr(e instanceof Error ? e.message : 'Fehler')
+            setErr(e instanceof Error ? e.message : t('errorGeneric'))
             setLoading(false)
         }
     }
@@ -149,7 +142,7 @@ function AddOnButton() {
                 }}
             >
                 <Crown size={11} />
-                {loading ? 'Lädt…' : 'Jetzt buchen'}
+                {loading ? t('loadingShort') : t('bookNow')}
             </button>
             {err && <p className="text-[10px] mt-1 text-red-400">{err}</p>}
         </div>
@@ -159,6 +152,7 @@ function AddOnButton() {
 // ─── Pro-forma download button (simple, no payment selector) ──
 
 function ProformaDownloadButton({ legalComplete, plan, onGoToOrg }: { legalComplete: boolean; plan: string; onGoToOrg: () => void }) {
+    const t = useTranslations('settings')
     const [loading, setLoading] = useState(false)
 
     async function handleDownload() {
@@ -168,7 +162,7 @@ function ProformaDownloadButton({ legalComplete, plan, onGoToOrg }: { legalCompl
             const res = await fetch(`/api/stripe/proforma?plan=${plan}`)
             if (!res.ok) {
                 const d = await res.json().catch(() => ({}))
-                alert(d.error ?? 'Fehler beim Generieren der Proforma-Rechnung.')
+                alert(d.error ?? t('proformaError'))
                 return
             }
             const blob = await res.blob()
@@ -179,7 +173,7 @@ function ProformaDownloadButton({ legalComplete, plan, onGoToOrg }: { legalCompl
             a.click()
             URL.revokeObjectURL(href)
         } catch {
-            alert('Technischer Fehler. Bitte erneut versuchen.')
+            alert(t('technicalError'))
         } finally {
             setLoading(false)
         }
@@ -188,11 +182,11 @@ function ProformaDownloadButton({ legalComplete, plan, onGoToOrg }: { legalCompl
     if (!legalComplete) {
         return (
             <span className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                Bitte{' '}
+                {t('fillLegalFirst')}{' '}
                 <button onClick={onGoToOrg} className="underline hover:brightness-125 transition-all" style={{ color: 'var(--color-pl-brand-light)' }}>
-                    Rechtliche Angaben
+                    {t('legalDetailsLink')}
                 </button>{' '}
-                ausfüllen
+                {t('fillLegalSuffix')}
             </span>
         )
     }
@@ -210,7 +204,7 @@ function ProformaDownloadButton({ legalComplete, plan, onGoToOrg }: { legalCompl
             }}
         >
             <FileDown size={12} />
-            {loading ? 'Erstellt…' : 'Herunterladen'}
+            {loading ? t('generating') : t('downloadDoc')}
         </button>
     )
 }
@@ -218,53 +212,52 @@ function ProformaDownloadButton({ legalComplete, plan, onGoToOrg }: { legalCompl
 // ─── Language selector ────────────────────────────────────────
 
 function LanguageSelector() {
-    const { lang, setLang } = useTranslation()
-    const [showHint, setShowHint] = useState(false)
+    const serverLang = useLocale()
+    const [activeLang, setActiveLang] = useState(serverLang)
+    const [switching, setSwitching] = useState(false)
 
-    const LANGS: { code: Lang; label: string; flag: string }[] = [
+    const LANGS: { code: string; label: string; flag: string }[] = [
         { code: 'de', label: 'Deutsch',  flag: '🇩🇪' },
         { code: 'en', label: 'English',  flag: '🇬🇧' },
     ]
 
-    function handleClick(code: Lang) {
-        if (code === 'en') {
-            setShowHint(true)
-            setTimeout(() => setShowHint(false), 3500)
-            return
-        }
-        setLang(code)
+    function handleClick(code: string) {
+        if (code === activeLang || switching) return
+        setActiveLang(code)
+        setSwitching(true)
+        document.cookie = `NEXT_LOCALE=${code}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`
+        fetch('/api/profile/language', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ language: code }),
+        }).finally(() => {
+            window.location.hash = '#profile'
+            window.location.reload()
+        })
     }
 
     return (
-        <div className="space-y-2">
-            <div className="flex gap-2">
-                {LANGS.map(l => (
-                    <button
-                        key={l.code}
-                        onClick={() => handleClick(l.code)}
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all"
-                        style={{
-                            background: lang === l.code ? 'var(--color-pl-brand)' : 'rgba(255,255,255,0.05)',
-                            border:     `1px solid ${lang === l.code ? 'var(--color-pl-brand)' : 'var(--color-pl-border)'}`,
-                            color:      lang === l.code ? '#fff' : 'var(--color-pl-text-secondary)',
-                        }}
-                    >
-                        <span className="text-base leading-none">{l.flag}</span>
-                        {l.label}
-                        {lang === l.code && <Check size={11} />}
-                    </button>
-                ))}
-            </div>
-            {showHint && (
-                <p className="text-xs flex items-center gap-1.5 px-3 py-2 rounded-lg"
+        <div className="flex gap-2">
+            {LANGS.map(l => (
+                <button
+                    type="button"
+                    key={l.code}
+                    onClick={() => handleClick(l.code)}
+                    disabled={switching}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all"
                     style={{
-                        background: 'rgba(99,102,241,0.08)',
-                        border: '1px solid rgba(99,102,241,0.2)',
-                        color: 'var(--color-pl-accent)',
-                    }}>
-                    🚧 English version is coming soon — we're working on it!
-                </p>
-            )}
+                        background: activeLang === l.code ? 'var(--color-pl-brand)' : 'rgba(255,255,255,0.05)',
+                        border:     `1px solid ${activeLang === l.code ? 'var(--color-pl-brand)' : 'var(--color-pl-border)'}`,
+                        color:      activeLang === l.code ? '#fff' : 'var(--color-pl-text-secondary)',
+                        opacity:    switching ? 0.7 : 1,
+                        cursor:     switching ? 'wait' : 'pointer',
+                    }}
+                >
+                    <span className="text-base leading-none">{l.flag}</span>
+                    {l.label}
+                    {activeLang === l.code && <Check size={11} />}
+                </button>
+            ))}
         </div>
     )
 }
@@ -319,14 +312,15 @@ type Props = {
 // ─── Main component ───────────────────────────────────────────
 
 export default function SettingsClient({ user, org, role, memberCount, teamData, profileData, legalData }: Props) {
+    const t = useTranslations('settings')
     const [activeTab, setActiveTab] = useState<'org' | 'team' | 'profile' | 'billing' | 'security' | 'bands'>('org')
     const [openInvite, setOpenInvite] = useState(false)
-    const plan = planInfo(org?.plan ?? null)
 
     useEffect(() => {
         const hash = window.location.hash.replace('#', '') as 'org' | 'team' | 'profile' | 'billing' | 'security' | 'bands'
         const valid = ['org', 'team', 'profile', 'billing', 'security', 'bands']
         if (valid.includes(hash)) setActiveTab(hash)
+        if (hash === 'billing' && ['licensed', 'paylens', 'paylens_ai'].includes(org?.plan ?? '')) trackPaymentComplete()
     }, [])
 
     const trialEnd  = org?.trial_ends_at       ? new Date(org.trial_ends_at)       : null
@@ -338,20 +332,20 @@ export default function SettingsClient({ user, org, role, memberCount, teamData,
     const trialActive = !isLicensed && trialEnd && trialEnd > now
 
     const tabs = [
-        { id: 'org',      label: 'Organisation', icon: Building2,  adminOnly: false },
-        { id: 'team',     label: 'Team',          icon: Users,       adminOnly: false },
-        { id: 'profile',  label: 'Profil',        icon: UserIcon,    adminOnly: false },
-        { id: 'bands',    label: 'Entgeltbänder', icon: TrendingUp,  adminOnly: true  },
-        { id: 'billing',  label: 'Abonnement',    icon: CreditCard,  adminOnly: false },
-        { id: 'security', label: 'Datenschutz',   icon: Shield,      adminOnly: false },
+        { id: 'org',      label: t('tabOrg'),      icon: Building2,  adminOnly: false },
+        { id: 'team',     label: t('tabTeam'),      icon: Users,       adminOnly: false },
+        { id: 'profile',  label: t('tabProfile'),   icon: UserIcon,    adminOnly: false },
+        { id: 'bands',    label: t('tabBands'),     icon: TrendingUp,  adminOnly: true  },
+        { id: 'billing',  label: t('tabBilling'),   icon: CreditCard,  adminOnly: false },
+        { id: 'security', label: t('tabSecurity'),  icon: Shield,      adminOnly: false },
     ] as const
 
     return (
         <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
             <div>
-                <h1 className="text-2xl font-bold" style={{ color: 'var(--color-pl-text-primary)' }}>Einstellungen</h1>
+                <h1 className="text-2xl font-bold" style={{ color: 'var(--color-pl-text-primary)' }}>{t('title')}</h1>
                 <p className="text-sm mt-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                    Organisation, Nutzer und Abonnement verwalten
+                    {t('subtitle')}
                 </p>
             </div>
 
@@ -363,7 +357,7 @@ export default function SettingsClient({ user, org, role, memberCount, teamData,
                     <div className="flex items-center gap-2">
                         <Zap size={14} style={{ color: '#f59e0b' }} />
                         <span style={{ color: '#f59e0b' }}>
-                            Testversion: noch <strong>{daysLeft} Tag{daysLeft !== 1 ? 'e' : ''}</strong> verbleibend
+                            {t.rich('trialBanner', { days: daysLeft, strong: (chunks) => <strong>{chunks}</strong> })}
                         </span>
                     </div>
                     <button
@@ -371,7 +365,7 @@ export default function SettingsClient({ user, org, role, memberCount, teamData,
                         className="flex items-center gap-1 text-xs font-semibold"
                         style={{ color: '#f59e0b' }}
                     >
-                        Jetzt upgraden <ChevronRight size={12} />
+                        {t('upgradeNow')} <ChevronRight size={12} />
                     </button>
                 </div>
             )}
@@ -401,7 +395,7 @@ export default function SettingsClient({ user, org, role, memberCount, teamData,
                     {activeTab === 'team'     && <TeamPanel   teamData={teamData} openInviteOnMount={openInvite} onInviteMounted={() => setOpenInvite(false)} />}
                     {activeTab === 'profile'  && <ProfileTab  user={user} profileData={profileData} />}
                     {activeTab === 'bands'    && <SalaryBandsPanel />}
-                    {activeTab === 'billing'  && <BillingTab  org={org} plan={plan} subEnd={subEnd} isLicensed={isLicensed} legalComplete={!!(legalData.legal_representative && legalData.legal_address && legalData.legal_city)} onGoToOrg={() => setActiveTab('org')} />}
+                    {activeTab === 'billing'  && <BillingTab  org={org} subEnd={subEnd} isLicensed={isLicensed} legalComplete={!!(legalData.legal_representative && legalData.legal_address && legalData.legal_city)} onGoToOrg={() => setActiveTab('org')} />}
                     {activeTab === 'security' && <SecurityTab />}
                 </div>
             </div>
@@ -421,6 +415,7 @@ type LegalData = {
 }
 
 function OrgTab({ org, role, memberCount, legalData, onInvite }: { org: Org; role: string; memberCount: number; legalData: LegalData; onInvite: () => void }) {
+    const t = useTranslations('settings')
     const [name, setName]   = useState(org?.name ?? '')
     const [saved, setSaved] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -443,7 +438,7 @@ function OrgTab({ org, role, memberCount, legalData, onInvite }: { org: Org; rol
     const [legalCity, setLegalCity] = useState(legalData.legal_city)
     const [legalZip,  setLegalZip]  = useState(legalData.legal_zip)
     const [vatId,     setVatId]     = useState(legalData.vat_id)
-    const [country,   setCountry]   = useState(legalData.country || 'Deutschland')
+    const [country,   setCountry]   = useState(legalData.country || t('legalCountryDefault'))
     const [legalSaved,   setLegalSaved]   = useState(false)
     const [legalError,   setLegalError]   = useState<string | null>(null)
     const [legalPending, startLegalTrans] = useTransition()
@@ -478,7 +473,7 @@ function OrgTab({ org, role, memberCount, legalData, onInvite }: { org: Org; rol
         setLegalCity(legalData.legal_city)
         setLegalZip(legalData.legal_zip)
         setVatId(legalData.vat_id)
-        setCountry(legalData.country || 'Deutschland')
+        setCountry(legalData.country || t('legalCountryDefault'))
         setLegalError(null)
         setLegalEditing(false)
     }
@@ -490,12 +485,12 @@ function OrgTab({ org, role, memberCount, legalData, onInvite }: { org: Org; rol
         <div className="space-y-4">
             <div className="glass-card p-5">
                 <h2 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-pl-text-primary)' }}>
-                    Organisationsdetails
+                    {t('orgDetails')}
                 </h2>
                 <div className="space-y-4">
                     <div>
                         <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                            Unternehmensname
+                            {t('companyName')}
                         </label>
                         <input
                             value={name}
@@ -506,14 +501,14 @@ function OrgTab({ org, role, memberCount, legalData, onInvite }: { org: Org; rol
                         />
                         {!isAdmin && (
                             <p className="text-xs mt-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                                Nur Administratoren können den Namen ändern.
+                                {t('adminOnlyName')}
                             </p>
                         )}
                     </div>
                     {error && <p className="text-xs" style={{ color: 'var(--color-pl-red)' }}>{error}</p>}
                     {isAdmin && (
                         <button onClick={handleSave} disabled={pending} className="btn-primary">
-                            {saved ? <><Check size={13} /> Gespeichert</> : pending ? 'Wird gespeichert…' : 'Änderungen speichern'}
+                            {saved ? <><Check size={13} /> {t('saved')}</> : pending ? t('saving') : t('saveChanges')}
                         </button>
                     )}
                 </div>
@@ -524,10 +519,10 @@ function OrgTab({ org, role, memberCount, legalData, onInvite }: { org: Org; rol
                 <div className="flex items-start justify-between mb-4">
                     <div>
                         <h2 className="text-sm font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>
-                            Rechtliche Angaben für Vertragsunterlagen
+                            {t('legalTitle')}
                         </h2>
                         <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                            Erforderlich zur Generierung von Lizenzvertrag, AVV & Proforma-Rechnung
+                            {t('legalSubtitle')}
                         </p>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0 ml-3">
@@ -538,7 +533,7 @@ function OrgTab({ org, role, memberCount, legalData, onInvite }: { org: Org; rol
                                 : { background: 'rgba(245,158,11,0.1)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)' }
                             }
                         >
-                            {legalComplete ? <><Check size={11} /> Vollständig</> : 'Felder fehlen'}
+                            {legalComplete ? <><Check size={11} /> {t('legalComplete')}</> : t('legalMissing')}
                         </span>
                         {isAdmin && !legalEditing && (
                             <button
@@ -546,7 +541,7 @@ function OrgTab({ org, role, memberCount, legalData, onInvite }: { org: Org; rol
                                 className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg"
                                 style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.25)', color: 'var(--color-pl-brand-light)' }}
                             >
-                                Bearbeiten
+                                {t('legalEdit')}
                             </button>
                         )}
                     </div>
@@ -556,30 +551,30 @@ function OrgTab({ org, role, memberCount, legalData, onInvite }: { org: Org; rol
                 {!legalEditing && legalComplete && (
                     <div className="space-y-2 text-xs" style={{ color: 'var(--color-pl-text-secondary)' }}>
                         <div className="grid grid-cols-3 gap-1">
-                            <span style={{ color: 'var(--color-pl-text-tertiary)' }}>Vertreter/in</span>
+                            <span style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('legalRepSummary')}</span>
                             <span className="col-span-2 font-medium" style={{ color: 'var(--color-pl-text-primary)' }}>{legalRep}</span>
                         </div>
                         <div className="grid grid-cols-3 gap-1">
-                            <span style={{ color: 'var(--color-pl-text-tertiary)' }}>Adresse</span>
+                            <span style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('legalAddressLabel')}</span>
                             <span className="col-span-2">{legalAddr}</span>
                         </div>
                         <div className="grid grid-cols-3 gap-1">
-                            <span style={{ color: 'var(--color-pl-text-tertiary)' }}>PLZ / Stadt</span>
+                            <span style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('legalZipCity')}</span>
                             <span className="col-span-2">{legalZip} {legalCity}</span>
                         </div>
                         <div className="grid grid-cols-3 gap-1">
-                            <span style={{ color: 'var(--color-pl-text-tertiary)' }}>Land</span>
+                            <span style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('legalCountry')}</span>
                             <span className="col-span-2">{country}</span>
                         </div>
                         {vatId && (
                             <div className="grid grid-cols-3 gap-1">
-                                <span style={{ color: 'var(--color-pl-text-tertiary)' }}>USt-IdNr.</span>
+                                <span style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('legalVatIdSummary')}</span>
                                 <span className="col-span-2">{vatId}</span>
                             </div>
                         )}
                         {legalSaved && (
                             <p className="flex items-center gap-1 text-xs" style={{ color: '#22c55e' }}>
-                                <Check size={12} /> Gespeichert
+                                <Check size={12} /> {t('saved')}
                             </p>
                         )}
                     </div>
@@ -590,45 +585,45 @@ function OrgTab({ org, role, memberCount, legalData, onInvite }: { org: Org; rol
                     <div className="space-y-4">
                         <div>
                             <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                                Gesetzliche/r Vertreter/in <span style={{ color: '#ef4444' }}>*</span>
+                                {t('legalRepLabel')} <span style={{ color: '#ef4444' }}>*</span>
                             </label>
                             <input value={legalRep} onChange={e => setLegalRep(e.target.value)}
-                                placeholder="z.B. Maria Müller, Geschäftsführerin" className="input-base w-full" />
-                            <p className="text-xs mt-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>Name + Funktion der zeichnungsberechtigten Person</p>
+                                placeholder={t('legalRepPlaceholder')} className="input-base w-full" />
+                            <p className="text-xs mt-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('legalRepHint')}</p>
                         </div>
                         <div>
                             <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                                Straße und Hausnummer <span style={{ color: '#ef4444' }}>*</span>
+                                {t('legalAddress')} <span style={{ color: '#ef4444' }}>*</span>
                             </label>
                             <input value={legalAddr} onChange={e => setLegalAddr(e.target.value)}
-                                placeholder="z.B. Industriestraße 13" className="input-base w-full" />
+                                placeholder={t('legalAddressPlaceholder')} className="input-base w-full" />
                         </div>
                         <div className="grid grid-cols-3 gap-3">
                             <div>
-                                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--color-pl-text-secondary)' }}>PLZ <span style={{ color: '#ef4444' }}>*</span></label>
+                                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--color-pl-text-secondary)' }}>{t('legalZip')} <span style={{ color: '#ef4444' }}>*</span></label>
                                 <input value={legalZip} onChange={e => setLegalZip(e.target.value)}
-                                    placeholder="63755" className="input-base w-full" />
+                                    placeholder={t('legalZipPlaceholder')} className="input-base w-full" />
                             </div>
                             <div className="col-span-2">
-                                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--color-pl-text-secondary)' }}>Stadt <span style={{ color: '#ef4444' }}>*</span></label>
+                                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--color-pl-text-secondary)' }}>{t('legalCity')} <span style={{ color: '#ef4444' }}>*</span></label>
                                 <input value={legalCity} onChange={e => setLegalCity(e.target.value)}
-                                    placeholder="München" className="input-base w-full" />
+                                    placeholder={t('legalCityPlaceholder')} className="input-base w-full" />
                             </div>
                         </div>
                         <div>
-                            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--color-pl-text-secondary)' }}>Land <span style={{ color: '#ef4444' }}>*</span></label>
+                            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--color-pl-text-secondary)' }}>{t('legalCountry')} <span style={{ color: '#ef4444' }}>*</span></label>
                             <input value={country} onChange={e => setCountry(e.target.value)}
-                                placeholder="Deutschland" className="input-base w-full" />
+                                placeholder={t('legalCountryPlaceholder')} className="input-base w-full" />
                         </div>
                         <div>
-                            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--color-pl-text-secondary)' }}>Umsatzsteuer-IdNr. (optional)</label>
+                            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--color-pl-text-secondary)' }}>{t('legalVatId')}</label>
                             <input value={vatId} onChange={e => setVatId(e.target.value)}
-                                placeholder="DE123456789" className="input-base w-full" />
+                                placeholder={t('legalVatIdPlaceholder')} className="input-base w-full" />
                         </div>
                         {legalError && <p className="text-xs" style={{ color: '#ef4444' }}>{legalError}</p>}
                         <div className="flex items-center gap-2">
                             <button onClick={handleLegalSave} disabled={legalPending} className="btn-primary">
-                                {legalPending ? 'Speichert…' : 'Speichern'}
+                                {legalPending ? t('saving') : t('saved').replace('!', '')}
                             </button>
                             <button
                                 onClick={handleLegalCancel}
@@ -636,7 +631,7 @@ function OrgTab({ org, role, memberCount, legalData, onInvite }: { org: Org; rol
                                 className="text-xs px-3 py-1.5 rounded-lg"
                                 style={{ background: 'var(--color-pl-surface)', border: '1px solid var(--color-pl-border)', color: 'var(--color-pl-text-secondary)' }}
                             >
-                                Abbrechen
+                                {t('legalCancel')}
                             </button>
                         </div>
                     </div>
@@ -644,23 +639,23 @@ function OrgTab({ org, role, memberCount, legalData, onInvite }: { org: Org; rol
 
                 {!legalEditing && !legalComplete && (
                     <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                        Keine Angaben hinterlegt.{' '}
-                        {isAdmin && <button onClick={() => setLegalEditing(true)} className="underline" style={{ color: 'var(--color-pl-brand-light)' }}>Jetzt ausfüllen</button>}
+                        {t('legalNoData')}{' '}
+                        {isAdmin && <button onClick={() => setLegalEditing(true)} className="underline" style={{ color: 'var(--color-pl-brand-light)' }}>{t('legalFillNow')}</button>}
                     </p>
                 )}
             </div>
 
             <div className="glass-card p-5">
                 <h2 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-pl-text-primary)' }}>
-                    Team
+                    {t('teamTitle')}
                 </h2>
                 <div className="flex items-center justify-between">
                     <div>
                         <p className="text-sm" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                            {memberCount} von {org?.max_users ?? 1} Mitglied{memberCount !== 1 ? 'ern' : ''}
+                            {t('teamMembers', { count: memberCount, max: org?.max_users ?? 1 })}
                         </p>
                         <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                            Ihr Abonnement umfasst {org?.max_users ?? 1} Nutzerplatz{(org?.max_users ?? 1) !== 1 ? 'e' : ''}
+                            {t('teamSeatsInfo', { max: org?.max_users ?? 1 })}
                         </p>
                     </div>
                     {isAdmin && (
@@ -669,7 +664,7 @@ function OrgTab({ org, role, memberCount, legalData, onInvite }: { org: Org; rol
                             style={{ background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.25)', color: 'var(--color-pl-brand-light)' }}
                             onClick={onInvite}
                         >
-                            Mitglied einladen
+                            {t('teamInvite')}
                         </button>
                     )}
                 </div>
@@ -681,6 +676,8 @@ function OrgTab({ org, role, memberCount, legalData, onInvite }: { org: Org; rol
 // ─── Tab: Profile ─────────────────────────────────────────────
 
 function ProfileTab({ user, profileData }: { user: User; profileData: { fullName: string; jobTitle: string } }) {
+    const t = useTranslations('settings')
+    const format = useFormatter()
     const [fullName,  setFullName]  = useState(profileData.fullName)
     const [jobTitle,  setJobTitle]  = useState(profileData.jobTitle)
     const [saved,     setSaved]     = useState(false)
@@ -701,11 +698,13 @@ function ProfileTab({ user, profileData }: { user: User; profileData: { fullName
         ? fullName.trim().split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
         : (user.email?.slice(0, 2).toUpperCase() ?? '??')
 
+    const memberSinceDate = format.dateTime(new Date(user.created_at), { month: 'long', year: 'numeric' })
+
     return (
         <div className="space-y-4">
             <div className="glass-card p-5">
                 <h2 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-pl-text-primary)' }}>
-                    Benutzerprofil
+                    {t('profileTitle')}
                 </h2>
 
                 <div className="flex items-center gap-4 mb-6">
@@ -725,7 +724,7 @@ function ProfileTab({ user, profileData }: { user: User; profileData: { fullName
                             </p>
                         )}
                         <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                            Mitglied seit {new Date(user.created_at).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })}
+                            {t('memberSince', { date: memberSinceDate })}
                         </p>
                     </div>
                 </div>
@@ -733,39 +732,39 @@ function ProfileTab({ user, profileData }: { user: User; profileData: { fullName
                 <div className="space-y-4">
                     <div>
                         <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                            Vollständiger Name
+                            {t('fullName')}
                         </label>
                         <input
                             value={fullName}
                             onChange={e => setFullName(e.target.value)}
-                            placeholder="z.B. Maria Müller"
+                            placeholder={t('fullNamePlaceholder')}
                             className="input-base w-full"
                         />
                     </div>
                     <div>
                         <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                            Funktion / Berufsbezeichnung
+                            {t('jobTitleLabel')}
                         </label>
                         <input
                             value={jobTitle}
                             onChange={e => setJobTitle(e.target.value)}
-                            placeholder="z.B. HR Managerin, Personalreferentin"
+                            placeholder={t('jobTitlePlaceholder')}
                             className="input-base w-full"
                         />
                     </div>
                     <div>
                         <label className="block text-xs font-medium mb-2" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                            Bevorzugte Sprache / Preferred Language
+                            {t('language')}
                         </label>
                         <LanguageSelector />
                     </div>
                     <div>
                         <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                            E-Mail-Adresse
+                            {t('emailLabel')}
                         </label>
                         <input value={user.email ?? ''} disabled className="input-base w-full" style={{ opacity: 0.5 }} />
                         <p className="text-xs mt-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                            E-Mail-Änderung ist nicht über die UI möglich. Kontaktieren Sie den Support.
+                            {t('emailChangeHint')}
                         </p>
                     </div>
 
@@ -777,33 +776,33 @@ function ProfileTab({ user, profileData }: { user: User; profileData: { fullName
                         className="flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-lg disabled:opacity-50 transition-all"
                         style={{ background: 'var(--color-pl-brand)', color: '#fff' }}
                     >
-                        {saved ? <><Check size={13} /> Gespeichert!</> : isPending ? 'Speichert…' : 'Profil speichern'}
+                        {saved ? <><Check size={13} /> {t('profileSaved')}</> : isPending ? t('profileSaving') : t('profileSave')}
                     </button>
                 </div>
             </div>
 
             <div className="glass-card p-5">
                 <h2 className="text-sm font-semibold mb-1" style={{ color: 'var(--color-pl-text-primary)' }}>
-                    Passwort ändern
+                    {t('changePassword')}
                 </h2>
                 <p className="text-xs mb-4" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                    Sie erhalten eine E-Mail mit einem Passwort-Reset-Link.
+                    {t('changePasswordHint')}
                 </p>
                 <button
                     className="text-xs font-semibold px-3 py-1.5 rounded-lg"
                     style={{ background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.25)', color: 'var(--color-pl-brand-light)' }}
-                    onClick={() => alert('Passwort-Reset-E-Mail wird gesendet — in Kürze verfügbar.')}
+                    onClick={() => alert(t('resetEmailAlert'))}
                 >
-                    Passwort-Reset-E-Mail senden
+                    {t('sendResetEmail')}
                 </button>
             </div>
 
             <div className="glass-card p-5">
                 <h2 className="text-sm font-semibold mb-1" style={{ color: '#ef4444' }}>
-                    Abmelden
+                    {t('logoutTitle')}
                 </h2>
                 <p className="text-xs mb-4" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                    Sie werden von allen Geräten abgemeldet.
+                    {t('logoutHint')}
                 </p>
                 <form action={signOut}>
                     <button
@@ -811,7 +810,7 @@ function ProfileTab({ user, profileData }: { user: User; profileData: { fullName
                         className="text-xs font-semibold px-3 py-1.5 rounded-lg"
                         style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', color: '#ef4444' }}
                     >
-                        Abmelden
+                        {t('logoutBtn')}
                     </button>
                 </form>
             </div>
@@ -822,18 +821,24 @@ function ProfileTab({ user, profileData }: { user: User; profileData: { fullName
 // ─── Tab: Billing ─────────────────────────────────────────────
 
 function BillingTab({
-    org, plan, subEnd, isLicensed, legalComplete, onGoToOrg
+    org, subEnd, isLicensed, legalComplete, onGoToOrg
 }: {
     org: Org
-    plan: ReturnType<typeof planInfo>
     subEnd: Date | null
     isLicensed: boolean
     legalComplete: boolean
     onGoToOrg: () => void
 }) {
+    const t = useTranslations('settings')
+    const format = useFormatter()
     const subStart = subEnd ? new Date(subEnd.getTime() - 365 * 24 * 60 * 60 * 1000) : null
     const fmtDate  = (d: Date | null) =>
-        d ? d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : null
+        d ? format.dateTime(d, { day: '2-digit', month: '2-digit', year: 'numeric' }) : null
+
+    const planKey = org?.plan ?? 'trial'
+    const planLabel = t(`plan${planKey === 'trial' ? 'Trial' : planKey === 'free' ? 'Free' : 'Licensed'}Label` as any)
+    const planBadge = t(`plan${planKey === 'trial' ? 'Trial' : planKey === 'free' ? 'Free' : 'Licensed'}Badge` as any)
+    const planColor = planKey === 'trial' || planKey === 'free' ? '#f59e0b' : 'var(--color-pl-brand)'
 
     // ── Reusable document row ────────────────────────────────────
     function DocRow({
@@ -873,18 +878,18 @@ function BillingTab({
             {/* ── 1. Plan status ────────────────────────────────── */}
             <div className="glass-card p-5">
                 <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                    Aktuelles Abonnement
+                    {t('currentPlan')}
                 </p>
                 <div className="flex items-center gap-3">
                     <div
                         className="px-2.5 py-1 rounded-lg text-xs font-bold tracking-wide"
-                        style={{ background: plan.color + '18', color: plan.color, border: `1px solid ${plan.color}40` }}
+                        style={{ background: planColor + '18', color: planColor, border: `1px solid ${planColor}40` }}
                     >
-                        {plan.badge}
+                        {planBadge}
                     </div>
                     <div>
                         <p className="font-semibold text-sm" style={{ color: 'var(--color-pl-text-primary)' }}>
-                            {plan.label}
+                            {planLabel}
                         </p>
                         {isLicensed && subStart && subEnd ? (
                             <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>
@@ -892,7 +897,7 @@ function BillingTab({
                             </p>
                         ) : subEnd ? (
                             <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                                Verlängerung: {fmtDate(subEnd)}
+                                {t('renewal', { date: fmtDate(subEnd) ?? '' })}
                             </p>
                         ) : null}
                     </div>
@@ -913,25 +918,25 @@ function BillingTab({
                         pointerEvents: 'none',
                     }} />
                     <p className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--color-pl-brand-light)' }}>
-                        CompLens Lizenz
+                        {t('licenseCta')}
                     </p>
                     <p className="text-2xl font-bold mb-0.5" style={{ color: 'var(--color-pl-text-primary)' }}>
-                        € 5.990{' '}
+                        {t('licensePrice')}{' '}
                         <span className="text-sm font-normal" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                            / Jahr zzgl. MwSt.
+                            {t('licensePriceUnit')}
                         </span>
                     </p>
                     <p className="text-xs mb-5" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                        Jahresabo · 1 HR-Admin + 1 Betriebsrat-Lesezugang inkl.
+                        {t('licensePriceDesc')}
                     </p>
                     <div className="space-y-1.5 mb-5">
-                        {[
-                            'Unbegrenzte Uploads & Analysen',
-                            'PDF & PowerPoint-Export (ohne Wasserzeichen)',
-                            'KI-Import-Mapping & Chatbot',
-                            'Compliance-Bericht gem. EU Art. 9',
-                            'Lizenzvertrag & AVV sofort verfügbar',
-                        ].map(f => (
+                        {([
+                            t('licenseFeature1'),
+                            t('licenseFeature2'),
+                            t('licenseFeature3'),
+                            t('licenseFeature4'),
+                            t('licenseFeature5'),
+                        ]).map(f => (
                             <div key={f} className="flex items-center gap-2 text-xs" style={{ color: 'var(--color-pl-text-secondary)' }}>
                                 <Check size={12} style={{ color: '#10b981', flexShrink: 0 }} />
                                 {f}
@@ -940,7 +945,7 @@ function BillingTab({
                     </div>
                     <UpgradeButton />
                     <p className="text-xs mt-2" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                        Zahlung per Kreditkarte oder SEPA-Lastschrift — Sie wählen in Stripe.
+                        {t('licensePaymentNote')}
                     </p>
                 </div>
             )}
@@ -949,13 +954,13 @@ function BillingTab({
             {isLicensed && (
                 <div className="glass-card p-5">
                     <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                        Nutzerplätze erweitern
+                        {t('expandSeats')}
                     </p>
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>Zusätzlicher Nutzerplatz</p>
+                            <p className="text-sm font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>{t('additionalSeat')}</p>
                             <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                                HR-Admin oder Mitarbeitervertretung · € 990 / Platz / Jahr zzgl. MwSt.
+                                {t('additionalSeatDesc')}
                             </p>
                         </div>
                         <AddOnButton />
@@ -967,10 +972,10 @@ function BillingTab({
             {isLicensed && (
                 <div className="glass-card p-5">
                     <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                        Abonnement & Rechnungen
+                        {t('subscriptionInvoices')}
                     </p>
                     <p className="text-xs mb-4" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                        Abonnement anpassen, kündigen oder Rechnungen herunterladen — direkt in Ihrem Stripe-Kundenkonto.
+                        {t('subscriptionManageDesc')}
                     </p>
                     <ManageSubscriptionButton />
                 </div>
@@ -979,20 +984,20 @@ function BillingTab({
             {/* ── 3. Documents ──────────────────────────────────── */}
             <div className="glass-card p-5">
                 <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                    Dokumente
+                    {t('documents')}
                 </p>
                 <p className="text-xs mb-3" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                    Offizielle Steuerrechnung erhalten Sie nach Zahlung automatisch per E-Mail von Stripe.
+                    {t('documentsInvoiceNote')}
                 </p>
 
                 <div>
                     {/* Lizenzvertrag */}
                     <DocRow
                         icon={<FileDown size={14} style={{ color: isLicensed && legalComplete ? 'var(--color-pl-brand-light)' : 'var(--color-pl-text-tertiary)' }} />}
-                        title="Lizenzvertrag (PDF)"
+                        title={t('docLicenseTitle')}
                         subtitle={isLicensed
-                            ? `Personalisiert auf ${org?.name} · von DexterBee GmbH unterzeichnet`
-                            : 'Verfügbar nach Lizenzierung'}
+                            ? t('docLicenseSub', { orgName: org?.name ?? '' })
+                            : t('docLicenseAvailAfter')}
                         muted={!isLicensed}
                         action={isLicensed && legalComplete ? (
                             <a
@@ -1002,13 +1007,13 @@ function BillingTab({
                                 className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg"
                                 style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', color: 'var(--color-pl-brand-light)', textDecoration: 'none' }}
                             >
-                                <FileDown size={12} /> Herunterladen
+                                <FileDown size={12} /> {t('downloadDoc')}
                             </a>
                         ) : isLicensed ? (
-                            <button onClick={onGoToOrg} className="text-xs hover:underline" style={{ color: 'var(--color-pl-brand-light)' }}>Bitte Rechtliche Angaben ausfüllen</button>
+                            <button onClick={onGoToOrg} className="text-xs hover:underline" style={{ color: 'var(--color-pl-brand-light)' }}>{t('docLicenseFillLegal')}</button>
                         ) : (
                             <span className="text-xs px-2.5 py-1 rounded-lg" style={{ background: 'rgba(255,255,255,0.04)', color: 'var(--color-pl-text-tertiary)', border: '1px solid var(--color-pl-border)' }}>
-                                Nach Lizenzierung
+                                {t('docAfterLicensing')}
                             </span>
                         )}
                     />
@@ -1016,10 +1021,10 @@ function BillingTab({
                     {/* AVV */}
                     <DocRow
                         icon={<FileDown size={14} style={{ color: isLicensed && legalComplete ? 'var(--color-pl-brand-light)' : 'var(--color-pl-text-tertiary)' }} />}
-                        title="AVV / Auftragsverarbeitungsvertrag (PDF)"
+                        title={t('docAvvTitle')}
                         subtitle={isLicensed
-                            ? 'Gem. Art. 28 DSGVO · inkl. Subprocessors & TOMs'
-                            : 'Verfügbar nach Lizenzierung'}
+                            ? t('docAvvSub')
+                            : t('docAvvAvailAfter')}
                         muted={!isLicensed}
                         action={isLicensed && legalComplete ? (
                             <a
@@ -1029,13 +1034,13 @@ function BillingTab({
                                 className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg"
                                 style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', color: 'var(--color-pl-brand-light)', textDecoration: 'none' }}
                             >
-                                <FileDown size={12} /> Herunterladen
+                                <FileDown size={12} /> {t('downloadDoc')}
                             </a>
                         ) : isLicensed ? (
-                            <button onClick={onGoToOrg} className="text-xs hover:underline" style={{ color: 'var(--color-pl-brand-light)' }}>Bitte Rechtliche Angaben ausfüllen</button>
+                            <button onClick={onGoToOrg} className="text-xs hover:underline" style={{ color: 'var(--color-pl-brand-light)' }}>{t('docLicenseFillLegal')}</button>
                         ) : (
                             <span className="text-xs px-2.5 py-1 rounded-lg" style={{ background: 'rgba(255,255,255,0.04)', color: 'var(--color-pl-text-tertiary)', border: '1px solid var(--color-pl-border)' }}>
-                                Nach Lizenzierung
+                                {t('docAfterLicensing')}
                             </span>
                         )}
                     />
@@ -1043,8 +1048,8 @@ function BillingTab({
                     {/* Proforma */}
                     <DocRow
                         icon={<FileDown size={14} style={{ color: legalComplete ? 'var(--color-pl-brand-light)' : 'var(--color-pl-text-tertiary)' }} />}
-                        title="Proforma-Rechnung (PDF)"
-                        subtitle="Für interne Budgetfreigabe oder Vorauszahlung — kein Steuerdokument"
+                        title={t('docProformaTitle')}
+                        subtitle={t('docProformaSub')}
                         action={<ProformaDownloadButton legalComplete={legalComplete} plan={org?.plan ?? 'paylens'} onGoToOrg={onGoToOrg} />}
                     />
                 </div>
@@ -1054,19 +1059,19 @@ function BillingTab({
                         style={{ background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.2)' }}>
                         <AlertTriangle size={12} style={{ color: '#f59e0b', flexShrink: 0, marginTop: 1 }} />
                         <span style={{ color: 'var(--color-pl-text-secondary)' }}>
-                            Für Vertragsunterlagen und Proforma-Rechnung bitte zunächst{' '}
-                            <button onClick={onGoToOrg} className="underline font-semibold" style={{ color: '#f59e0b' }}>
-                                Rechtliche Angaben
-                            </button>{' '}
-                            ausfüllen (Organisation-Tab).
+                            {t.rich('docLegalWarning', {
+                                link: (chunks) => (
+                                    <button onClick={onGoToOrg} className="underline font-semibold" style={{ color: '#f59e0b' }}>
+                                        {t('docLegalLink')}
+                                    </button>
+                                ),
+                            })}
                         </span>
                     </div>
                 )}
 
                 <p className="text-xs mt-4" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                    Alle Preise zzgl. MwSt. · Jährliche Abrechnung · Kündigung 3 Monate zum Jahresende
-                    · Fragen:{' '}
-                    <a href="mailto:hallo@complens.de" className="underline hover:text-blue-400">hallo@complens.de</a>
+                    {t('pricingNote', { email: 'hallo@complens.de' })}
                 </p>
             </div>
         </div>
@@ -1076,18 +1081,19 @@ function BillingTab({
 // ─── Tab: Security ────────────────────────────────────────────
 
 function SecurityTab() {
+    const t = useTranslations('settings')
     return (
         <div className="space-y-4">
             <div className="glass-card p-5">
                 <h2 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-pl-text-primary)' }}>
-                    Datenschutz &amp; Compliance
+                    {t('securityTitle')}
                 </h2>
                 <div className="space-y-3">
                     {[
-                        { icon: '🇩🇪', title: 'EU-Server',         desc: 'Alle Daten in Frankfurt am Main (EU-West)' },
-                        { icon: '🔒', title: 'DSGVO-konform',     desc: 'Art. 28 AVV auf Anfrage verfügbar' },
-                        { icon: '🔑', title: 'Verschlüsselung',   desc: 'TLS 1.3 in transit, AES-256 at rest' },
-                        { icon: '📋', title: 'Zugriffsprotokoll', desc: 'Alle Aktionen werden auditiert' },
+                        { icon: '🇩🇪', title: t('secEuServer'),     desc: t('secEuServerDesc') },
+                        { icon: '🔒', title: t('secGdpr'),          desc: t('secGdprDesc') },
+                        { icon: '🔑', title: t('secEncryption'),    desc: t('secEncryptionDesc') },
+                        { icon: '📋', title: t('secAuditLog'),      desc: t('secAuditLogDesc') },
                     ].map(item => (
                         <div key={item.title} className="flex items-start gap-3 py-2 border-b last:border-0"
                             style={{ borderColor: 'var(--color-pl-border)' }}>
@@ -1100,21 +1106,24 @@ function SecurityTab() {
                         </div>
                     ))}
                 </div>
+                <a href="/toms" className="inline-flex items-center gap-1.5 text-xs font-medium mt-4 hover:underline" style={{ color: 'var(--color-pl-brand-light)' }}>
+                    <Shield size={12} /> {t('viewFullToms')}
+                    <ChevronRight size={12} />
+                </a>
             </div>
 
             <div className="glass-card p-5">
                 <h2 className="text-sm font-semibold mb-1" style={{ color: '#ef4444' }}>
-                    Datenlöschung
+                    {t('secDeletionTitle')}
                 </h2>
                 <p className="text-xs mb-4" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                    Bei Kündigung werden alle Daten innerhalb von 30 Tagen unwiderruflich gelöscht.
-                    Datenexport vor Kündigung empfohlen.
+                    {t('secDeletionDesc')}
                 </p>
                 <div className="flex items-center gap-2 text-xs p-3 rounded-lg"
                     style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)' }}>
                     <AlertTriangle size={12} style={{ color: '#ef4444', flexShrink: 0 }} />
                     <span style={{ color: 'var(--color-pl-text-secondary)' }}>
-                        Kontolöschung: Bitte wenden Sie sich an hallo@complens.de
+                        {t('secDeletionContact')}
                     </span>
                 </div>
             </div>

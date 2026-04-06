@@ -5,6 +5,7 @@ import {
     Plus, Trash2, Check, AlertTriangle, ChevronDown, ChevronUp,
     Info, Save, Loader2, TrendingUp,
 } from 'lucide-react'
+import { useTranslations, useLocale } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -30,22 +31,17 @@ type SalaryBand = {
     grades:      SalaryGrade[]
 }
 
-// ─── Number formatter ─────────────────────────────────────────────────────────
-
-const CURR_FMT = (n: number) =>
-    new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n)
-
 // ─── Compa-ratio chip ─────────────────────────────────────────────────────────
 
-function CompaChip({ ratio }: { ratio: number }) {
+function CompaChip({ ratio, t }: { ratio: number; t: ReturnType<typeof useTranslations> }) {
     const color = ratio < 0.8   ? '#ef4444'
                 : ratio < 0.875 ? '#f59e0b'
                 : ratio > 1.125 ? '#818cf8'
                 : '#34d399'
-    const label = ratio < 0.8   ? 'Untervergütung'
-                : ratio < 0.875 ? 'Risikobereich'
-                : ratio > 1.125 ? 'Übervergütung'
-                : 'Im Zielbereich'
+    const label = ratio < 0.8   ? t('underpayment')
+                : ratio < 0.875 ? t('riskZone')
+                : ratio > 1.125 ? t('overpayment')
+                : t('onTarget')
     return (
         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold"
             style={{ background: `${color}18`, color, border: `1px solid ${color}40` }}>
@@ -84,11 +80,13 @@ function gradeToForm(g: SalaryGrade): GradeFormState {
 // ─── Band card ────────────────────────────────────────────────────────────────
 
 function BandCard({
-    band, onUpdated, onDeleted,
+    band, onUpdated, onDeleted, t, currFmt,
 }: {
     band:      SalaryBand
     onUpdated: (b: SalaryBand) => void
     onDeleted: (id: string) => void
+    t:         ReturnType<typeof useTranslations>
+    currFmt:   (n: number) => string
 }) {
     const [expanded,  setExpanded]  = useState(false)
     const [adding,    setAdding]    = useState(false)
@@ -106,9 +104,9 @@ function BandCard({
         const min = parseFloat(gradeForm.min_salary)
         const max = parseFloat(gradeForm.max_salary)
         const mid = gradeForm.mid_salary ? parseFloat(gradeForm.mid_salary) : null
-        if (!gradeForm.job_grade.trim()) { setError('Entgeltgruppe ist erforderlich.'); return }
+        if (!gradeForm.job_grade.trim()) { setError(t('gradeRequired')); return }
         if (isNaN(min) || isNaN(max) || min <= 0 || max <= min) {
-            setError('Min muss > 0 und kleiner als Max sein.'); return
+            setError(t('minMaxError')); return
         }
 
         setSaving(true)
@@ -138,9 +136,9 @@ function BandCard({
         const min = parseFloat(editForm.min_salary)
         const max = parseFloat(editForm.max_salary)
         const mid = editForm.mid_salary ? parseFloat(editForm.mid_salary) : null
-        if (!editForm.job_grade.trim()) { setError('Entgeltgruppe ist erforderlich.'); return }
+        if (!editForm.job_grade.trim()) { setError(t('gradeRequired')); return }
         if (isNaN(min) || isNaN(max) || min <= 0 || max <= min) {
-            setError('Min muss > 0 und < Max sein.'); return
+            setError(t('minMaxError')); return
         }
 
         setSaving(true)
@@ -173,7 +171,7 @@ function BandCard({
     }
 
     async function deleteBand() {
-        if (!confirm(`Band "${band.name}" und alle Entgeltgruppen löschen?`)) return
+        if (!confirm(t('deleteBandConfirm', { name: band.name }))) return
         const { error: e } = await supabase.from('salary_bands').delete().eq('id', band.id)
         if (e) { setError(e.message); return }
         onDeleted(band.id)
@@ -193,13 +191,13 @@ function BandCard({
                     <div>
                         <p className="text-sm font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>{band.name}</p>
                         <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                            {band.grades.length} Entgeltgruppe{band.grades.length !== 1 ? 'n' : ''}
+                            {t('gradeCount', { count: band.grades.length })}
                             {band.description ? ` · ${band.description}` : ''}
                         </p>
                     </div>
                 </button>
                 <button onClick={deleteBand} className="p-1.5 rounded-lg transition-colors ml-2"
-                    title="Band löschen"
+                    title={t('deleteBandTitle')}
                     style={{ color: 'var(--color-pl-text-tertiary)' }}
                     onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
                     onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-pl-text-tertiary)')}>
@@ -223,7 +221,7 @@ function BandCard({
                             <table className="text-xs w-full border-collapse">
                                 <thead>
                                     <tr style={{ background: 'var(--theme-pl-action-ghost)', borderBottom: '1px solid var(--color-pl-border)' }}>
-                                        {['Gruppe', 'Familie · Level', 'Min', 'Mitte', 'Max', 'Compa', ''].map(h => (
+                                        {[t('tableGroup'), t('tableFamilyLevel'), t('tableMin'), t('tableMid'), t('tableMax'), t('tableCompa'), ''].map(h => (
                                             <th key={h} className="py-2 px-3 text-left font-medium"
                                                 style={{ color: 'var(--color-pl-text-tertiary)' }}>{h}</th>
                                         ))}
@@ -246,11 +244,11 @@ function BandCard({
                                                         <div className="flex gap-1">
                                                             <input value={editForm.job_family}
                                                                 onChange={e => setEditForm(f => ({ ...f, job_family: e.target.value }))}
-                                                                placeholder="Familie"
+                                                                placeholder={t('jobFamilyLabel')}
                                                                 className="input-base text-xs py-1 w-20" />
                                                             <input value={editForm.level_label}
                                                                 onChange={e => setEditForm(f => ({ ...f, level_label: e.target.value }))}
-                                                                placeholder="Level"
+                                                                placeholder={t('levelLabel')}
                                                                 className="input-base text-xs py-1 w-16" />
                                                         </div>
                                                     </td>
@@ -259,7 +257,7 @@ function BandCard({
                                                             <input type="number" value={editForm[k]}
                                                                 onChange={e => setEditForm(f => ({ ...f, [k]: e.target.value }))}
                                                                 className="input-base text-xs py-1 w-24"
-                                                                placeholder={k === 'mid_salary' ? '(opt.)' : undefined} />
+                                                                placeholder={k === 'mid_salary' ? `(${t('midPlaceholder')})` : undefined} />
                                                         </td>
                                                     ))}
                                                     <td className="px-3 py-2 text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>—</td>
@@ -292,18 +290,18 @@ function BandCard({
                                                     {[g.job_family, g.level_label].filter(Boolean).join(' · ') || '—'}
                                                 </td>
                                                 <td className="px-3 py-2" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                                                    {CURR_FMT(g.min_salary)}
+                                                    {currFmt(g.min_salary)}
                                                 </td>
                                                 <td className="px-3 py-2" style={{ color: 'var(--color-pl-text-secondary)' }}>
                                                     {g.mid_salary
-                                                        ? CURR_FMT(g.mid_salary)
-                                                        : <span style={{ color: 'var(--color-pl-text-tertiary)' }}>{CURR_FMT((g.min_salary + g.max_salary) / 2)} (ber.)</span>}
+                                                        ? currFmt(g.mid_salary)
+                                                        : <span style={{ color: 'var(--color-pl-text-tertiary)' }}>{currFmt((g.min_salary + g.max_salary) / 2)} {t('calculatedMid')}</span>}
                                                 </td>
                                                 <td className="px-3 py-2" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                                                    {CURR_FMT(g.max_salary)}
+                                                    {currFmt(g.max_salary)}
                                                 </td>
                                                 <td className="px-3 py-2">
-                                                    <CompaChip ratio={ratio} />
+                                                    <CompaChip ratio={ratio} t={t} />
                                                 </td>
                                                 <td className="px-3 py-2">
                                                     <div className="flex items-center gap-1.5">
@@ -311,7 +309,7 @@ function BandCard({
                                                             onClick={() => { setEditId(g.id); setEditForm(gradeToForm(g)); setError(null) }}
                                                             className="text-xs px-2 py-0.5 rounded"
                                                             style={{ color: 'var(--color-pl-brand-light)', border: '1px solid rgba(99,102,241,0.3)' }}>
-                                                            Bearbeiten
+                                                            {t('editButton')}
                                                         </button>
                                                         <button onClick={() => deleteGrade(g.id)} disabled={deleting === g.id}
                                                             className="p-1 rounded transition-colors"
@@ -335,41 +333,41 @@ function BandCard({
                         <div className="rounded-xl p-4 space-y-3"
                             style={{ background: 'var(--theme-pl-action-ghost)', border: '1px solid var(--color-pl-border)' }}>
                             <p className="text-xs font-semibold uppercase tracking-wide"
-                                style={{ color: 'var(--color-pl-text-tertiary)' }}>Neue Entgeltgruppe</p>
+                                style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('newGradeTitle')}</p>
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
                                     <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                                        Bezeichnung <span style={{ color: '#ef4444' }}>*</span>
+                                        {t('gradeLabel')} <span style={{ color: '#ef4444' }}>*</span>
                                     </label>
                                     <input value={gradeForm.job_grade}
                                         onChange={e => setGradeForm(f => ({ ...f, job_grade: e.target.value }))}
-                                        placeholder="z.B. EG5, Senior, L4"
+                                        placeholder={t('gradePlaceholder')}
                                         className="input-base text-xs w-full" />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                                        Job-Familie (optional)
+                                        {t('jobFamilyLabel')}
                                     </label>
                                     <input value={gradeForm.job_family}
                                         onChange={e => setGradeForm(f => ({ ...f, job_family: e.target.value }))}
-                                        placeholder="z.B. Engineering, Finance"
+                                        placeholder={t('jobFamilyPlaceholder')}
                                         className="input-base text-xs w-full" />
                                 </div>
                             </div>
                             <div>
                                 <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                                    Level-Bezeichnung (optional)
+                                    {t('levelLabel')}
                                 </label>
                                 <input value={gradeForm.level_label}
                                     onChange={e => setGradeForm(f => ({ ...f, level_label: e.target.value }))}
-                                    placeholder="z.B. Junior, Senior, Principal"
+                                    placeholder={t('levelPlaceholder')}
                                     className="input-base text-xs w-full" />
                             </div>
                             <div className="grid grid-cols-3 gap-3">
                                 {([
-                                    { key: 'min_salary' as const, label: 'Min p.a. (EUR)', req: true },
-                                    { key: 'mid_salary' as const, label: 'Mitte p.a.',     req: false },
-                                    { key: 'max_salary' as const, label: 'Max p.a. (EUR)', req: true },
+                                    { key: 'min_salary' as const, label: t('minSalaryLabel'), req: true },
+                                    { key: 'mid_salary' as const, label: t('midSalaryLabel'), req: false },
+                                    { key: 'max_salary' as const, label: t('maxSalaryLabel'), req: true },
                                 ]).map(({ key, label, req }) => (
                                     <div key={key}>
                                         <label className="block text-xs font-medium mb-1"
@@ -378,19 +376,19 @@ function BandCard({
                                         </label>
                                         <input type="number" value={gradeForm[key]}
                                             onChange={e => setGradeForm(f => ({ ...f, [key]: e.target.value }))}
-                                            placeholder={req ? '0' : 'wird berechnet'}
+                                            placeholder={req ? '0' : t('midPlaceholder')}
                                             className="input-base text-xs w-full" />
                                     </div>
                                 ))}
                             </div>
                             <div className="flex items-center gap-2">
                                 <button onClick={saveGrade} disabled={saving} className="btn-primary text-xs py-1.5">
-                                    {saving ? <><Loader2 size={12} className="animate-spin" /> Speichert…</> : <><Save size={12} /> Speichern</>}
+                                    {saving ? <><Loader2 size={12} className="animate-spin" /> {t('savingButton')}</> : <><Save size={12} /> {t('saveGradeButton')}</>}
                                 </button>
                                 <button onClick={() => { setAdding(false); setError(null) }}
                                     className="text-xs px-3 py-1.5 rounded-lg"
                                     style={{ border: '1px solid var(--color-pl-border)', color: 'var(--color-pl-text-secondary)' }}>
-                                    Abbrechen
+                                    {t('cancelButton')}
                                 </button>
                             </div>
                         </div>
@@ -402,7 +400,7 @@ function BandCard({
                                 border: '1px solid rgba(99,102,241,0.25)',
                                 color: 'var(--color-pl-brand-light)',
                             }}>
-                            <Plus size={13} /> Entgeltgruppe hinzufügen
+                            <Plus size={13} /> {t('addGradeButton')}
                         </button>
                     )}
                 </div>
@@ -422,6 +420,12 @@ export default function SalaryBandsPanel() {
     const [saving,   setSaving]   = useState(false)
     const [error,    setError]    = useState<string | null>(null)
     const [, startTransition] = useTransition()
+
+    const t = useTranslations('salaryBands')
+    const locale = useLocale()
+
+    const currFmt = (n: number) =>
+        new Intl.NumberFormat(locale, { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n)
 
     const supabase = createClient()
 
@@ -456,7 +460,7 @@ export default function SalaryBandsPanel() {
     }, [])
 
     async function createBand() {
-        if (!newName.trim()) { setError('Name ist erforderlich.'); return }
+        if (!newName.trim()) { setError(t('nameRequired')); return }
         setError(null)
         setSaving(true)
         const { data, error: e } = await supabase
@@ -478,17 +482,17 @@ export default function SalaryBandsPanel() {
             <div className="flex items-start justify-between">
                 <div>
                     <h2 className="text-sm font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>
-                        Entgeltbänder &amp; Gehaltsrahmen
+                        {t('panelTitle')}
                     </h2>
                     <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                        Compa-Ratio-Auswertungen nach EU RL 2023/970 Art. 5 &amp; 9
+                        {t('panelSubtitle')}
                     </p>
                 </div>
                 {!creating && (
                     <button onClick={() => { setCreating(true); setError(null) }}
                         className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg flex-shrink-0"
                         style={{ background: 'var(--color-pl-brand)', color: '#fff' }}>
-                        <Plus size={13} /> Neues Band
+                        <Plus size={13} /> {t('newBandButton')}
                     </button>
                 )}
             </div>
@@ -498,10 +502,8 @@ export default function SalaryBandsPanel() {
                 style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.2)' }}>
                 <Info size={13} className="flex-shrink-0 mt-0.5" style={{ color: '#818cf8' }} />
                 <div style={{ color: 'var(--color-pl-text-secondary)' }}>
-                    <strong style={{ color: 'var(--color-pl-text-primary)' }}>EU Art. 5 &amp; 9:</strong>{' '}
-                    Arbeitgeber müssen Entgeltstrukturen definieren und zugänglich machen.
-                    Die Compa-Ratio (aktuelles Gehalt ÷ Bandmitte) hilft, strukturelle Lohnlücken zu erkennen.
-                    Werte unter <strong>87,5%</strong> oder über <strong>112,5%</strong> gelten als außerhalb des Zielbands.
+                    <strong style={{ color: 'var(--color-pl-text-primary)' }}>{t('euComplianceNoteLabel')}</strong>{' '}
+                    <span dangerouslySetInnerHTML={{ __html: t('euComplianceNote') }} />
                 </div>
             </div>
 
@@ -510,22 +512,22 @@ export default function SalaryBandsPanel() {
                 <div className="glass-card p-4 space-y-3"
                     style={{ border: '1px solid rgba(99,102,241,0.3)' }}>
                     <p className="text-xs font-semibold uppercase tracking-wide"
-                        style={{ color: 'var(--color-pl-text-tertiary)' }}>Neues Entgeltband</p>
+                        style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('newBandFormTitle')}</p>
                     <div>
                         <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                            Name <span style={{ color: '#ef4444' }}>*</span>
+                            {t('bandNameLabel')} <span style={{ color: '#ef4444' }}>*</span>
                         </label>
                         <input value={newName} onChange={e => setNewName(e.target.value)}
-                            placeholder="z.B. Tarifband 2025, Senior Band, Führungskräfte"
+                            placeholder={t('bandNamePlaceholderPanel')}
                             className="input-base text-sm w-full"
                             onKeyDown={e => e.key === 'Enter' && createBand()} />
                     </div>
                     <div>
                         <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                            Beschreibung (optional)
+                            {t('bandDescLabel')}
                         </label>
                         <input value={newDesc} onChange={e => setNewDesc(e.target.value)}
-                            placeholder="z.B. Gültig für alle Vollzeitkräfte ab L3"
+                            placeholder={t('bandDescPlaceholder')}
                             className="input-base text-sm w-full" />
                     </div>
                     {error && (
@@ -535,12 +537,12 @@ export default function SalaryBandsPanel() {
                     )}
                     <div className="flex items-center gap-2">
                         <button onClick={createBand} disabled={saving} className="btn-primary text-xs py-1.5">
-                            {saving ? <><Loader2 size={12} className="animate-spin" /> Speichert…</> : 'Band erstellen'}
+                            {saving ? <><Loader2 size={12} className="animate-spin" /> {t('savingButton')}</> : t('createBandButton')}
                         </button>
                         <button onClick={() => { setCreating(false); setError(null) }}
                             className="text-xs px-3 py-1.5 rounded-lg"
                             style={{ border: '1px solid var(--color-pl-border)', color: 'var(--color-pl-text-secondary)' }}>
-                            Abbrechen
+                            {t('cancelButton')}
                         </button>
                     </div>
                 </div>
@@ -550,7 +552,7 @@ export default function SalaryBandsPanel() {
             {loading && (
                 <div className="py-12 text-center">
                     <Loader2 size={24} className="animate-spin mx-auto mb-2" style={{ color: 'var(--color-pl-text-tertiary)' }} />
-                    <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>Daten werden geladen…</p>
+                    <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('loadingData')}</p>
                 </div>
             )}
 
@@ -559,15 +561,15 @@ export default function SalaryBandsPanel() {
                 <div className="glass-card py-12 text-center" style={{ borderStyle: 'dashed' }}>
                     <TrendingUp size={32} className="mx-auto mb-3" style={{ color: 'var(--color-pl-text-tertiary)' }} />
                     <p className="text-sm font-medium mb-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                        Noch keine Entgeltbänder angelegt
+                        {t('noBandsYet')}
                     </p>
                     <p className="text-xs mb-4" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                        Erstellen Sie Ihr erstes Band, um Compa-Ratio-Analysen zu ermöglichen.
+                        {t('noBandsDesc')}
                     </p>
                     <button onClick={() => setCreating(true)}
                         className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg"
                         style={{ background: 'var(--color-pl-brand)', color: '#fff' }}>
-                        <Plus size={13} /> Jetzt anlegen
+                        <Plus size={13} /> {t('createNow')}
                     </button>
                 </div>
             )}
@@ -579,6 +581,8 @@ export default function SalaryBandsPanel() {
                     band={band}
                     onUpdated={updated => setBands(prev => prev.map(b => b.id === updated.id ? updated : b))}
                     onDeleted={id => setBands(prev => prev.filter(b => b.id !== id))}
+                    t={t}
+                    currFmt={currFmt}
                 />
             ))}
         </div>

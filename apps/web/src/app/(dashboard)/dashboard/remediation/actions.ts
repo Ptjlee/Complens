@@ -3,6 +3,7 @@
 import { createClient }      from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import { getTranslations }   from 'next-intl/server'
 import type { IndividualFlag } from '@/lib/calculations/types'
 
 // ============================================================
@@ -194,7 +195,10 @@ export async function upsertRemediationPlan(
 ): Promise<{ plan?: RemediationPlan; error?: string }> {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Nicht angemeldet.' }
+    if (!user) {
+        const t = await getTranslations('remediation')
+        return { error: t('notLoggedIn') }
+    }
 
     // Resolve org_id from membership
     const { data: memData } = await supabase
@@ -203,7 +207,10 @@ export async function upsertRemediationPlan(
         .eq('user_id', user.id)
         .single()
 
-    if (!memData?.org_id) return { error: 'Organisation nicht gefunden.' }
+    if (!memData?.org_id) {
+        const t = await getTranslations('remediation')
+        return { error: t('orgNotFound') }
+    }
 
     const row = {
         org_id:          memData.org_id,
@@ -248,7 +255,10 @@ export async function updateRemediationPlan(
 ): Promise<{ error?: string }> {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Nicht angemeldet.' }
+    if (!user) {
+        const t = await getTranslations('remediation')
+        return { error: t('notLoggedIn') }
+    }
 
     const { error } = await supabase
         .from('remediation_plans')
@@ -265,7 +275,10 @@ export async function updateRemediationPlan(
 export async function deleteRemediationPlan(planId: string): Promise<{ error?: string }> {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Nicht angemeldet.' }
+    if (!user) {
+        const t = await getTranslations('remediation')
+        return { error: t('notLoggedIn') }
+    }
 
     const { error } = await supabase
         .from('remediation_plans')
@@ -289,8 +302,9 @@ export async function generateRemediationAiPlan(
     adjustedTargetHourly = 0,
     planSteps: PlanStep[] = [],   // user-defined compensation steps
 ): Promise<{ text?: string; error?: string }> {
+    const t = await getTranslations('remediation')
     const apiKey = process.env.GEMINI_API_KEY
-    if (!apiKey) return { error: 'Gemini API-Key fehlt.' }
+    if (!apiKey) return { error: t('apiKeyMissing') }
 
     const supabase = await createClient()
 
@@ -305,28 +319,28 @@ export async function generateRemediationAiPlan(
 
     // auth check
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Nicht angemeldet.' }
+    if (!user) return { error: t('notLoggedIn') }
 
     const hasExplanation = !!explData
 
     // Build Begründungen context block for the prompt
     type CategoryEntry = { key: string; comment?: string; claimed_pct?: number }
-    let begSection = 'Keine HR-Begründung vorhanden.'
+    let begSection = t('noExplanation')
     if (hasExplanation && explData) {
         const cats: CategoryEntry[] = Array.isArray(explData.categories_json)
             ? (explData.categories_json as CategoryEntry[])
             : []
         const catLines = cats.map((c: CategoryEntry) =>
-            `  • ${c.key}${c.claimed_pct != null ? ` (${c.claimed_pct}% geltend gemacht)` : ''}${c.comment ? ': ' + c.comment : ''}`
+            `  • ${c.key}${c.claimed_pct != null ? ` (${c.claimed_pct}%)` : ''}${c.comment ? ': ' + c.comment : ''}`
         ).join('\n')
         const totalClaimed = cats.reduce((s: number, c: CategoryEntry) => s + (c.claimed_pct ?? 0), 0)
 
         begSection = [
-            `Status: ${explData.status}`,
-            catLines ? `Kategorien:\n${catLines}` : '',
-            `Gesamt geltend gemachte Begründung: ${totalClaimed.toFixed(1)}% (Deckel gem. Art. 18: 25%)`,
-            explData.explanation ? `HR-Freitext: ${explData.explanation}` : '',
-            explData.action_plan ? `Bereits skizzierter Aktionsplan (HR): ${explData.action_plan}` : '',
+            t('statusLabel', { status: explData.status }),
+            catLines ? `${t('categoriesLabel')}\n${catLines}` : '',
+            t('totalClaimed', { pct: totalClaimed.toFixed(1) }),
+            explData.explanation ? t('hrFreetext', { text: explData.explanation }) : '',
+            explData.action_plan ? t('existingPlan', { plan: explData.action_plan }) : '',
         ].filter(Boolean).join('\n')
     }
 
@@ -338,22 +352,22 @@ export async function generateRemediationAiPlan(
     const effectiveTargetHourly = adjustedTargetHourly > 0 ? adjustedTargetHourly : flag.cohort_median
     const adjustedTargetAnnual = (effectiveTargetHourly * flag.imported_annualised_hours).toFixed(0)
 
-    const name = [flag.first_name, flag.last_name].filter(Boolean).join(' ') || `Mitarbeiter:in ${flag.employee_id}`
+    const name = [flag.first_name, flag.last_name].filter(Boolean).join(' ') || t('employeeFallback', { id: flag.employee_id })
 
     // ── Build plan-steps narrative (if user has defined steps) ──
     const HORIZON_ORDER = ['6m', '1y', '1.5y', '2-3y']
     const HORIZON_LABEL: Record<string, string> = {
-        '6m':   'Kurzfristig (≤ 6 Monate)',
-        '1y':   'Mittelfristig (ca. 1 Jahr)',
-        '1.5y': 'Mittelfristig (ca. 1,5 Jahre)',
-        '2-3y': 'Langfristig (2–3 Jahre)',
+        '6m':   t('horizon6m'),
+        '1y':   t('horizon1y'),
+        '1.5y': t('horizon1_5y'),
+        '2-3y': t('horizon2_3y'),
     }
     const ACTION_LABEL: Record<string, string> = {
-        salary_increase:      'Gehaltsanpassung',
-        job_reclassification: 'Neueinstufung',
-        promotion:            'Beförderung',
-        bonus_adjustment:     'Bonusanpassung',
-        review:               'Manuelle Prüfung',
+        salary_increase:      t('actionSalaryIncrease'),
+        job_reclassification: t('actionReclassification'),
+        promotion:            t('actionPromotion'),
+        bonus_adjustment:     t('actionBonusAdjustment'),
+        review:               t('actionReview'),
     }
     const currentBase     = flag.hourly_rate * flag.imported_annualised_hours - flag.imported_variable_pay_eur
     const currentVariable = flag.imported_variable_pay_eur
@@ -376,66 +390,62 @@ export async function generateRemediationAiPlan(
                 if (s.target_variable_pay  != null) runVar  = Math.max(runVar,  s.target_variable_pay)
             }
             const baseLine = (s.action_type !== 'bonus_adjustment' && s.target_salary != null)
-                ? ` Grundgehalt: ${Math.round(prevBase).toLocaleString('de-DE')} € → ${s.target_salary.toLocaleString('de-DE')} € (+${(((s.target_salary / prevBase) - 1) * 100).toFixed(1)}%)`
+                ? ` ${t('baseSalary')}: ${Math.round(prevBase).toLocaleString('de-DE')} € → ${s.target_salary.toLocaleString('de-DE')} € (+${(((s.target_salary / prevBase) - 1) * 100).toFixed(1)}%)`
                 : ''
             const effVarTarget = s.action_type === 'bonus_adjustment' ? s.target_salary : (s.target_variable_pay ?? null)
             const varLine = effVarTarget != null
-                ? ` Variabler Anteil: ${Math.round(prevVar).toLocaleString('de-DE')} € → ${Math.round(effVarTarget).toLocaleString('de-DE')} €`
+                ? ` ${t('variablePay')}: ${Math.round(prevVar).toLocaleString('de-DE')} € → ${Math.round(effVarTarget).toLocaleString('de-DE')} €`
                 : ''
-            const total = `Gesamt nach Schritt: ${(runBase + runVar).toLocaleString('de-DE', { maximumFractionDigits: 0 })} €/Jahr`
-            const resp  = s.responsible ? ` | Zuständig: ${s.responsible}` : ''
-            const desc  = s.description ? ` | Hinweis: "${s.description}"` : ''
-            return `  Schritt ${i + 1} [${HORIZON_LABEL[s.horizon] ?? s.horizon}] — ${ACTION_LABEL[s.action_type] ?? s.action_type}:${baseLine}${varLine}. ${total}${resp}${desc}`
+            const total = `${t('totalAfterStep')}: ${(runBase + runVar).toLocaleString('de-DE', { maximumFractionDigits: 0 })} ${t('totalPerYear')}`
+            const resp  = s.responsible ? ` | ${t('responsible')}: ${s.responsible}` : ''
+            const desc  = s.description ? ` | ${t('note')}: "${s.description}"` : ''
+            return `  ${t('stepLabel', { num: i + 1 })} [${HORIZON_LABEL[s.horizon] ?? s.horizon}] — ${ACTION_LABEL[s.action_type] ?? s.action_type}:${baseLine}${varLine}. ${total}${resp}${desc}`
         })
         const finalTotal = runBase + runVar
         const changeVsNow = ((finalTotal / currentTotal - 1) * 100).toFixed(1)
-        stepLines.push(`  → ENDZUSTAND: Grundgehalt ${Math.round(runBase).toLocaleString('de-DE')} €, Variable ${Math.round(runVar).toLocaleString('de-DE')} €, Gesamt ${Math.round(finalTotal).toLocaleString('de-DE')} €/Jahr (${changeVsNow > '0' ? '+' : ''}${changeVsNow}% ggü. heute)`)
+        stepLines.push(`  → ${t('finalState')}: ${t('baseSalary')} ${Math.round(runBase).toLocaleString('de-DE')} €, ${t('variablePay')} ${Math.round(runVar).toLocaleString('de-DE')} €, ${t('totalAfterStep')} ${Math.round(finalTotal).toLocaleString('de-DE')} ${t('totalPerYear')} (${changeVsNow > '0' ? '+' : ''}${changeVsNow}% ${t('vsToday')})`)
         planSection = stepLines.join('\n')
     }
 
     // hasPlan is always true here (client guards the empty case)
-    const prompt = `Du bist Experte für EU-Entgelttransparenz (Richtlinie 2023/970 / EntgTranspG).
-Der HR hat bereits einen konkreten Vergütungsplan definiert. Erstelle einen schriftlichen Maßnahmenplan, der AUSSCHLIEßLICH auf diesen definierten Schritten basiert. Erfinde keine eigenen Zahlen.
+    const tp = (key: string, values?: Record<string, any>) => t(`prompt.${key}` as any, values as any)
+    const genderLabel = flag.gender === 'female' ? t('genderFemale') : flag.gender === 'male' ? t('genderMale') : t('genderDiverse')
+    const severityLabel = flag.severity === 'high' ? t('severityCritical') : flag.severity === 'overpaid' ? t('severityOverpaid') : t('severityReview')
 
-Organisation: ${orgName}
-Berichtsjahr: ${reportingYear}
-Mitarbeiter:in: ${name} (${flag.gender === 'female' ? 'weiblich' : flag.gender === 'male' ? 'männlich' : 'divers'})
-Abteilung: ${flag.department ?? '—'}
-Entgeltgruppe: ${flag.job_grade ?? '—'}
-Beschäftigungsart: ${flag.employment_type}
+    const prompt = `${tp('role')}
+${tp('instruction')}
 
-ENTGELTLÜCKENANALYSE:
-- Aktueller Bruttostundenlohn: ${flag.hourly_rate.toFixed(2)} €/h
-- Kohorten-Median (gleiche WIF-Gruppe): ${flag.cohort_median.toFixed(2)} €/h
-- Festgestellte Rohlücke: ${rawGapPct}% (${flag.severity === 'high' ? 'KRITISCH' : flag.severity === 'overpaid' ? 'ÜBERBEZAHLT' : 'ZU PRÜFEN'})
-- Aktuelle Jahresvergütung (annualisiert): ${Number(annualCurrent).toLocaleString('de-DE')} € (Basis: ${Math.round(currentBase).toLocaleString('de-DE')} €, Variable: ${Math.round(currentVariable).toLocaleString('de-DE')} €)
-- Kohortenmedian (Jahresbasis): ${Number(annualMedian).toLocaleString('de-DE')} €
+${tp('orgLabel')}: ${orgName}
+${tp('yearLabel')}: ${reportingYear}
+${tp('employeeLabel')}: ${name} (${genderLabel})
+${tp('deptLabel')}: ${flag.department ?? '—'}
+${tp('gradeLabel')}: ${flag.job_grade ?? '—'}
+${tp('employmentTypeLabel')}: ${flag.employment_type}
+
+${tp('gapAnalysisTitle')}:
+- ${tp('currentHourly')}: ${flag.hourly_rate.toFixed(2)} €/h
+- ${tp('cohortMedian')}: ${flag.cohort_median.toFixed(2)} €/h
+- ${tp('rawGap')}: ${rawGapPct}% (${severityLabel})
+- ${tp('currentAnnual')}: ${Number(annualCurrent).toLocaleString('de-DE')} € (${t('baseSalary')}: ${Math.round(currentBase).toLocaleString('de-DE')} €, ${t('variablePay')}: ${Math.round(currentVariable).toLocaleString('de-DE')} €)
+- ${tp('cohortMedianAnnual')}: ${Number(annualMedian).toLocaleString('de-DE')} €
 ${hasExplanation
-    ? `- Durch HR-Begründung erklärter Anteil: ${(Number(rawGapPct) - residualPct).toFixed(1)}%
-- ⚠ VERBLEIBENDE UNERKLÄRTE RESTLÜCKE: ${residualPct.toFixed(1)}% — dieser Anteil erfordert Maßnahmen
-- Empfohlenes Zielgehalt (schließt nur Restlücke): ${Number(adjustedTargetAnnual).toLocaleString('de-DE')} €/Jahr`
-    : `- Empfohlenes Zielgehalt: ${Number(adjustedTargetAnnual).toLocaleString('de-DE')} €/Jahr`}
+    ? `- ${tp('explainedPortion')}: ${(Number(rawGapPct) - residualPct).toFixed(1)}%
+- ⚠ ${tp('residualGap')}: ${residualPct.toFixed(1)}% — ${tp('residualRequiresAction')}
+- ${tp('targetSalary')}: ${Number(adjustedTargetAnnual).toLocaleString('de-DE')} ${t('totalPerYear')}`
+    : `- ${tp('targetSalaryGeneral')}: ${Number(adjustedTargetAnnual).toLocaleString('de-DE')} ${t('totalPerYear')}`}
 
-BEREITS ERFASSTE HR-BEGRÜNDUNG (aus Analyse-Modul):
+${tp('existingExplanationTitle')}:
 ${begSection}
 
-VOM HR DEFINIERTER VERGÜTUNGSPLAN (GRUNDLAGE DES MASSNAHMENPLANS):
+${tp('planTitle')}:
 ${planSection}
 
-WICHTIG: Verwende AUSSCHLIEßLICH diese Schritte und ihre Zahlen. Der Plan ist bereits entschieden — formuliere ihn als schriftlichen Maßnahmenplan.
+${tp('useOnlySteps')}
 ${hasExplanation
-    ? `Fokussiere außerdem auf die verbleibende Restlücke von ${residualPct.toFixed(1)}%. Die durch HR-Begründung erklärten ${(Number(rawGapPct) - residualPct).toFixed(1)}% müssen NICHT angepasst werden.`
+    ? tp('focusResidual', { residualPct: residualPct.toFixed(1), explainedPct: (Number(rawGapPct) - residualPct).toFixed(1) })
     : ''}
 
-Erstelle einen Maßnahmenplan mit diesen Abschnitten (Deutsch, sachlich, direkt):
-1. **Handlungsbedarf** — Rohlücke, erklärter Anteil, Restlücke (3 Zahlen klar nennen)
-2. **Geplante Maßnahmen** — Jeden definierten Schritt mit Zeithorizont, konkreten EUR-Beträgen (Basis+Variable) und Endzustand beschreiben
-3. **Zielgehalt** — Endzustand nach allen Schritten (Basis + Variable + Gesamt), Vergleich zu Kohortenmedian
-4. **Zeitplan** — Zeitstrahl der definierten Schritte (Horizonte aus Plan)
-5. **Zuständigkeit** — Verantwortliche aus den Schritten
-6. **Risiko bei Untätigkeit** — rechtlich / reputational
-
-Max. 380 Wörter. Keine Marketing-Sprache. Direkt und professionell.`
+${tp('outputInstructions')}`
 
     try {
         const genAI = new GoogleGenerativeAI(apiKey)
@@ -445,6 +455,6 @@ Max. 380 Wörter. Keine Marketing-Sprache. Direkt und professionell.`
     } catch (err) {
         const msg = err instanceof Error ? err.message : String(err)
         console.error('[generateRemediationAiPlan]', msg)
-        return { error: `Fehler: ${msg}` }
+        return { error: t('aiError', { message: msg }) }
     }
 }

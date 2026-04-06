@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback, useTransition, useRef } from 'react'
+import { useTranslations, useFormatter } from 'next-intl'
 import {
     Upload, FileSpreadsheet, Sparkles, CheckCircle2, Clock,
     ChevronRight, ChevronUp, ChevronDown, AlertCircle, ShieldCheck, ArrowLeft,
@@ -12,6 +13,7 @@ import {
     confirmMappingAndProcess,
 } from './actions'
 import { runDatasetAnalysis } from '../analysis/actions'
+import { trackDatasetUpload } from '@/lib/analytics'
 import {
     PAYLENS_FIELDS,
     type ColumnMapping,
@@ -38,12 +40,12 @@ type WizardState = {
     defaultVariablePayType: 'eur' | 'pct' | 'auto'  // how salary_variable values are expressed
 }
 
-const STEPS = [
-    { n: 1, label: 'Datei hochladen' },
-    { n: 2, label: 'Datenschutz' },
-    { n: 3, label: 'Spaltenzuordnung' },
-    { n: 4, label: 'Bestätigen' },
-]
+const STEP_KEYS = [
+    { n: 1, labelKey: 'step1Label' },
+    { n: 2, labelKey: 'step2Label' },
+    { n: 3, labelKey: 'step3Label' },
+    { n: 4, labelKey: 'step4Label' },
+] as const
 
 const CURRENT_YEAR = new Date().getFullYear()
 const MIN_YEAR = 1900
@@ -54,9 +56,10 @@ const MAX_YEAR = 2100
 // ============================================================
 
 function StepBar({ current }: { current: Step }) {
+    const t = useTranslations('importWizard')
     return (
         <div className="flex items-center gap-0 mb-8">
-            {STEPS.map((s, i) => (
+            {STEP_KEYS.map((s, i) => (
                 <div key={s.n} className="flex items-center flex-1 last:flex-none">
                     <div className="flex flex-col items-center gap-1.5">
                         <div
@@ -77,10 +80,10 @@ function StepBar({ current }: { current: Step }) {
                             color: current >= s.n ? 'var(--color-pl-text-primary)' : 'var(--color-pl-text-tertiary)',
                             fontWeight: current === s.n ? 600 : 400,
                         }}>
-                            {s.label}
+                            {t(s.labelKey)}
                         </span>
                     </div>
-                    {i < STEPS.length - 1 && (
+                    {i < STEP_KEYS.length - 1 && (
                         <div className="flex-1 h-px mx-2 mb-5 transition-all duration-500"
                             style={{ background: current > s.n ? 'var(--color-pl-green)' : 'var(--color-pl-border)' }} />
                     )}
@@ -95,6 +98,8 @@ function StepBar({ current }: { current: Step }) {
 // ============================================================
 
 function StepUpload({ onNext }: { onNext: (state: WizardState) => void }) {
+    const t = useTranslations('importWizard')
+    const format = useFormatter()
     const [isDragging, setIsDragging] = useState(false)
     const [file, setFile] = useState<File | null>(null)
     const [datasetName, setDatasetName] = useState('')
@@ -115,8 +120,8 @@ function StepUpload({ onNext }: { onNext: (state: WizardState) => void }) {
     }, [])
 
     async function handleSubmit() {
-        if (!file) return setError('Bitte wählen Sie eine Datei aus.')
-        if (!datasetName.trim()) return setError('Bitte geben Sie einen Namen für den Datensatz ein.')
+        if (!file) return setError(t('noFileError'))
+        if (!datasetName.trim()) return setError(t('noNameError'))
         setError('')
 
         const formData = new FormData()
@@ -150,10 +155,10 @@ function StepUpload({ onNext }: { onNext: (state: WizardState) => void }) {
         <div className="space-y-6">
             <div>
                 <h2 className="text-lg font-semibold mb-1" style={{ color: 'var(--color-pl-text-primary)' }}>
-                    Gehaltsdaten hochladen
+                    {t('uploadTitle')}
                 </h2>
                 <p className="text-sm" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                    Unterstützte Formate: CSV, XLSX, ODS · Maximale Dateigröße: 10 MB
+                    {t('uploadFormats')}
                 </p>
             </div>
 
@@ -185,7 +190,7 @@ function StepUpload({ onNext }: { onNext: (state: WizardState) => void }) {
                         <div className="text-center">
                             <p className="text-sm font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>{file.name}</p>
                             <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                                {(file.size / 1024).toFixed(0)} KB — Klicken zum Ändern
+                                {(file.size / 1024).toFixed(0)} KB — {t('clickToChange')}
                             </p>
                         </div>
                     </>
@@ -197,10 +202,10 @@ function StepUpload({ onNext }: { onNext: (state: WizardState) => void }) {
                         </div>
                         <div className="text-center">
                             <p className="text-sm font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>
-                                Datei hierher ziehen oder klicken
+                                {t('dropOrClick')}
                             </p>
                             <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                                CSV · XLSX · ODS
+                                {t('fileFormats')}
                             </p>
                         </div>
                     </>
@@ -211,19 +216,19 @@ function StepUpload({ onNext }: { onNext: (state: WizardState) => void }) {
             <div className="grid grid-cols-2 gap-4">
                 <div>
                     <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                        Name des Datensatzes
+                        {t('datasetName')}
                     </label>
                     <input
                         type="text"
                         value={datasetName}
                         onChange={e => setDatasetName(e.target.value)}
-                        placeholder="z.B. Gehaltsrunde 2025"
+                        placeholder={t('datasetNamePlaceholder')}
                         className="input-base"
                     />
                 </div>
                 <div>
                     <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                        Berichtsjahr
+                        {t('reportingYear')}
                     </label>
                     <div className="flex rounded-lg overflow-hidden" style={{ border: '1px solid var(--color-pl-border)' }}>
                         <input
@@ -264,13 +269,13 @@ function StepUpload({ onNext }: { onNext: (state: WizardState) => void }) {
                 <div className="flex items-center gap-2 mb-1">
                     <Clock size={14} style={{ color: 'var(--color-pl-brand-light)' }} />
                     <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                        Arbeitszeiteinstellungen (EU-Pflichtangabe)
+                        {t('workingHoursTitle')}
                     </p>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                     <div>
                         <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                            Vollzeit-Referenz (Std/Woche)
+                            {t('ftReference')}
                         </label>
                         <div className="flex rounded-lg overflow-hidden" style={{ border: '1px solid var(--color-pl-border)' }}>
                             <input
@@ -301,30 +306,30 @@ function StepUpload({ onNext }: { onNext: (state: WizardState) => void }) {
                                 </button>
                             </div>
                         </div>
-                        <p className="text-xs mt-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>Standard: 40h (TVöD: 38,5h)</p>
+                        <p className="text-xs mt-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('ftDefault')}</p>
                     </div>
                     <div>
                         <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                            Gehaltsangabe im Import
+                            {t('salaryPeriod')}
                         </label>
                         <select value={defaultSalaryPeriod} onChange={e => setDefaultSalaryPeriod(e.target.value)} className="input-base text-sm py-2">
-                            <option value="annual">Jährlich (z.B. 60.000 €/Jahr)</option>
-                            <option value="monthly">Monatlich (z.B. 5.000 €/Monat)</option>
-                            <option value="hourly">Stündlich (z.B. 28,50 €/Std)</option>
+                            <option value="annual">{t('salaryAnnual')}</option>
+                            <option value="monthly">{t('salaryMonthly')}</option>
+                            <option value="hourly">{t('salaryHourly')}</option>
                         </select>
-                        <p className="text-xs mt-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>Gilt als Standard, wenn kein Periodenfeld gemappt</p>
+                        <p className="text-xs mt-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('salaryPeriodHint')}</p>
                     </div>
                     <div>
                         <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                            Variable Vergütung — Format
+                            {t('variablePayFormat')}
                         </label>
                         <select value={defaultVariablePayType} onChange={e => setDefaultVariablePayType(e.target.value as 'eur' | 'pct' | 'auto')} className="input-base text-sm py-2">
-                            <option value="auto">Automatisch erkennen</option>
-                            <option value="eur">Euro-Betrag (z.B. 5.000 €)</option>
-                            <option value="pct">Prozentsatz (z.B. 0,10 = 10%)</option>
+                            <option value="auto">{t('variablePayAuto')}</option>
+                            <option value="eur">{t('variablePayEur')}</option>
+                            <option value="pct">{t('variablePayPct')}</option>
                         </select>
                         <p className="text-xs mt-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                            Wählen Sie wie die Spalte „Variable Vergütung" im Export vorliegt
+                            {t('variablePayHint')}
                         </p>
                     </div>
                 </div>
@@ -350,14 +355,13 @@ function StepUpload({ onNext }: { onNext: (state: WizardState) => void }) {
                         </div>
                         <div>
                             <p className="text-sm font-medium" style={{ color: 'var(--color-pl-text-primary)' }}>
-                                Vor- und Nachnamen einbeziehen
+                                {t('includeNames')}
                             </p>
                             <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                                Optional · Standard: anonym (nur ID)
+                                {t('includeNamesHint')}
                             </p>
                         </div>
                     </div>
-                    {/* Toggle switch */}
                     <button
                         type="button"
                         onClick={() => setIncludeNames(v => !v)}
@@ -366,7 +370,7 @@ function StepUpload({ onNext }: { onNext: (state: WizardState) => void }) {
                             background: includeNames ? 'var(--color-pl-amber)' : 'var(--color-pl-border)',
                             border: `1px solid ${includeNames ? 'rgba(245,158,11,0.5)' : 'var(--color-pl-border)'}`,
                         }}
-                        aria-label="Namen einbeziehen"
+                        aria-label={t('includeNamesAriaLabel')}
                     >
                         <span
                             className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200"
@@ -375,14 +379,12 @@ function StepUpload({ onNext }: { onNext: (state: WizardState) => void }) {
                     </button>
                 </div>
 
-                {/* GDPR note — only shown when toggle is ON */}
                 {includeNames && (
                     <div className="mt-3 pt-3 text-xs flex items-start gap-2"
                         style={{ borderTop: '1px solid rgba(245,158,11,0.15)', color: 'var(--color-pl-text-secondary)' }}>
                         <AlertCircle size={13} className="flex-shrink-0 mt-0.5" style={{ color: 'var(--color-pl-amber)' }} />
                         <span>
-                            Vor- und Nachnamen sind <strong style={{ color: 'var(--color-pl-text-primary)' }}>personenbezogene Daten</strong> gemäß Art. 4 DSGVO
-                            und werden ausschließlich für die Entgeltlückenanalyse auf EU-Servern gespeichert.
+                            {t.rich('gdprNamesNote', { strong: (chunks) => <strong style={{ color: 'var(--color-pl-text-primary)' }}>{chunks}</strong> })}
                         </span>
                     </div>
                 )}
@@ -401,7 +403,7 @@ function StepUpload({ onNext }: { onNext: (state: WizardState) => void }) {
                 className="btn-primary w-full"
                 style={isPending || !file ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
             >
-                {isPending ? <><Loader2 size={16} className="animate-spin" /> Wird geladen…</> : <>Weiter <ChevronRight size={16} /></>}
+                {isPending ? <><Loader2 size={16} className="animate-spin" /> {t('uploading')}</> : <>{t('next')} <ChevronRight size={16} /></>}
             </button>
         </div>
     )
@@ -420,18 +422,19 @@ function StepGdpr({ state, onAiConsent, onManual, onBack, aiError, onRetry, isRe
     onRetry?: () => void
     isRetrying?: boolean
 }) {
+    const t = useTranslations('importWizard')
     return (
         <div className="space-y-6">
             <div>
                 <h2 className="text-lg font-semibold mb-1" style={{ color: 'var(--color-pl-text-primary)' }}>
-                    Spaltenzuordnung — Datenschutzhinweis
+                    {t('gdprTitle')}
                 </h2>
                 <p className="text-sm" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                    {state.rowCount.toLocaleString('de-DE')} Datensätze erkannt in <strong style={{ color: 'var(--color-pl-text-primary)' }}>{state.headers.length} Spalten</strong>
+                    {t.rich('gdprRowCount', { count: state.rowCount.toLocaleString(), cols: state.headers.length, strong: (chunks) => <strong style={{ color: 'var(--color-pl-text-primary)' }}>{chunks}</strong> })}
                     {state.includeNames && (
                         <span className="ml-2 inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
                             style={{ background: 'rgba(245,158,11,0.1)', color: 'var(--color-pl-amber)', border: '1px solid rgba(245,158,11,0.2)' }}>
-                            <UserCheck size={11} /> Mit Namen
+                            <UserCheck size={11} /> {t('withNames')}
                         </span>
                     )}
                 </p>
@@ -443,23 +446,17 @@ function StepGdpr({ state, onAiConsent, onManual, onBack, aiError, onRetry, isRe
                 <div className="flex items-center gap-2">
                     <span className="ai-badge"><Sparkles size={10} /> Auto</span>
                     <h3 className="font-semibold text-sm" style={{ color: 'var(--color-pl-text-primary)' }}>
-                        Automatische Spaltenzuordnung verwenden (empfohlen)
+                        {t('aiAutoTitle')}
                     </h3>
                 </div>
 
                 <div className="space-y-2 text-sm" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                    <p className="font-medium" style={{ color: 'var(--color-pl-text-primary)' }}>Was wird an Google Gemini gesendet?</p>
+                    <p className="font-medium" style={{ color: 'var(--color-pl-text-primary)' }}>{t('aiSentTitle')}</p>
                     <ul className="space-y-1.5 ml-1">
-                        {[
-                            '✅ Nur Spaltenüberschriften (z.B. "Abteilung", "Gehalt")',
-                            '✅ Maximal 5 anonymisierte Beispielwerte pro Spalte',
-                            '❌ Keine vollständigen Gehaltsdaten',
-                            '❌ Keine Namen oder Mitarbeiter-IDs',
-                            '❌ Google speichert API-Anfragen nicht für Modelltraining',
-                        ].map((item, i) => <li key={i}>{item}</li>)}
+                        {[t('aiItem1'), t('aiItem2'), t('aiItem3'), t('aiItem4'), t('aiItem5')].map((item, i) => <li key={i}>{item}</li>)}
                         {state.includeNames && (
                             <li style={{ color: 'var(--color-pl-amber)' }}>
-                                ⚠️ Namen-Spalten werden zur Zuordnung erkannt, aber <strong>keine</strong> echten Namenswerte gesendet
+                                {t.rich('aiNamesNote', { strong: (chunks) => <strong>{chunks}</strong> })}
                             </li>
                         )}
                     </ul>
@@ -467,14 +464,14 @@ function StepGdpr({ state, onAiConsent, onManual, onBack, aiError, onRetry, isRe
 
                 <div className="p-3 rounded-lg text-xs"
                     style={{ background: 'rgba(99,102,241,0.08)', color: 'var(--color-pl-text-secondary)' }}>
-                    <strong style={{ color: 'var(--color-pl-text-primary)' }}>Rechtsgrundlage:</strong> Die übermittelten Spaltenköpfe und Stichproben stellen keine personenbezogenen Daten i.S.d. Art. 4 DSGVO dar.
+                    {t.rich('aiLegalBasis', { strong: (chunks) => <strong style={{ color: 'var(--color-pl-text-primary)' }}>{chunks}</strong> })}
                 </div>
 
                 <button onClick={onAiConsent} disabled={isRetrying} className="btn-primary w-full"
                     style={isRetrying ? { opacity: 0.7, cursor: 'not-allowed' } : {}}>
                     {isRetrying
-                        ? <><Loader2 size={15} className="animate-spin" /> CompLens analysiert…</>
-                        : <><Sparkles size={15} /> Automatische Zuordnung verwenden & fortfahren</>
+                        ? <><Loader2 size={15} className="animate-spin" /> {t('aiAnalysing')}</>
+                        : <><Sparkles size={15} /> {t('aiUseAutoBtn')}</>
                     }
                 </button>
             </div>
@@ -490,10 +487,10 @@ function StepGdpr({ state, onAiConsent, onManual, onBack, aiError, onRetry, isRe
                     <div className="flex gap-2">
                         <button onClick={onRetry} disabled={isRetrying} className="btn-primary flex-1 text-sm"
                             style={isRetrying ? { opacity: 0.7, cursor: 'not-allowed' } : {}}>
-                            {isRetrying ? <><Loader2 size={14} className="animate-spin" /> Wird erneut versucht…</> : 'Erneut versuchen'}
+                            {isRetrying ? <><Loader2 size={14} className="animate-spin" /> {t('aiRetrying')}</> : t('aiRetryBtn')}
                         </button>
                         <button onClick={onManual} className="btn-outline flex-1 text-sm">
-                            Manuell zuordnen
+                            {t('aiManualBtn')}
                         </button>
                     </div>
                 </div>
@@ -502,26 +499,25 @@ function StepGdpr({ state, onAiConsent, onManual, onBack, aiError, onRetry, isRe
             {/* Manual option */}
             <div className="text-center">
                 <button onClick={onManual} className="text-sm" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                    Nein danke — <span style={{ color: 'var(--color-pl-brand-light)' }}>Manuell zuordnen</span>
+                    {t.rich('aiManualLink', { accent: (chunks) => <span style={{ color: 'var(--color-pl-brand-light)' }}>{chunks}</span> })}
                 </button>
             </div>
 
             {/* Back button */}
             <button onClick={onBack} className="btn-outline w-full">
-                <ArrowLeft size={15} /> Zurück
+                <ArrowLeft size={15} /> {t('back')}
             </button>
         </div>
     )
 }
 
 // ============================================================
-// Step 3 — Column mapping review (existing back button kept)
+// Step 3 — Column mapping review
 // ============================================================
 
-// Standard fields (non-name)
 const BASE_FIELD_OPTIONS = [
-    { value: '', label: '— Ignorieren —' },
-    ...PAYLENS_FIELDS.filter(f => !f.nameField).map(f => ({ value: f.key, label: f.label })),
+    { value: '', labelKey: null as string | null },
+    ...PAYLENS_FIELDS.filter(f => !f.nameField).map(f => ({ value: f.key, labelKey: null as string | null, label: f.label })),
 ]
 
 const NAME_FIELD_OPTIONS = PAYLENS_FIELDS.filter(f => f.nameField).map(f => ({ value: f.key, label: f.label }))
@@ -543,15 +539,17 @@ function StepMapping({ state, onNext, onBack }: {
     onNext: (mapping: ColumnMapping) => void
     onBack: () => void
 }) {
+    const t = useTranslations('importWizard')
     const [mapping, setMapping] = useState<ColumnMapping>(state.mapping)
 
     const requiredFields = PAYLENS_FIELDS.filter(f => f.required).map(f => f.key)
     const mappedFields = Object.values(mapping).filter(Boolean)
     const missingRequired = requiredFields.filter(f => !mappedFields.includes(f))
 
-    // Build dropdown options: base + name fields only when includeNames is on
+    const ignoreLabel = t('mappingIgnore')
     const fieldOptions = [
-        ...BASE_FIELD_OPTIONS,
+        { value: '', label: ignoreLabel },
+        ...PAYLENS_FIELDS.filter(f => !f.nameField).map(f => ({ value: f.key, label: f.label })),
         ...(state.includeNames ? NAME_FIELD_OPTIONS : []),
     ]
 
@@ -559,27 +557,24 @@ function StepMapping({ state, onNext, onBack }: {
         <div className="space-y-6">
             <div>
                 <h2 className="text-lg font-semibold mb-1" style={{ color: 'var(--color-pl-text-primary)' }}>
-                    Spaltenzuordnung {state.usedAi && <span className="ai-badge ml-2"><Sparkles size={10} /> Auto</span>}
+                    {t('mappingTitle')} {state.usedAi && <span className="ai-badge ml-2"><Sparkles size={10} /> Auto</span>}
                 </h2>
                 <p className="text-sm" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                    {state.usedAi
-                        ? 'CompLens hat folgende Zuordnung vorgeschlagen. Bitte prüfen und ggf. korrigieren.'
-                        : 'Ordnen Sie jede Spalte Ihrer Datei einem PayLens-Feld zu.'}
+                    {state.usedAi ? t('mappingAiSuggested') : t('mappingManualInstr')}
                     {state.includeNames && (
                         <span className="ml-2 inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
                             style={{ background: 'rgba(245,158,11,0.1)', color: 'var(--color-pl-amber)', border: '1px solid rgba(245,158,11,0.2)' }}>
-                            <UserCheck size={11} /> Vorname/Nachname verfügbar
+                            <UserCheck size={11} /> {t('mappingNamesAvail')}
                         </span>
                     )}
                 </p>
             </div>
 
-            {/* AI error banner */}
             {state.aiError && (
                 <div className="flex items-start gap-2 p-3 rounded-lg text-sm"
                     style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', color: 'var(--color-pl-amber)' }}>
                     <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
-                    <span>{state.aiError} — Bitte ordnen Sie die Felder manuell zu.</span>
+                    <span>{state.aiError}{t('mappingAiErrorSuffix')}</span>
                 </div>
             )}
 
@@ -587,21 +582,20 @@ function StepMapping({ state, onNext, onBack }: {
                 <div className="flex items-start gap-2 p-3 rounded-lg text-sm"
                     style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', color: 'var(--color-pl-amber)' }}>
                     <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
-                    <span>Pflichtfelder noch nicht zugeordnet: <strong>{missingRequired.map(f => PAYLENS_FIELDS.find(p => p.key === f)?.label).join(', ')}</strong></span>
+                    <span>{t.rich('mappingMissing', { fields: missingRequired.map(f => PAYLENS_FIELDS.find(p => p.key === f)?.label).join(', '), strong: (chunks) => <strong>{chunks}</strong> })}</span>
                 </div>
             )}
 
             {/* Mapping table */}
             <div className="rounded-xl overflow-hidden border" style={{ borderColor: 'var(--color-pl-border)' }}>
-                {/* Column headers */}
                 <div className="grid grid-cols-3 px-4 py-2.5 text-xs font-semibold uppercase tracking-wide"
                     style={{ background: 'var(--theme-pl-action-ghost)', color: 'var(--color-pl-text-tertiary)', borderBottom: '1px solid var(--color-pl-border)' }}>
-                    <span>Ihre Spalte</span>
-                    <span>Beispielwerte</span>
+                    <span>{t('mappingColYourCol')}</span>
+                    <span>{t('mappingColSample')}</span>
                     <span className="flex items-center justify-between">
-                        PayLens-Feld
+                        {t('mappingColField')}
                         <span className="normal-case font-normal" style={{ color: mappedFields.length > 0 ? 'var(--color-pl-green)' : 'var(--color-pl-text-tertiary)' }}>
-                            {mappedFields.length} / {state.headers.length} zugeordnet
+                            {t('mappingCountMapped', { mapped: mappedFields.length, total: state.headers.length })}
                         </span>
                     </span>
                 </div>
@@ -618,9 +612,8 @@ function StepMapping({ state, onNext, onBack }: {
                                 style={{
                                     background:   isMatched ? 'rgba(52,211,153,0.04)' : 'var(--theme-pl-action-ghost)',
                                     borderLeft:   `3px solid ${isMatched ? (isRequired ? '#34d399' : 'rgba(52,211,153,0.5)') : 'transparent'}`,
-                                    paddingLeft:  isMatched ? '13px' : '16px', // compensate for border
+                                    paddingLeft:  isMatched ? '13px' : '16px',
                                 }}>
-                                {/* Column name + confidence + match indicator */}
                                 <div className="flex items-center gap-2">
                                     {isMatched ? (
                                         <CheckCircle2 size={14} className="flex-shrink-0"
@@ -637,12 +630,10 @@ function StepMapping({ state, onNext, onBack }: {
                                         <ConfidenceBadge score={state.confidence[header]} />
                                     )}
                                 </div>
-                                {/* Sample values */}
                                 <div className="text-xs truncate"
                                     style={{ color: isMatched ? 'var(--color-pl-text-secondary)' : 'var(--color-pl-text-tertiary)' }}>
                                     {state.sampleRows.slice(0, 3).map(r => r[header]).filter(Boolean).join(' · ')}
                                 </div>
-                                {/* Field selector */}
                                 <select
                                     value={mapping[header] ?? ''}
                                     onChange={e => setMapping(prev => ({ ...prev, [header]: e.target.value || null }))}
@@ -665,7 +656,7 @@ function StepMapping({ state, onNext, onBack }: {
 
             <div className="flex gap-3">
                 <button onClick={onBack} className="btn-outline flex-1">
-                    <ArrowLeft size={15} /> Zurück
+                    <ArrowLeft size={15} /> {t('back')}
                 </button>
                 <button
                     onClick={() => onNext(mapping)}
@@ -673,7 +664,7 @@ function StepMapping({ state, onNext, onBack }: {
                     className="btn-primary flex-1"
                     style={missingRequired.length > 0 ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
                 >
-                    Weiter <ChevronRight size={16} />
+                    {t('next')} <ChevronRight size={16} />
                 </button>
             </div>
         </div>
@@ -690,6 +681,7 @@ function DoneScreen({ state, mappedCount, hoursCoverage, onReset }: {
     hoursCoverage: number | null
     onReset: () => void
 }) {
+    const t = useTranslations('importWizard')
     const [analysing, setAnalysing] = useState(false)
     const [analysisError, setAnalysisError] = useState('')
 
@@ -703,7 +695,6 @@ function DoneScreen({ state, mappedCount, hoursCoverage, onReset }: {
             setAnalysing(false)
             return
         }
-        // Redirect to analysis page — autoload picks up the result
         window.location.href = '/dashboard/analysis'
     }
 
@@ -718,12 +709,12 @@ function DoneScreen({ state, mappedCount, hoursCoverage, onReset }: {
             </div>
             <div>
                 <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--color-pl-text-primary)' }}>
-                    {analysing ? 'Analyse wird berechnet…' : 'Datensatz erfolgreich importiert'}
+                    {analysing ? t('doneAnalysing') : t('doneTitle')}
                 </h2>
                 <p className="text-sm" style={{ color: 'var(--color-pl-text-secondary)' }}>
                     {analysing
-                        ? 'Bitte warten. Sie werden automatisch weitergeleitet.'
-                        : `${state.rowCount.toLocaleString('de-DE')} Mitarbeitende · ${mappedCount} Felder zugeordnet`}
+                        ? t('doneWait')
+                        : t('doneSummary', { rows: state.rowCount.toLocaleString(), fields: mappedCount })}
                 </p>
                 {!analysing && hoursCoverage !== null && hoursCoverage < 100 && (
                     <div className="flex items-center gap-2 mt-3 p-3 rounded-lg text-sm"
@@ -731,8 +722,8 @@ function DoneScreen({ state, mappedCount, hoursCoverage, onReset }: {
                         <Clock size={14} className="flex-shrink-0" />
                         <span>
                             {hoursCoverage === 0
-                                ? `Keine Stundendaten — Berechnung mit ${state.standardWeeklyHours}h Vollzeit-Referenz (FTE-Annahme)`
-                                : `${hoursCoverage}% Stundendaten vorhanden — Rest: ${state.standardWeeklyHours}h FTE-Annahme`
+                                ? t('doneNoHours', { hours: state.standardWeeklyHours })
+                                : t('donePartialHours', { pct: hoursCoverage, hours: state.standardWeeklyHours })
                             }
                         </span>
                     </div>
@@ -748,11 +739,11 @@ function DoneScreen({ state, mappedCount, hoursCoverage, onReset }: {
             {!analysing && (
                 <div className="flex gap-3 justify-center">
                     <button onClick={onReset} className="btn-outline">
-                        Weiteren Datensatz importieren
+                        {t('doneImportAnother')}
                     </button>
                     <button onClick={handleStartAnalysis} className="btn-primary flex items-center gap-2">
                         <Loader2 size={14} style={{ opacity: 0 }} />
-                        Analyse starten <ChevronRight size={15} />
+                        {t('doneStartAnalysis')} <ChevronRight size={15} />
                     </button>
                 </div>
             )}
@@ -769,6 +760,7 @@ function StepConfirm({ state, onBack, onReset }: {
     onBack: () => void
     onReset: () => void
 }) {
+    const t = useTranslations('importWizard')
     const [isPending, startTransition] = useTransition()
     const [done, setDone] = useState(false)
     const [error, setError] = useState('')
@@ -779,7 +771,6 @@ function StepConfirm({ state, onBack, onReset }: {
     const hasHoursCols = Object.values(state.finalMapping).some(v => v === 'weekly_hours' || v === 'monthly_hours')
     const hasFte       = Object.values(state.finalMapping).some(v => v === 'fte_ratio')
 
-    // Detect null-mapped columns that have positive numeric sample values → likely pay components
     function parseSampleNum(s: string): number | null {
         if (!s) return null
         const n = parseFloat(s.replace(/[€$£\s]/g, '').replace(',', '.'))
@@ -811,6 +802,7 @@ function StepConfirm({ state, onBack, onReset }: {
             } else {
                 setHoursCoverage(result.hoursCoverage ?? 0)
                 setDone(true)
+                trackDatasetUpload()
             }
         })
     }
@@ -830,32 +822,31 @@ function StepConfirm({ state, onBack, onReset }: {
         <div className="space-y-6">
             <div>
                 <h2 className="text-lg font-semibold mb-1" style={{ color: 'var(--color-pl-text-primary)' }}>
-                    Import bestätigen
+                    {t('confirmTitle')}
                 </h2>
                 <p className="text-sm" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                    Bitte prüfen Sie die Zusammenfassung vor dem Import.
+                    {t('confirmSubtitle')}
                 </p>
             </div>
 
-            {/* Summary */}
             <div className="glass-card p-5 space-y-3">
                 {[
-                    ['Datensatz', state.datasetId.slice(0, 8) + '…'],
-                    ['Mitarbeitende', state.rowCount.toLocaleString('de-DE')],
-                    ['Zugeordnete Felder', `${mappedCount} von ${state.headers.length}`],
-                    ['Spaltenzuordnung', state.usedAi ? 'Automatisch' : 'Manuell'],
-                    ['Namen einbezogen', hasNames ? 'Ja (Vor- und Nachname)' : 'Nein (anonym)'],
-                    ['Vollzeit-Referenz', `${state.standardWeeklyHours}h/Woche`],
-                    ['Gehaltsangabe', state.defaultSalaryPeriod === 'monthly' ? 'Monatlich' : state.defaultSalaryPeriod === 'hourly' ? 'Stündlich' : 'Jährlich'],
-                    ['Variable Verg.: Format', state.defaultVariablePayType === 'pct' ? 'Prozentsatz (%)' : state.defaultVariablePayType === 'eur' ? 'Euro-Betrag' : 'Automatisch'],
-                    ['Arbeitsstunden', hasHoursCols ? 'Aus Importdaten (Std/Woche oder Monat)' : hasFte ? `FTE-Anteil × ${state.standardWeeklyHours}h` : `Annahme: ${state.standardWeeklyHours}h Vollzeit`],
+                    [t('confirmDataset'), state.datasetId.slice(0, 8) + '…'],
+                    [t('confirmEmployees'), state.rowCount.toLocaleString()],
+                    [t('confirmMappedFields'), t('confirmMappedOf', { mapped: mappedCount, total: state.headers.length })],
+                    [t('confirmMappingMethod'), state.usedAi ? t('confirmMappingAuto') : t('confirmMappingManual')],
+                    [t('confirmNamesIncluded'), hasNames ? t('confirmNamesYes') : t('confirmNamesNo')],
+                    [t('confirmFtRef'), t('confirmFtRefValue', { hours: state.standardWeeklyHours })],
+                    [t('confirmSalaryPeriod'), state.defaultSalaryPeriod === 'monthly' ? t('confirmSalaryMonthlyLabel') : state.defaultSalaryPeriod === 'hourly' ? t('confirmSalaryHourlyLabel') : t('confirmSalaryAnnualLabel')],
+                    [t('confirmVariableFormat'), state.defaultVariablePayType === 'pct' ? t('confirmVariablePct') : state.defaultVariablePayType === 'eur' ? t('confirmVariableEur') : t('confirmVariableAuto')],
+                    [t('confirmHours'), hasHoursCols ? t('confirmHoursFromImport') : hasFte ? t('confirmHoursFte', { hours: state.standardWeeklyHours }) : t('confirmHoursAssumption', { hours: state.standardWeeklyHours })],
                 ].map(([label, value]) => (
-                    <div key={label} className="flex justify-between text-sm">
+                    <div key={String(label)} className="flex justify-between text-sm">
                         <span style={{ color: 'var(--color-pl-text-secondary)' }}>{label}</span>
                         <span className="font-semibold" style={{
-                            color: label === 'Namen einbezogen' && hasNames
+                            color: label === t('confirmNamesIncluded') && hasNames
                                 ? 'var(--color-pl-amber)'
-                                : label === 'Arbeitsstunden' && !hasHoursCols
+                                : label === t('confirmHours') && !hasHoursCols
                                 ? 'var(--color-pl-amber)'
                                 : 'var(--color-pl-text-primary)'
                         }}>{value}</span>
@@ -863,24 +854,22 @@ function StepConfirm({ state, onBack, onReset }: {
                 ))}
             </div>
 
-            {/* Working hours warning */}
             {!hasHoursCols && (
                 <div className="flex items-start gap-2 p-3 rounded-lg text-sm"
                     style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', color: 'var(--color-pl-amber)' }}>
                     <Clock size={15} className="flex-shrink-0 mt-0.5" />
                     <div>
-                        <p className="font-semibold mb-0.5">Keine Arbeitsstunden in den Importdaten</p>
+                        <p className="font-semibold mb-0.5">{t('noHoursTitle')}</p>
                         <p className="text-xs" style={{ color: 'var(--color-pl-text-secondary)' }}>
                             {hasFte
-                                ? `Der Stundenlohn wird aus dem FTE-Anteil × ${state.standardWeeklyHours}h Vollzeit berechnet. Für präzisere EU-konforme Ergebnisse empfehlen wir die Spalte "Wöchentliche Stunden" in künftigen Exporten einzuschließen.`
-                                : `Kein FTE-Anteil oder Stunden gemappt. Es wird ${state.standardWeeklyHours}h Vollzeit für alle Mitarbeitenden angenommen. Bitte prüfen Sie Ihre Spaltenzuordnung oder korrigieren Sie die Vollzeit-Referenz in Schritt 1.`
+                                ? t('noHoursFteHint', { hours: state.standardWeeklyHours })
+                                : t('noHoursNoFteHint', { hours: state.standardWeeklyHours })
                             }
                         </p>
                     </div>
                 </div>
             )}
 
-            {/* GDPR reminder */}
             <div className="flex items-start gap-2 p-3 rounded-lg text-xs"
                 style={{
                     background: hasNames ? 'rgba(245,158,11,0.06)' : 'rgba(59,130,246,0.06)',
@@ -889,9 +878,7 @@ function StepConfirm({ state, onBack, onReset }: {
                 }}>
                 <ShieldCheck size={15} className="mt-0.5 flex-shrink-0"
                     style={{ color: hasNames ? 'var(--color-pl-amber)' : 'var(--color-pl-brand-light)' }} />
-                {hasNames
-                    ? 'Namen werden als personenbezogene Daten (Art. 4 DSGVO) auf EU-Servern gespeichert und ausschließlich für die Entgeltlückenanalyse verwendet.'
-                    : 'Ihre Daten werden ausschließlich auf EU-Servern (Frankfurt) gespeichert und nur für die Entgeltlückenanalyse verwendet.'}
+                {hasNames ? t('gdprReminderNames') : t('gdprReminderNoNames')}
             </div>
 
             {error && (
@@ -901,16 +888,14 @@ function StepConfirm({ state, onBack, onReset }: {
                 </div>
             )}
 
-            {/* Unmapped numeric columns warning — shown before submit so user can go back */}
             {unmappedPayColumns.length > 0 && (
                 <div className="flex items-start gap-2.5 p-3.5 rounded-lg text-sm"
                     style={{ background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.3)', color: 'var(--color-pl-amber)' }}>
                     <AlertCircle size={15} className="flex-shrink-0 mt-0.5" />
                     <div>
-                        <p className="font-semibold mb-1">Nicht zugeordnete Vergütungsspalten erkannt</p>
+                        <p className="font-semibold mb-1">{t('unmappedTitle')}</p>
                         <p className="text-xs mb-2" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                            Die folgenden Spalten wurden auf <strong style={{ color: 'var(--color-pl-amber)' }}>„— Ignorieren —"</strong> gesetzt,
-                            enthalten jedoch numerische Werte und könnten Vergütungskomponenten sein (z.B. Zulagen, Prämien):
+                            {t.rich('unmappedDesc', { strong: (chunks) => <strong style={{ color: 'var(--color-pl-amber)' }}>{chunks}</strong> })}
                         </p>
                         <ul className="text-xs space-y-0.5 mb-2" style={{ color: 'var(--color-pl-text-primary)' }}>
                             {unmappedPayColumns.map(col => (
@@ -918,27 +903,23 @@ function StepConfirm({ state, onBack, onReset }: {
                             ))}
                         </ul>
                         <p className="text-xs" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                            Gehen Sie zurück und ordnen Sie diese Spalten ggf.
-                            <strong style={{ color: 'var(--color-pl-text-primary)' }}> „Sachbezüge / Sonstige Vergütung"</strong> zu,
-                            damit alle Gehaltsbestandteile erfasst werden.
+                            {t.rich('unmappedHint', { strong: (chunks) => <strong style={{ color: 'var(--color-pl-text-primary)' }}>{chunks}</strong> })}
                         </p>
                     </div>
                 </div>
             )}
 
-
             <div className="flex gap-3">
-                {/* Back button — only before submission */}
                 {!isPending && (
                     <button onClick={onBack} className="btn-outline flex-1">
-                        <ArrowLeft size={15} /> Zurück
+                        <ArrowLeft size={15} /> {t('back')}
                     </button>
                 )}
                 <button onClick={handleConfirm} disabled={isPending} className="btn-primary flex-1"
                     style={isPending ? { opacity: 0.7, cursor: 'not-allowed' } : {}}>
                     {isPending
-                        ? <><Loader2 size={16} className="animate-spin" /> Wird verarbeitet…</>
-                        : <>Import starten <ChevronRight size={16} /></>}
+                        ? <><Loader2 size={16} className="animate-spin" /> {t('processing')}</>
+                        : <>{t('startImport')} <ChevronRight size={16} /></>}
                 </button>
             </div>
         </div>
@@ -950,6 +931,7 @@ function StepConfirm({ state, onBack, onReset }: {
 // ============================================================
 
 function AiLoadingScreen() {
+    const t = useTranslations('importWizard')
     return (
         <div className="flex flex-col items-center justify-center gap-6 py-12 text-center">
             <div className="relative">
@@ -962,10 +944,10 @@ function AiLoadingScreen() {
             </div>
             <div>
                 <p className="font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>
-                    CompLens analysiert Ihre Spalten…
+                    {t('aiLoadingTitle')}
                 </p>
                 <p className="text-sm mt-1" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                    Nur Spaltenköpfe werden verarbeitet — keine Gehaltsdaten
+                    {t('aiLoadingSubtitle')}
                 </p>
             </div>
         </div>
@@ -977,6 +959,7 @@ function AiLoadingScreen() {
 // ============================================================
 
 export default function ImportWizard() {
+    const t = useTranslations('importWizard')
     const [step, setStep] = useState<Step>(1)
     const [wizardState, setWizardState] = useState<WizardState | null>(null)
     const [finalMapping, setFinalMapping] = useState<ColumnMapping>({})
@@ -989,13 +972,11 @@ export default function ImportWizard() {
         setFinalMapping({})
     }
 
-    // Step 1 → 2
     function handleUploadDone(state: WizardState) {
         setWizardState(state)
         setStep(2)
     }
 
-    // Step 2 → 3 with AI
     async function handleAiConsent() {
         if (!wizardState) return
         setAiLoading(true)
@@ -1008,7 +989,6 @@ export default function ImportWizard() {
         setAiLoading(false)
 
         if (result.error) {
-            // Stay on Step 2 — show error + retry button
             setAiRetryError(result.error)
             return
         }
@@ -1024,12 +1004,10 @@ export default function ImportWizard() {
         setStep(3)
     }
 
-    // Step 2 → 3 manual
     function handleManual() {
         setStep(3)
     }
 
-    // Step 3 → 4
     function handleMappingDone(mapping: ColumnMapping) {
         setFinalMapping(mapping)
         setStep(4)
@@ -1039,10 +1017,10 @@ export default function ImportWizard() {
         <div className="max-w-2xl mx-auto">
             <div className="mb-6">
                 <h1 className="text-xl font-bold" style={{ color: 'var(--color-pl-text-primary)' }}>
-                    Daten importieren
+                    {t('wizardTitle')}
                 </h1>
                 <p className="text-sm mt-0.5" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                    Importieren Sie Ihre Gehaltsdaten für die EU-konforme Entgeltlückenanalyse.
+                    {t('wizardSubtitle')}
                 </p>
             </div>
 
@@ -1081,7 +1059,7 @@ export default function ImportWizard() {
 
             <div className="flex items-center gap-2 mt-4 text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
                 <Info size={12} />
-                Nur für die Entgeltlückenanalyse gem. EU-Richtlinie 2023/970 · DSGVO-konform · Daten bleiben auf EU-Servern
+                {t('wizardFooter')}
             </div>
         </div>
     )

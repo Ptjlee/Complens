@@ -5,17 +5,21 @@ import Link from 'next/link'
 import { signup } from '../actions'
 import { Eye, EyeOff, Loader2, Check } from 'lucide-react'
 import { Logo } from '@/components/ui/Logo'
-
-const passwordRules = [
-    { label: 'Mindestens 8 Zeichen', test: (p: string) => p.length >= 8 },
-    { label: 'Zahl enthalten', test: (p: string) => /\d/.test(p) },
-]
+import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher'
+import { trackSignup } from '@/lib/analytics'
+import { useTranslations } from 'next-intl'
 
 export default function SignupPage() {
+    const t = useTranslations('auth')
     const [showPassword, setShowPassword] = useState(false)
     const [password, setPassword] = useState('')
     const [error, setError] = useState<string | null>(null)
     const [loading, setLoading] = useState(false)
+
+    const passwordRules = [
+        { label: t('passwordRule8Chars'), test: (p: string) => p.length >= 8 },
+        { label: t('passwordRuleNumber'), test: (p: string) => /\d/.test(p) },
+    ]
 
     async function handleSubmit(formData: FormData) {
         setLoading(true)
@@ -24,6 +28,8 @@ export default function SignupPage() {
         if (result?.error) {
             setError(result.error)
             setLoading(false)
+        } else {
+            trackSignup()
         }
     }
 
@@ -36,12 +42,15 @@ export default function SignupPage() {
             </div>
 
             <div className="mb-8">
-                <div className="ai-badge inline-flex mb-3">7 Tage kostenlos</div>
+                <div className="flex items-center justify-between mb-3">
+                    <div className="ai-badge inline-flex">{t('freeTrialBadge')}</div>
+                    <LanguageSwitcher />
+                </div>
                 <h1 className="text-2xl font-bold mb-1.5" style={{ color: 'var(--color-pl-text-primary)' }}>
-                    Konto erstellen
+                    {t('createAccount')}
                 </h1>
                 <p className="text-sm" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                    Keine Kreditkarte erforderlich. Kein Risiko.
+                    {t('signupSubtitle')}
                 </p>
             </div>
 
@@ -67,7 +76,7 @@ export default function SignupPage() {
                         className="block text-sm font-medium mb-1.5"
                         style={{ color: 'var(--color-pl-text-secondary)' }}
                     >
-                        Unternehmen
+                        {t('companyName')}
                     </label>
                     <input
                         id="companyName"
@@ -75,7 +84,7 @@ export default function SignupPage() {
                         type="text"
                         autoComplete="organization"
                         required
-                        placeholder="Mustermann GmbH"
+                        placeholder={t('companyPlaceholder')}
                         className="input-base"
                     />
                 </div>
@@ -87,7 +96,7 @@ export default function SignupPage() {
                         className="block text-sm font-medium mb-1.5"
                         style={{ color: 'var(--color-pl-text-secondary)' }}
                     >
-                        Geschäftliche E-Mail
+                        {t('businessEmail')}
                     </label>
                     <input
                         id="email"
@@ -95,7 +104,7 @@ export default function SignupPage() {
                         type="email"
                         autoComplete="email"
                         required
-                        placeholder="name@unternehmen.de"
+                        placeholder={t('emailPlaceholder')}
                         className="input-base"
                     />
                 </div>
@@ -107,7 +116,7 @@ export default function SignupPage() {
                         className="block text-sm font-medium mb-1.5"
                         style={{ color: 'var(--color-pl-text-secondary)' }}
                     >
-                        Passwort
+                        {t('password')}
                     </label>
                     <div className="relative">
                         <input
@@ -116,7 +125,7 @@ export default function SignupPage() {
                             type={showPassword ? 'text' : 'password'}
                             autoComplete="new-password"
                             required
-                            placeholder="••••••••"
+                            placeholder={t('passwordPlaceholder')}
                             className="input-base pr-10"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
@@ -158,7 +167,7 @@ export default function SignupPage() {
                         className="block text-sm font-medium mb-1.5"
                         style={{ color: 'var(--color-pl-text-secondary)' }}
                     >
-                        Passwort bestätigen
+                        {t('confirmPassword')}
                     </label>
                     <input
                         id="confirmPassword"
@@ -166,7 +175,7 @@ export default function SignupPage() {
                         type={showPassword ? 'text' : 'password'}
                         autoComplete="new-password"
                         required
-                        placeholder="••••••••"
+                        placeholder={t('passwordPlaceholder')}
                         className="input-base"
                     />
                 </div>
@@ -180,11 +189,10 @@ export default function SignupPage() {
                         className="mt-0.5 w-4 h-4 rounded accent-blue-500 flex-shrink-0"
                     />
                     <span className="text-xs" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                        Ich akzeptiere die{' '}
-                        <Link href="/agb" className="underline" style={{ color: 'var(--color-pl-brand-light)' }}>AGB</Link>
-                        {' '}und die{' '}
-                        <Link href="/datenschutz" className="underline" style={{ color: 'var(--color-pl-brand-light)' }}>Datenschutzerklärung</Link>.
-                        Die Daten werden DSGVO-konform in der EU verarbeitet.
+                        {t.rich('terms', {
+                            agbLink: (chunks) => <a href="/agb" target="_blank" rel="noopener noreferrer" className="underline" style={{ color: 'var(--color-pl-brand-light)' }}>{chunks}</a>,
+                            datenschutzLink: (chunks) => <a href="/datenschutz" target="_blank" rel="noopener noreferrer" className="underline" style={{ color: 'var(--color-pl-brand-light)' }}>{chunks}</a>,
+                        })}
                     </span>
                 </label>
 
@@ -196,9 +204,9 @@ export default function SignupPage() {
                     style={{ opacity: loading ? 0.7 : 1 }}
                 >
                     {loading ? (
-                        <><Loader2 size={15} className="animate-spin" /> Konto wird erstellt…</>
+                        <><Loader2 size={15} className="animate-spin" /> {t('creatingAccount')}</>
                     ) : (
-                        'Kostenlos testen — 7 Tage'
+                        t('startTrialBtn')
                     )}
                 </button>
             </form>
@@ -212,11 +220,7 @@ export default function SignupPage() {
                 }}
             >
                 <ul className="space-y-1">
-                    {[
-                        'Keine Kreditkarte beim Start',
-                        'Voller Funktionsumfang inkl. automatisierte Datenzuordnung und Analyse',
-                        'Nach 7 Tagen: Upgrade oder automatische Beendigung',
-                    ].map((item) => (
+                    {([t('trialBullet1'), t('trialBullet2'), t('trialBullet3')] as string[]).map((item) => (
                         <li key={item} className="flex items-center gap-2 text-xs" style={{ color: 'var(--color-pl-text-secondary)' }}>
                             <Check size={11} strokeWidth={3} style={{ color: 'var(--color-pl-brand-light)', flexShrink: 0 }} />
                             {item}
@@ -227,13 +231,13 @@ export default function SignupPage() {
 
             {/* Login link */}
             <p className="text-center text-sm mt-6" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                Bereits ein Konto?{' '}
+                {t('alreadyHaveAccount')}{' '}
                 <Link
                     href="/login"
                     className="font-semibold hover:underline"
                     style={{ color: 'var(--color-pl-brand-light)' }}
                 >
-                    Anmelden
+                    {t('loginLink')}
                 </Link>
             </p>
         </div>

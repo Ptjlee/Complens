@@ -8,7 +8,7 @@
  * can answer "how do I…" questions about CompLens — not just compliance law.
  */
 
-export const COMPLENS_KB = `
+const COMPLENS_KB_DE = `
 ═══ COMPLENS PRODUKTWISSEN — BEDIENUNGSANLEITUNG ═══
 
 Du kennst CompLens vollständig und kannst Nutzern bei Bedienungsfragen helfen.
@@ -303,4 +303,310 @@ Dort werden alle Module in Reihenfolge gezeigt: Import → Analyse → Entgeltb�
 Nutzer können auf das Video verwiesen werden, wenn sie eine visuelle Übersicht suchen.
 `
 
+const COMPLENS_KB_EN = `
+═══ COMPLENS PRODUCT KNOWLEDGE — USER GUIDE ═══
+
+You have full knowledge of CompLens and can help users with product questions.
+When a user asks "how do I do X in CompLens?" or "where do I find Y?", answer
+with concrete step-by-step instructions from this knowledge base.
+
+── MODULE 1: GETTING STARTED ──
+
+Step 1 – Registration & Organisation:
+After registration the organisation is created automatically. Under Settings → Organisation
+you can adjust the name, country, and other metadata. This data appears on
+all generated reports and PDF exports.
+Tip: Fill in the organisation name completely — it is automatically used on PDF reports and the licence agreement.
+
+Step 2 – Invite Team Members:
+Under Settings → Team, admins can invite additional people by email.
+Roles: Admin (full access) or Viewer (read-only access). Invitations are valid for 7 days.
+Seat count is licence-bound; add-on seats can be booked under Settings → Subscription.
+
+Step 3 – Complete Your Profile:
+Under Settings → Profile: set your name, job title, and preferred language (German/English).
+
+Step 4 – Download CSV Template:
+Under Import → Download Template. The template contains all required fields per EU Directive 2023/970.
+Always use the latest template version.
+
+FAQ:
+- Trial period = 7 days, then access is blocked until licence activation. Reports carry a SAMPLE watermark.
+- Organisation name can be changed later under Settings → Organisation (admins only).
+- After trial period: overlay blocks access, data is preserved, upgrade via Stripe.
+
+── MODULE 2: IMPORTING DATASETS ──
+
+Step 1 – Prepare CSV:
+Required fields: employee_id (unique), gender (m/f/d), job_grade (pay grade),
+hourly_rate OR annual_salary, department, employment_type (full_time/part_time/minijob), weekly_hours.
+Delimiter: semicolon (;). Decimal numbers with comma (25,50) or period (25.50) both accepted.
+Encoding: UTF-8.
+
+Step 2 – Optional Fields:
+first_name, last_name (for right to information Art. 7), variable_pay (bonuses/premiums),
+overtime_hours, benefits_value (benefits in kind in EUR/year).
+
+Step 3 – Upload File:
+Import → New Dataset → enter name + reporting year → upload CSV.
+CompLens validates automatically and shows errors with line references.
+The dataset name appears on the PDF cover page.
+
+Step 4 – Fix Errors:
+Common errors: missing gender values, invalid employment_type codes, negative hourly rates.
+Correct the CSV and re-upload.
+
+Step 5 – Archive/Delete:
+Archive = hide (data preserved, usable for trends).
+Hard Delete = all linked analyses and explanations are deleted in GDPR-compliant fashion.
+
+FAQ:
+- Part-time employees: employment_type="part_time", weekly_hours=contractual hours.
+  CompLens normalises to gross hourly pay per Art. 3 EU Directive 2023/970.
+- Mini-jobs: type "minijob", reported separately, not included in overall gap.
+- External contractors/freelancers: DO NOT include. Only employees in the legal sense.
+- job_grade = internal pay grade (e.g. "L1", "Senior", "Pay Band 5").
+
+── MODULE 3: ANALYSIS & RESULTS ──
+
+Step 1 – Start a New Analysis:
+Analysis → New Analysis → select dataset → enter analysis name → "Start Analysis".
+Multiple analyses from the same dataset are possible (e.g. different WIF weightings).
+
+Step 2 – Unadjusted vs. Adjusted:
+Unadjusted = direct comparison of all women and men without regard to job groups.
+Adjusted = comparison within the same cohort (job_grade) + WIF factors.
+Both values are legally reportable per Art. 9 EU Directive 2023/970.
+
+Step 3 – 5% Threshold:
+Above 5% unadjusted median gap → red status badge → action required (Art. 9(1c)).
+CompLens automatically generates a remediation plan suggestion.
+
+Step 4 – Results by Department & Pay Grade:
+Broken down by department and job_grade in the analysis detail view.
+Cohorts with fewer than 5 people are anonymised as "< 5 empl.".
+
+Step 5 – Quartile Distribution:
+Shows the female/male share in each pay quartile. Required per Art. 9(1b) EU Directive.
+
+FAQ:
+- WIF factors = Value, Content, Function. Objective factors for equal work assessment.
+  CompLens considers: qualification requirements, responsibility, workload, working conditions.
+- Median is more robust than mean (less susceptible to outliers). The EU Directive primarily prescribes the median.
+- Cohorts < 5 are hidden for GDPR reasons (data minimisation Art. 5(1c)).
+- Retention obligation: 4 years per EU Directive. CompLens stores data until explicit deletion.
+
+── MODULE 4: RECORDING EXPLANATIONS ──
+
+What are explanations? Justifications for statistically conspicuous pay gaps using objective factors.
+Examples: performance reviews, seniority, market compensation for specialists.
+Explanations reduce the ADJUSTED gap, never the unadjusted (both must be reported).
+
+Add an Explanation:
+Analysis detail view → Cohort → "Add Explanation" → select category →
+explanation share in % or EUR/hour → write description.
+Explanations automatically appear in the PDF report (page 3) and PPT presentation.
+
+Edit/Delete Explanations:
+Edit icon (✎) → immediate effect on the adjusted gap.
+
+FAQ:
+- No limit on the number of explanations per cohort. Multiple factors can be combined.
+- Explanations are internal documentation, not legal advice. Can be presented to authorities on request.
+- "Explained" = gap portion backed by a documented factor.
+  "Unexplained" = remaining gap without justification = potentially legally relevant.
+
+── MODULE 5: REMEDIATION PLANS ──
+
+Create a Remediation Plan:
+Remediation → New Plan → select affected analysis + title + target date.
+A plan contains multiple steps that are assigned to cohorts/departments.
+
+Define Steps:
+Each step: title, description, assignment, responsible person, target date.
+Status: "open" / "in progress" / "completed".
+Tip: Measurable targets per step (e.g. "3% pay raise for women in L3 by 31 Dec 2025").
+
+Track Progress:
+Remediation dashboard shows all active plans with progress bars and open/overdue steps.
+
+FAQ:
+- Export: Remediation plan is integrated into the PDF report (from page 4).
+- Remediation plans do NOT affect calculation results (documentation only).
+
+── MODULE 6: REPORTS & EXPORTS ──
+
+Generate PDF Report:
+Analysis detail page → "Export PDF". Contains: cover page, executive summary,
+gap overview, cohort details, quartile distribution, explanations overview, remediation plan.
+Reports during trial/expired licence: SAMPLE watermark, max 4 pages.
+
+Generate PPT Presentation:
+"Export PPT" → 7 slides: cover page, executive summary, gap overview, departments,
+quartiles, salary comparison, methodology. Ideal for management or works council.
+
+Branding:
+All exports prominently display the organisation name.
+"Created with CompLens" appears only as a small note.
+
+Download Licence Agreement:
+Settings → Subscription → "Download Agreement". Pre-filled and digitally signed by DexterBee GmbH.
+
+── MODULE 7: RIGHT TO INFORMATION (Art. 7 EU Directive 2023/970) ──
+
+What is the Right to Information?
+Art. 7 EU Directive obliges employers to provide employees with information about their own pay
+vs. average pay of the comparison group. Deadline: 2 months.
+
+Search for Employees:
+Right to Information → Search Employee → enter name or employee ID (minimum 3 characters).
+Requires: first_name/last_name in the imported dataset.
+
+Generate PDF Letter:
+"Generate PDF / Print" → information letter with organisation name,
+legally required comparison data, legal basis reference (Art. 7 EU Directive 2023/970).
+
+FAQ:
+- Each employee may request once per year. Response: median of the cohort (not individual salaries).
+- Cohort < 5 people: no information can be provided; define alternative comparison groups.
+- Anonymity: only medians/means shown, no individual salaries of third parties.
+
+── MODULE 8: TREND ANALYSIS ──
+
+Select Datasets (IMPORTANT — new UI):
+Open Trend Analysis → "Dataset Selection" area → select at least 2 datasets via checkbox.
+Without a selection the message "Please select at least one dataset" appears.
+CompLens automatically pre-selects a sensible default based on reporting year.
+
+Year-over-Year vs. Comparison Mode:
+Standard mode: one line per reporting year (one representative dataset per year).
+Comparison mode (toggle top right): each selected dataset = its own line,
+even if multiple datasets cover the same year. Ideal for A/B scenarios.
+
+Delta Cards: Green = gap decreased (improvement), Red = gap increased (deterioration).
+Comparison refers to the immediately preceding year in the selection.
+
+Department Heatmap (tab "Departments") & Grade Heatmap (tab "Grades"):
+Colour-coded: Dark red (>10%), Orange (5–10%), Yellow (2–5%), Green (<2%).
+
+FAQ:
+- No trend view? → Select at least 2 datasets in the dataset selection.
+- The same dataset cannot be selected twice.
+- Trends are currently interactive only (not in PDF export, planned for a future version).
+
+── MODULE 9: GDPR & COMPLIANCE ──
+
+DPA (Data Processing Agreement):
+Required per Art. 28 GDPR when personal data is processed.
+Request via Compliance page → "Request DPA" section → open a support ticket in CompLens.
+DPA is free of charge, delivered within 2 business days.
+
+Data Protection Architecture:
+- Server location: Germany/EU (Frankfurt am Main)
+- Transmission: TLS 1.3 encrypted
+- Storage: AES-256 at rest
+- AI models via EU endpoints; data NOT used for AI training
+
+Deletion Policy:
+Datasets/analyses/account can be deleted at any time. Hard Delete = irreversible.
+On request: complete data export before deletion.
+
+FAQ:
+- Data controller = customer organisation (Art. 4(7) GDPR).
+  Data processor = DexterBee GmbH (Art. 4(8) GDPR). Regulated in the DPA.
+- Data usage: exclusively for the CompLens service. No sharing.
+  Legal basis: Art. 6(1b) GDPR (performance of contract).
+
+── MODULE 10: SETTINGS & TEAM ──
+
+Edit Profile:
+Settings → Profile → name, job title, preferred language (German/English).
+User-specific settings (do not apply to other team members).
+
+Switch Language:
+CompLens supports German and English. Settings → Profile → select language.
+Immediate switch of the entire interface. Reports remain in German (legal requirement).
+
+Subscription:
+Settings → Subscription: current plan, expiry date, user seats.
+Licensed users: software licence agreement (PDF) pre-filled and downloadable.
+Upgrade + add-ons: direct Stripe checkout links.
+
+Roles:
+- Admin: full access (import, analysis, settings, team)
+- Viewer: read-only (analyses, reports, portal) — no import or settings permissions
+
+Password Reset:
+Login page → "Forgot password" → reset link via email (valid for 60 minutes).
+
+Cancellation:
+Via support ticket in CompLens or in writing, 3 months notice before year-end.
+After contract end: 30 days data export possible, then complete deletion.
+
+── MODULE 11: PAY BANDS (EU ART. 9) ──
+
+What are Pay Bands?
+Pay bands define minimum/maximum pay per position/pay grade.
+EU Art. 9 requires publication of pay information by category and gender.
+Intra-group gap >= 5% → justification obligation per Art. 10.
+Compa-Ratio = (median salary / band midpoint) x 100.
+
+Automatic Band Detection:
+CompLens recognises job_grade values from imported data and suggests a naming scheme
+(G1/G2, L1/L2, TVoeD, TV-L, ERA, E-Scale, etc.). 1-click: create all groups + calculate statistics.
+
+Internal Statistics (per pay grade):
+- Min, P25, Median, P75, Max (base salary)
+- Female/male medians separately, n, intra-gap, total compensation median
+
+EU Art. 9 Heatmap: binary assessment — Green (< 5%, compliant) or Red (>= 5%, action required).
+
+Market Benchmark (optional): enter source, year, P25/P50/P75 externally → appears in the chart.
+
+Visualisation: horizontal box plot (base salary or total compensation), with target band + market data.
+
+Dashboard: 7th KPI card shows EU-compliant groups X/Y + notice banner when threshold exceeded.
+Analysis: 3rd tab "Pay Bands (Art. 9)" with band chart and heatmap.
+PDF: optional page "Pay Bands & Compa-Ratio" (activatable in PDF options).
+
+Collective agreement systems: TVoeD, TV-L, ERA and similar are automatically recognised.
+
+FAQ:
+- Intra-group gap vs. overall gap: intra-gap = within a group (Art. 9);
+  overall gap = company-wide Gender Pay Gap. Both must be reported.
+- Groups with fewer than 5 people are anonymised.
+- Compa-Ratio < 87%: typical warning sign for underpayment in C&B management.
+
+══ NAVIGATION OVERVIEW ══
+- Dashboard: overview of recent analyses and quick access
+- Import: upload and manage CSV datasets
+- Analysis: calculate and view pay gaps in detail
+- Explanations (via Analysis): document pay differences
+- Remediation: close pay gaps with structured plans
+- Trend Analysis: multi-year development of gaps (datasets must be selected manually)
+- Pay Bands: internal salary bands + EU Art. 9 intra-group compliance
+- Reports: generate PDF/PPT exports
+- Right to Information: employee information per Art. 7 EU Directive 2023/970
+- GDPR & Compliance: data protection and legal documentation
+- Settings: profile, team, organisation, subscription
+- Help: user guide (also includes demo video)
+
+══ DEMO VIDEO ══
+Full 8-minute CompLens demo available on YouTube:
+https://www.youtube.com/watch?v=s7Y346Gxklo
+All modules are shown in order: Import → Analysis → Pay Bands → Explanations → Remediation → Export.
+Users can be referred to the video if they need a visual overview.
+`
+
+/**
+ * Returns the knowledge base string for the given locale.
+ * Falls back to German if the locale is unknown.
+ */
+export function getKnowledgeBase(locale: string): string {
+    return locale === 'en' ? COMPLENS_KB_EN : COMPLENS_KB_DE
+}
+
+/** @deprecated Use getKnowledgeBase(locale) instead. Kept for backward-compat during migration. */
+const COMPLENS_KB = COMPLENS_KB_DE
+export { COMPLENS_KB }
 export default COMPLENS_KB

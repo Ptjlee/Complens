@@ -6,6 +6,7 @@ import type { AnalysisResult } from '@/lib/calculations/types'
 import { MAX_JUSTIFIABLE_CAP } from '@/app/(dashboard)/dashboard/import/constants'
 import { getBandContext } from '@/lib/band/getBandContext'
 import React from 'react'
+import { cookies } from 'next/headers'
 
 export async function GET(
     req: NextRequest,
@@ -14,13 +15,20 @@ export async function GET(
     const { id } = await params
     const sp      = req.nextUrl.searchParams
 
+    // ── Locale ──
+    const localeParam = sp.get('locale')
+    const cookieStore = await cookies()
+    const locale = localeParam || cookieStore.get('NEXT_LOCALE')?.value || 'de'
+    const messages = (await import(`../../../../../../messages/${locale}.json`)).default
+    const rt = (key: string) => messages?.report?.[key] ?? key
+
     // ── PDF options from query params ──
     const companyName   = sp.get('companyName')  ?? undefined
     const reportTitle   = sp.get('reportTitle')  ?? undefined
     const signatories   = [
-        sp.get('sig0') ?? 'HR-Leitung',
-        sp.get('sig1') ?? 'Geschäftsführung',
-        sp.get('sig2') ?? 'Arbeitnehmervertretung',
+        sp.get('sig0') ?? rt('sigHrLead'),
+        sp.get('sig1') ?? rt('sigManagement'),
+        sp.get('sig2') ?? rt('sigWorksCouncil'),
     ] as [string, string, string]
     const sectionsParam = sp.get('sections')
     const sections      = sectionsParam ? new Set(sectionsParam.split(',')) : null
@@ -94,10 +102,19 @@ export async function GET(
         explanationAdjustedGap = residual / 100
     }
 
+    // Build labels from messages for i18n
+    const reportMessages = messages?.report ?? {}
+    const labels: Record<string, string> = {}
+    for (const [k, v] of Object.entries(reportMessages)) {
+        if (typeof v === 'string') labels[k] = v
+    }
+
     const doc = React.createElement(ReportDocument, {
         result,
         orgName,
-        reportName:               reportTitle ?? analysis.name ?? `Entgeltbericht ${reportYear}`,
+        locale,
+        labels,
+        reportName:               reportTitle ?? analysis.name ?? `${rt('pdfFilenameReport')} ${reportYear}`,
         createdAt:                analysis.created_at,
         reportNotes:              (analysis as { report_notes?: string | null }).report_notes ?? null,
         explanations:             exps,
@@ -111,8 +128,8 @@ export async function GET(
     })
 
     const pdfBuffer = await renderToBuffer(doc as React.ReactElement<import('@react-pdf/renderer').DocumentProps>)
-    const prefix    = sampleMode ? 'MUSTER_' : ''
-    const filename  = `${prefix}CompLens_Entgeltbericht_${reportYear}_${orgName.replace(/\s+/g, '_')}.pdf`
+    const prefix    = sampleMode ? rt('samplePrefix') : ''
+    const filename  = `${prefix}CompLens_${rt('pdfFilenameReport')}_${reportYear}_${orgName.replace(/\s+/g, '_')}.pdf`
 
     return new NextResponse(new Uint8Array(pdfBuffer), {
         status: 200,

@@ -3,18 +3,26 @@ import { createClient } from '@/lib/supabase/server'
 import type { AnalysisResult } from '@/lib/calculations/types'
 import { generateReportPptx } from '@/lib/ppt/ReportPresentation'
 import { getBandContext } from '@/lib/band/getBandContext'
+import { cookies } from 'next/headers'
 
 export async function GET(
-    _req: NextRequest,
+    req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
     const { id } = await params
+
+    // ── Locale ──
+    const localeParam = req.nextUrl.searchParams.get('locale')
+    const cookieStore = await cookies()
+    const locale = localeParam || cookieStore.get('NEXT_LOCALE')?.value || 'de'
+    const messages = (await import(`../../../../../messages/${locale}.json`)).default
+    const rt = (key: string) => messages?.report?.[key] ?? key
 
     // ── Auth ──────────────────────────────────────────────────────────────────
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
-        return NextResponse.json({ error: 'Nicht angemeldet.' }, { status: 401 })
+        return NextResponse.json({ error: rt('notAuthenticated') }, { status: 401 })
     }
 
     // ── Fetch analysis, org, plans, explanations in parallel ──────────────────
@@ -41,7 +49,7 @@ export async function GET(
     ])
 
     if (analysisRes.error || !analysisRes.data) {
-        return NextResponse.json({ error: 'Analyse nicht gefunden.' }, { status: 404 })
+        return NextResponse.json({ error: rt('analysisNotFound') }, { status: 404 })
     }
 
     const rawAnalysis = analysisRes.data as Record<string, unknown>
@@ -100,9 +108,18 @@ export async function GET(
     const datasetName = (ds as Record<string, unknown> | null)?.name as string | undefined
     const displayName = datasetName ?? (rawAnalysis.name as string)   // user-given name preferred
 
+    // Build labels from messages for i18n
+    const reportMessages = messages?.report ?? {}
+    const labels: Record<string, string> = {}
+    for (const [k, v] of Object.entries(reportMessages)) {
+        if (typeof v === 'string') labels[k] = v
+    }
+
     try {
         const buf = await generateReportPptx(results, {
             orgName,
+            locale,
+            labels,
             analysisName:          displayName,
             analysisDate:          rawAnalysis.created_at as string,
             reportNotes:           (rawAnalysis.report_notes as string | null) ?? null,
@@ -116,7 +133,7 @@ export async function GET(
         })
 
         const arrayBuffer = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer
-        const prefix      = sampleMode ? 'MUSTER_' : ''
+        const prefix      = sampleMode ? rt('samplePrefix') : ''
         const safeName    = prefix + displayName
             .replace(/[^a-z0-9_\-]/gi, '_')
             .slice(0, 60)
@@ -131,6 +148,6 @@ export async function GET(
         })
     } catch (err) {
         console.error('[ppt-export] Error generating PPTX:', err)
-        return NextResponse.json({ error: 'Fehler beim Erstellen der Präsentation.' }, { status: 500 })
+        return NextResponse.json({ error: rt('pptError') }, { status: 500 })
     }
 }

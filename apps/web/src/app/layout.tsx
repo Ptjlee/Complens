@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { NextIntlClientProvider } from 'next-intl'
-import { getLocale, getMessages } from 'next-intl/server'
+import { getLocale, getMessages, getTranslations } from 'next-intl/server'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import CookieBanner from '@/components/ui/CookieBanner'
 import './globals.css'
@@ -12,50 +12,53 @@ const inter = Inter({
   display: 'swap',
 })
 
-export const metadata: Metadata = {
-  title: {
-    default: 'CompLens — Entgelttransparenz einfach gemacht',
-    template: '%s | CompLens',
-  },
-  description:
-    'Erfüllen Sie die EU-Meldepflicht in unter 5 Minuten. Automatisierte Analysen, bereinigter Gender Pay Gap und fertige Berichte – 100% DSGVO-konform.',
-  keywords: [
-    'Entgelttransparenz',
-    'Gender Pay Gap',
-    'EU Pay Transparency Directive',
-    'Entgelttransparenzgesetz',
-    'Lohngleichheit',
-    'Pay Equity Software',
-    'GDPR compliant',
-    'CompLens',
-  ],
-  authors: [{ name: 'DexterBee GmbH' }],
-  creator: 'DexterBee GmbH',
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_APP_URL || 'https://complens.de'
-  ),
-  openGraph: {
-    type: 'website',
-    locale: 'de_DE',
-    alternateLocale: 'en_GB',
-    siteName: 'CompLens',
-    title: 'CompLens — Entgelttransparenz einfach gemacht',
-    description: 'Erfüllen Sie die EU-Meldepflicht in unter 5 Minuten. So einfach kann es sein.',
-    images: [
-      {
-        url: '/og-image.jpg',
-        width: 1200,
-        height: 630,
-        alt: 'CompLens Dashboard Preview',
-      },
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('metadata')
+
+  return {
+    title: {
+      default: t('siteTitle'),
+      template: t('siteTitleTemplate'),
+    },
+    description: t('siteDescription'),
+    keywords: [
+      'Entgelttransparenz',
+      'Gender Pay Gap',
+      'EU Pay Transparency Directive',
+      'Entgelttransparenzgesetz',
+      'Lohngleichheit',
+      'Pay Equity Software',
+      'GDPR compliant',
+      'CompLens',
     ],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'CompLens — Entgelttransparenz einfach gemacht',
-    description: 'Erfüllen Sie die EU-Meldepflicht in unter 5 Minuten. Automatisierte Analysen und fertige Berichte.',
-    creator: '@complens',
-  },
+    authors: [{ name: 'DexterBee GmbH' }],
+    creator: 'DexterBee GmbH',
+    metadataBase: new URL(
+      process.env.NEXT_PUBLIC_APP_URL || 'https://complens.de'
+    ),
+    openGraph: {
+      type: 'website',
+      locale: 'de_DE',
+      alternateLocale: 'en_GB',
+      siteName: 'CompLens',
+      title: t('ogTitle'),
+      description: t('ogDescription'),
+      images: [
+        {
+          url: '/og-image.jpg',
+          width: 1200,
+          height: 630,
+          alt: 'CompLens Dashboard Preview',
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: t('twitterTitle'),
+      description: t('twitterDescription'),
+      creator: '@complens',
+    },
+  }
 }
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID
@@ -105,6 +108,56 @@ export default async function RootLayout({
             }}
           />
         )}
+        {/* JSON-LD: Organization */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'Organization',
+              name: 'CompLens',
+              legalName: 'DexterBee GmbH',
+              url: 'https://complens.de',
+              logo: 'https://complens.de/icon.png',
+              description:
+                'Erfüllen Sie die EU-Meldepflicht in unter 5 Minuten. Automatisierte Analysen, bereinigter Gender Pay Gap und fertige Berichte – 100% DSGVO-konform.',
+              address: {
+                '@type': 'PostalAddress',
+                streetAddress: 'Industriestr. 13',
+                addressLocality: 'Alzenau',
+                postalCode: '63755',
+                addressCountry: 'DE',
+              },
+              contactPoint: {
+                '@type': 'ContactPoint',
+                email: 'hallo@complens.de',
+                contactType: 'sales',
+                availableLanguage: ['de', 'en'],
+              },
+            }),
+          }}
+        />
+        {/* JSON-LD: SoftwareApplication */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'SoftwareApplication',
+              name: 'CompLens',
+              applicationCategory: 'BusinessApplication',
+              operatingSystem: 'Web',
+              description:
+                'EU Pay Transparency compliance software. Automated gender pay gap analysis and reporting.',
+              offers: {
+                '@type': 'Offer',
+                price: '5990',
+                priceCurrency: 'EUR',
+                url: 'https://complens.de',
+              },
+            }),
+          }}
+        />
       </head>
       <body className="antialiased font-sans">
         <NextIntlClientProvider locale={locale} messages={messages}>

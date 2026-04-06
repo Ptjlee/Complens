@@ -2,10 +2,14 @@ import ImportWizard from './ImportWizard'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
+import { getTranslations } from 'next-intl/server'
 
-export const metadata = {
-    title: 'Daten importieren — CompLens',
-    description: 'Laden Sie Ihre Gehaltsdaten hoch. CompLens erkennt die Spaltenzuordnung automatisch.',
+export async function generateMetadata() {
+    const t = await getTranslations('importWizard')
+    return {
+        title: `${t('title')} — CompLens`,
+        description: t('subtitle'),
+    }
 }
 
 export default async function ImportPage() {

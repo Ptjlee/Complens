@@ -3,12 +3,16 @@ import RemediationClient from './RemediationClient'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
+import { getTranslations } from 'next-intl/server'
 
 export const dynamic = 'force-dynamic'   // never serve a stale cached version
 
-export const metadata = {
-    title: 'Maßnahmen — CompLens',
-    description: 'Maßnahmenpläne für Entgeltlücken nach EU-Richtlinie 2023/970.',
+export async function generateMetadata() {
+    const t = await getTranslations('remediationPage')
+    return {
+        title: t('metaTitle'),
+        description: t('metaDescription'),
+    }
 }
 
 export default async function RemediationPage() {

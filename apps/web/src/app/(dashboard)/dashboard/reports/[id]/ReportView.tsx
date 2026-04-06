@@ -2,10 +2,11 @@
 
 import { useState, useTransition, useMemo } from 'react'
 import Link from 'next/link'
+import { useTranslations, useLocale } from 'next-intl'
 import {
     ArrowLeft, Download, CheckCircle2, ShieldAlert,
     TrendingDown, FileText, Users, BarChart3,
-    PenLine, Save, X, ChevronRight, Presentation, Sparkles, Loader2, Info,
+    PenLine, Save, X, ChevronRight, Presentation, Sparkles, Loader2, Info, Lock,
 } from 'lucide-react'
 import type { AnalysisResult } from '@/lib/calculations/types'
 import type { BandGradeSummary } from '@/lib/band/getBandContext'
@@ -14,6 +15,7 @@ import { saveReportNotes } from '../actions'
 import { generateAndSaveNarrative } from '../generateNarrative'
 import PdfOptionsModal from '../PdfOptionsModal'
 import ComplianceHeatmap from '@/components/dashboard/ComplianceHeatmap'
+import { trackReportGenerated } from '@/lib/analytics'
 
 // ── helpers ─────────────────────────────────────────────────
 
@@ -29,20 +31,20 @@ function gapColor(val: number | null): string {
 }
 function hrFmt(val: number | null): string {
     if (!val) return '—'
-    return val.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €/h'
+    return val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €/h'
 }
 
 // ── Section nav ──────────────────────────────────────────────
 
 const SECTIONS = [
-    { id: 'summary',     label: 'Zusammenfassung' },
-    { id: 'departments', label: 'Bereiche' },
-    { id: 'grades',      label: 'Entgeltgruppen' },
-    { id: 'quartiles',   label: 'Quartile' },
-    { id: 'explanations', label: 'Begründungen' },
-    { id: 'remediation', label: 'Maßnahmen' },
-    { id: 'declaration',  label: 'Erklärung' },
-]
+    { id: 'summary',      labelKey: 'navSummary' },
+    { id: 'departments',  labelKey: 'navDepartments' },
+    { id: 'grades',       labelKey: 'navGrades' },
+    { id: 'quartiles',    labelKey: 'navQuartiles' },
+    { id: 'explanations', labelKey: 'navExplanations' },
+    { id: 'remediation',  labelKey: 'navRemediation' },
+    { id: 'declaration',  labelKey: 'navDeclaration' },
+] as const
 
 // ── Main component ───────────────────────────────────────────
 
@@ -82,9 +84,11 @@ export default function ReportView({
     orgName: string
     bandGrades?: BandGradeSummary[]
 }) {
+    const t       = useTranslations('report')
+    const locale  = useLocale()
     const r       = analysis.results
     const over    = r.overall
-    const date    = new Date(analysis.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' })
+    const date    = new Date(analysis.created_at).toLocaleDateString(locale, { day: '2-digit', month: 'long', year: 'numeric' })
     const [activeSection, setActiveSection] = useState('summary')
     const [editingNotes, setEditingNotes]   = useState(false)
     const [notes, setNotes]                 = useState(analysis.report_notes ?? '')
@@ -210,7 +214,7 @@ export default function ReportView({
                         style={{ color: 'var(--color-pl-text-tertiary)' }}
                         onMouseEnter={e => (e.currentTarget.style.background = 'var(--theme-pl-action-hover)')}
                         onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                        <ArrowLeft size={14} /> Zurück
+                        <ArrowLeft size={14} /> {t('back')}
                     </Link>
                     <div>
                         <h1 className="text-xl font-bold" style={{ color: 'var(--color-pl-text-primary)' }}>
@@ -222,19 +226,19 @@ export default function ReportView({
                             <span className="flex items-center gap-1"><BarChart3 size={11} /> {analysis.name}</span>
                             {analysis.datasets && <>
                                 <span style={{ color: 'var(--color-pl-text-tertiary)' }}>·</span>
-                                <span className="flex items-center gap-1"><Users size={11} /> {analysis.datasets.employee_count ?? '?'} MA</span>
+                                <span className="flex items-center gap-1"><Users size={11} /> {analysis.datasets.employee_count ?? '?'} {t('employees')}</span>
                                 <span style={{ color: 'var(--color-pl-text-tertiary)' }}>·</span>
-                                <span>Berichtsjahr {analysis.datasets.reporting_year}</span>
+                                <span>{t('reportingYearValue', { year: analysis.datasets.reporting_year })}</span>
                             </>}
                         </p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${over.exceeds_5pct ? 'status-red' : 'status-green'}`}>
-                        {over.exceeds_5pct ? <><ShieldAlert size={12} /> 5%-Schwelle überschritten</> : <><CheckCircle2 size={12} /> Unter 5%-Schwelle</>}
+                        {over.exceeds_5pct ? <><ShieldAlert size={12} /> {t('thresholdExceeded')}</> : <><CheckCircle2 size={12} /> {t('belowThreshold')}</>}
                     </div>
-                    <button onClick={() => setShowPdfModal(true)} className="btn-ghost text-sm flex items-center gap-2">
-                        <Download size={14} /> PDF exportieren
+                    <button onClick={() => { setShowPdfModal(true); trackReportGenerated('pdf') }} className="btn-ghost text-sm flex items-center gap-2">
+                        <Download size={14} /> {t('exportPdf')}
                     </button>
                     <a
                         href={`/api/report/${analysis.id}/export-ppt`}
@@ -242,13 +246,14 @@ export default function ReportView({
                         onClick={() => {
                             setPptLoading(true)
                             setTimeout(() => setPptLoading(false), 4000)
+                            trackReportGenerated('ppt')
                         }}
                         className="btn-ghost text-sm flex items-center gap-2"
                         style={{ textDecoration: 'none' }}
                     >
                         {pptLoading
-                            ? <><span>⟳</span> Wird erstellt…</>
-                            : <><Presentation size={14} /> PPT exportieren</>}
+                            ? <><span>⟳</span> {t('pptGenerating')}</>
+                            : <><Presentation size={14} /> {t('exportPpt')}</>}
                     </a>
                 </div>
             </div>
@@ -278,7 +283,7 @@ export default function ReportView({
                                     color: activeSection === s.id ? '#fff' : 'var(--color-pl-text-secondary)',
                                 }}>
                                 <ChevronRight size={11} style={{ opacity: activeSection === s.id ? 1 : 0 }} />
-                                {s.label}
+                                {t(s.labelKey)}
                             </button>
                         ))}
                     </nav>
@@ -300,13 +305,13 @@ export default function ReportView({
                                 <div>
                                     <p className="text-sm font-semibold mb-0.5" style={{ color: 'var(--color-pl-text-primary)' }}>
                                         {over.exceeds_5pct
-                                            ? 'Gemeinsame Entgeltbewertung erforderlich (Art. 9 Abs. 1c)'
-                                            : 'Entgeltlücke unterhalb der 5%-Schwelle'}
+                                            ? t('jointAssessmentRequired')
+                                            : t('gapBelowThreshold')}
                                     </p>
                                     <p className="text-xs" style={{ color: 'var(--color-pl-text-secondary)' }}>
                                         {over.exceeds_5pct
-                                            ? 'Der Grenzwert wurde überschritten. Eine gemeinsame Bewertung der Entgeltstrukturen unter Einbindung der Arbeitnehmervertretung wird empfohlen.'
-                                            : 'Kein unmittelbarer Handlungsbedarf. Jährliche Überprüfung gemäß Art. 9 Abs. 2 wird empfohlen.'}
+                                            ? t('jointAssessmentBody')
+                                            : t('noActionRequired')}
                                     </p>
                                 </div>
                             </div>
@@ -315,27 +320,27 @@ export default function ReportView({
                             <div className="grid grid-cols-3 gap-3 mb-4">
                                 {[
                                     {
-                                        label: 'Unbereinigter Gender Pay Gap (Median)',
-                                        sub: `EU Art. 9 · Mittelwert: ${pct(over.unadjusted_mean)}`,
+                                        label: t('unadjustedGapMedian'),
+                                        sub: t('art9MeanSub', { mean: pct(over.unadjusted_mean) }),
                                         value: pct(over.unadjusted_median),
                                         color: gapColor(over.unadjusted_median),
-                                        tooltip: 'Roher Entgeltunterschied — keine Kontrolle für Struktur.',
+                                        tooltip: t('rawGapNoControl'),
                                     },
                                     {
-                                        label: 'Bereinigter Gender Pay Gap · EU Art. 9',
-                                        sub: `WIF-Faktoren: ${r.wif_factors_used.join(', ')}`,
+                                        label: t('adjustedGapArt9'),
+                                        sub: t('wifFactorsSub', { factors: r.wif_factors_used.join(', ') }),
                                         value: pct(over.adjusted_median),
                                         color: gapColor(over.adjusted_median),
-                                        tooltip: 'Strukturell bereinigt: gleiche Stelle, Bereich und Standort.',
+                                        tooltip: t('structurallyAdjusted'),
                                     },
                                     {
-                                        label: 'Nach Begründungen · Art. 10',
+                                        label: t('afterExplanationsArt10'),
                                         sub: explainedWithStatus.length > 0
-                                            ? `Nach ${explainedWithStatus.length} dokumentierten Begründungen`
-                                            : 'Keine abgeschlossenen Begründungen',
+                                            ? t('afterExplanationsCount', { count: explainedWithStatus.length })
+                                            : t('noCompletedExplanations'),
                                         value: explanationAdjustedGap !== null ? pct(explanationAdjustedGap) : '—',
                                         color: explanationAdjustedGap !== null ? gapColor(explanationAdjustedGap) : 'var(--color-pl-text-tertiary)',
-                                        tooltip: 'Verbleibender Unterschied nach Abzug dokumentierter Art. 10-Begründungen (Teilgutschrift, max. 25%).',
+                                        tooltip: t('residualAfterArt10'),
                                     },
                                 ].map(({ label, value, color, sub, tooltip }) => (
                                     <div key={label} className="glass-card p-4" title={tooltip}>
@@ -349,10 +354,10 @@ export default function ReportView({
                             {/* Secondary KPI grid */}
                             <div className="grid grid-cols-4 gap-4">
                                 {[
-                                    { label: 'Unbereinigt (Mittelwert)', value: pct(over.unadjusted_mean), color: gapColor(over.unadjusted_mean), sub: 'EU Art. 9' },
-                                    { label: 'Bereinigt (Mittelwert)', value: pct(over.adjusted_mean), color: gapColor(over.adjusted_mean), sub: 'WIF-Mittelwert' },
-                                    { label: 'Mitarbeitende', value: String(r.total_employees), color: 'var(--color-pl-text-primary)', sub: `F ${over.female_count} · M ${over.male_count}` },
-                                    { label: 'Analyse-Datum', value: date, color: 'var(--color-pl-text-primary)', sub: `Berichtsjahr ${r.reporting_year}` },
+                                    { label: t('unadjustedMean'), value: pct(over.unadjusted_mean), color: gapColor(over.unadjusted_mean), sub: t('art9Label') },
+                                    { label: t('adjustedMean'), value: pct(over.adjusted_mean), color: gapColor(over.adjusted_mean), sub: t('wifMean') },
+                                    { label: t('totalEmployees'), value: String(r.total_employees), color: 'var(--color-pl-text-primary)', sub: `F ${over.female_count} · M ${over.male_count}` },
+                                    { label: t('analysisDate'), value: date, color: 'var(--color-pl-text-primary)', sub: t('reportingYearValue', { year: r.reporting_year }) },
                                 ].map(({ label, value, color, sub }) => (
                                     <div key={label} className="glass-card p-4">
                                         <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--color-pl-text-tertiary)' }}>{label}</p>
@@ -364,13 +369,13 @@ export default function ReportView({
 
                             {/* Methodology */}
                             <div className="glass-card p-5">
-                                <p className="text-sm font-semibold mb-3" style={{ color: 'var(--color-pl-text-primary)' }}>Methodik</p>
+                                <p className="text-sm font-semibold mb-3" style={{ color: 'var(--color-pl-text-primary)' }}>{t('methodology')}</p>
                                 <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-xs">
                                     {[
-                                        ['Berechnungsbasis', 'Bruttostundenverdienst (Art. 3 EU 2023/970)'],
-                                        ['WIF-Faktoren', r.wif_factors_used.join(', ')],
-                                        ['Vollzeit-Referenz', `${r.standard_weekly_hours} Std./Woche`],
-                                        ['Stundenabdeckung', `${r.hours_coverage_pct}%`],
+                                        [t('methodologyBasis'), t('methodologyBasisValue')],
+                                        [t('wifFactors'), r.wif_factors_used.join(', ')],
+                                        [t('fullTimeRef'), t('hoursPerWeek', { hours: r.standard_weekly_hours })],
+                                        [t('hoursCoverage'), `${r.hours_coverage_pct}%`],
                                     ].map(([k, v]) => (
                                         <div key={k} className="flex justify-between py-1.5 border-b" style={{ borderColor: 'var(--color-pl-border)' }}>
                                             <span style={{ color: 'var(--color-pl-text-tertiary)' }}>{k}</span>
@@ -384,7 +389,7 @@ export default function ReportView({
                             <div className="glass-card p-5">
                                 <div className="flex items-center justify-between mb-3">
                                     <p className="text-sm font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>
-                                        HR-Anmerkungen
+                                        {t('reportNotes')}
                                     </p>
                                     {!editingNotes ? (
                                         <div className="flex items-center gap-2">
@@ -397,24 +402,24 @@ export default function ReportView({
                                                     border: '1px solid rgba(99,102,241,0.3)',
                                                     color: 'var(--color-pl-accent)',
                                                 }}
-                                                title="Zusammenfassung generieren"
+                                                title={t('generateSummary')}
                                             >
                                                 {aiLoading
-                                                    ? <><Loader2 size={11} className="animate-spin" /> Generiert…</>
-                                                    : <><Sparkles size={11} /> Zusammenfassung generieren</>}
+                                                    ? <><Loader2 size={11} className="animate-spin" /> {t('generating')}</>
+                                                    : <><Sparkles size={11} /> {t('generateSummary')}</>}
                                             </button>
                                             <button onClick={() => setEditingNotes(true)} className="flex items-center gap-1 text-xs"
                                                 style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                                                <PenLine size={12} /> Bearbeiten
+                                                <PenLine size={12} /> {t('editNotes')}
                                             </button>
                                         </div>
                                     ) : (
                                         <div className="flex gap-2">
                                             <button onClick={() => setEditingNotes(false)} className="btn-ghost text-xs flex items-center gap-1">
-                                                <X size={11} /> Abbrechen
+                                                <X size={11} /> {t('cancelBtn')}
                                             </button>
                                             <button onClick={saveNotes} disabled={isPending} className="btn-primary text-xs flex items-center gap-1">
-                                                <Save size={11} /> Speichern
+                                                <Save size={11} /> {t('common.save')}
                                             </button>
                                         </div>
                                     )}
@@ -424,15 +429,16 @@ export default function ReportView({
                                 )}
                                 {editingNotes ? (
                                     <textarea
-                                        rows={4}
+                                        rows={10}
                                         value={notes}
                                         onChange={e => setNotes(e.target.value)}
-                                        placeholder="Ergänzen Sie Kommentare oder Kontextinformationen für den Bericht…"
-                                        className="input-base text-sm resize-none w-full"
+                                        placeholder={t('notesPlaceholder')}
+                                        className="input-base text-sm w-full"
+                                        style={{ resize: 'vertical', minHeight: 160 }}
                                     />
                                 ) : (
                                     <p className="text-sm" style={{ color: notes ? 'var(--color-pl-text-secondary)' : 'var(--color-pl-text-tertiary)' }}>
-                                        {notes || 'Keine Anmerkungen vorhanden. Klicken Sie „Bearbeiten" um Kommentare hinzuzufügen.'}
+                                        {notes || t('noNotesPlaceholder')}
                                     </p>
                                 )}
                             </div>
@@ -444,20 +450,20 @@ export default function ReportView({
                         <div className="glass-card">
                             <div className="px-5 py-4 border-b" style={{ borderColor: 'var(--color-pl-border)' }}>
                                 <div className="flex items-center gap-2 flex-wrap">
-                                    <p className="text-sm font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>Entgeltlücken nach Bereich</p>
+                                    <p className="text-sm font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>{t('deptGapTitle')}</p>
                                     <span className="text-xs px-2 py-0.5 rounded-full font-medium"
                                         style={{ background: 'rgba(245,158,11,0.12)', color: '#d97706', border: '1px solid rgba(245,158,11,0.3)' }}>
-                                        Nicht EU-Pflicht (Art. 9)
+                                        {t('deptNotMandatory')}
                                     </span>
                                 </div>
                                 <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                                    Ergänzende Managementansicht · Bereiche mit &lt; 5 MA anonymisiert · Nicht durch EU-RL 2023/970 Art. 9 vorgeschrieben
+                                    {t('deptSubtitle')}
                                 </p>
                             </div>
                             <table className="w-full text-xs">
                                 <thead>
                                     <tr style={{ background: 'var(--theme-pl-action-ghost)' }}>
-                                        {['Bereich', 'MA', 'F', 'M', 'Unbereinigt', 'Bereinigt', 'Nach Begründungen', '> 5%'].map(h => (
+                                        {[t('colDepartment'), t('colEmployees'), t('colFemale'), t('colMale'), t('colUnadjusted'), t('colAdjusted'), t('colAfterExpl'), t('colExceeds5')].map(h => (
                                             <th key={h} className="px-4 py-3 text-left font-semibold" style={{ color: 'var(--color-pl-text-tertiary)' }}>{h}</th>
                                         ))}
                                     </tr>
@@ -480,8 +486,8 @@ export default function ReportView({
                                             </td>
                                             <td className="px-4 py-3">
                                                 {d.suppressed ? '—' : d.gap.exceeds_5pct
-                                                    ? <span style={{ color: 'var(--color-pl-red)' }}>Ja</span>
-                                                    : <span style={{ color: 'var(--color-pl-green)' }}>Nein</span>}
+                                                    ? <span style={{ color: 'var(--color-pl-red)' }}>{t('yes')}</span>
+                                                    : <span style={{ color: 'var(--color-pl-green)' }}>{t('no')}</span>}
                                             </td>
                                         </tr>
                                     ))}
@@ -499,20 +505,17 @@ export default function ReportView({
                                 <div className="flex items-start justify-between gap-4">
                                     <div>
                                         <p className="text-sm font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>
-                                            EU Art. 9 Compliance — Entgelt nach Kategorie &amp; Geschlecht
+                                            {t('gradeComplianceTitle')}
                                         </p>
                                         <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                                            Diese Tabelle entspricht der gesetzlich vorgeschriebenen Berichtspflicht für Arbeitgeber mit ≥ 100 Beschäftigten.
+                                            {t('gradeComplianceSubtitle')}
                                         </p>
                                     </div>
                                     {bandGrades.length > 0 && !bandGrades.some(g => g.mid_salary != null) && (
                                         <div className="flex items-start gap-1.5 text-xs px-3 py-2 rounded-lg flex-shrink-0"
                                             style={{ background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.25)', color: '#fbbf24', maxWidth: 300 }}>
                                             <Info size={13} className="flex-shrink-0 mt-0.5" />
-                                            <span>
-                                                <strong>Compa-Ratio</strong> zeigt &quot;—&quot; weil keine Bandmitte (Midpoint) gesetzt ist.
-                                                Öffnen Sie das <strong>Entgeltband-Modul</strong> und klicken Sie <em>„Interne Bänder berechnen“</em>.
-                                            </span>
+                                            <span>{t('compaRatioHint')}</span>
                                         </div>
                                     )}
                                 </div>
@@ -528,19 +531,18 @@ export default function ReportView({
                                 <div className="glass-card">
                                     <div className="px-5 py-3 border-b" style={{ borderColor: 'var(--color-pl-border)' }}>
                                         <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                                            Noch keine Entgeltbänder berechnet.
-                                            Navigieren Sie zum <strong>Entgeltband-Modul</strong> und klicken Sie <em>„Interne Bänder berechnen“</em> um Compa-Ratios anzuzeigen.
+                                            {t('noBandsHint')}
                                         </p>
                                     </div>
                                     {r.by_grade.length === 0 ? (
                                         <p className="px-5 py-8 text-sm text-center" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                                            Keine Entgeltgruppen im Datensatz.
+                                            {t('noGrades')}
                                         </p>
                                     ) : (
                                         <table className="w-full text-xs">
                                             <thead>
                                                 <tr style={{ background: 'var(--theme-pl-action-ghost)' }}>
-                                                    {['Entgeltgruppe', 'MA', 'Unbereinigt', 'Bereinigt', 'Nach Begründungen', '> 5%'].map(h => (
+                                                    {[t('colGrade'), t('colEmployees'), t('colUnadjusted'), t('colAdjusted'), t('colAfterExpl'), t('colExceeds5')].map(h => (
                                                         <th key={h} className="px-4 py-3 text-left font-semibold" style={{ color: 'var(--color-pl-text-tertiary)' }}>{h}</th>
                                                     ))}
                                                 </tr>
@@ -561,8 +563,8 @@ export default function ReportView({
                                                         </td>
                                                         <td className="px-4 py-3">
                                                             {g.suppressed ? '—' : g.gap.exceeds_5pct
-                                                                ? <span style={{ color: 'var(--color-pl-red)' }}>Ja</span>
-                                                                : <span style={{ color: 'var(--color-pl-green)' }}>Nein</span>}
+                                                                ? <span style={{ color: 'var(--color-pl-red)' }}>{t('yes')}</span>
+                                                                : <span style={{ color: 'var(--color-pl-green)' }}>{t('no')}</span>}
                                                         </td>
                                                     </tr>
                                                 ))}
@@ -578,18 +580,18 @@ export default function ReportView({
                     {activeSection === 'quartiles' && (
                         <div className="glass-card">
                             <div className="px-5 py-4 border-b" style={{ borderColor: 'var(--color-pl-border)' }}>
-                                <p className="text-sm font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>Quartilsanalyse</p>
-                                <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>Geschlechterverteilung in den vier Vergütungsquartilen</p>
+                                <p className="text-sm font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>{t('quartilesTitle')}</p>
+                                <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('quartilesSubtitle')}</p>
                             </div>
                             <div className="p-5 space-y-4">
                                 {(['q1', 'q2', 'q3', 'q4'] as const).map((q, i) => {
                                     const qData  = r.quartiles[q]
-                                    const labels = ['Q1 — tiefstes Quartil', 'Q2', 'Q3', 'Q4 — höchstes Quartil']
+                                    const labels = [t('q1Label'), t('q2Label'), t('q3Label'), t('q4Label')]
                                     return (
                                         <div key={q}>
                                             <div className="flex justify-between text-xs mb-1.5">
                                                 <span style={{ color: 'var(--color-pl-text-secondary)' }}>{labels[i]}</span>
-                                                <span style={{ color: 'var(--color-pl-text-tertiary)' }}>{qData.count} Personen</span>
+                                                <span style={{ color: 'var(--color-pl-text-tertiary)' }}>{qData.count} {t('persons')}</span>
                                             </div>
                                             <div className="flex rounded-lg overflow-hidden h-7 text-xs font-semibold">
                                                 <div className="flex items-center justify-center"
@@ -617,9 +619,9 @@ export default function ReportView({
                         <div className="space-y-4">
                             <div className="grid grid-cols-3 gap-4">
                                 {[
-                                    { label: 'Gesamt',  value: flaggedEmployees.length, color: 'var(--color-pl-text-primary)' },
-                                    { label: 'Erklärt', value: explainedCount,          color: 'var(--color-pl-green)' },
-                                    { label: 'Offen',   value: openCount,              color: openCount > 0 ? 'var(--color-pl-red)' : 'var(--color-pl-green)' },
+                                    { label: t('totalFlagged'),  value: flaggedEmployees.length, color: 'var(--color-pl-text-primary)' },
+                                    { label: t('explained'), value: explainedCount,          color: 'var(--color-pl-green)' },
+                                    { label: t('open'),   value: openCount,              color: openCount > 0 ? 'var(--color-pl-red)' : 'var(--color-pl-green)' },
                                 ].map(({ label, value, color }) => (
                                     <div key={label} className="glass-card p-4">
                                         <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>{label}</p>
@@ -629,7 +631,7 @@ export default function ReportView({
                             </div>
                             <div className="glass-card p-5">
                                 <p className="text-sm font-semibold mb-3" style={{ color: 'var(--color-pl-text-primary)' }}>
-                                    Angewendete Kategorien
+                                    {t('appliedCategories')}
                                 </p>
                                 <div className="space-y-2">
                                     {EXPLANATION_CATEGORIES.map(cat => {
@@ -651,11 +653,11 @@ export default function ReportView({
                                                     <span className="text-sm" style={{ color: 'var(--color-pl-text-primary)' }}>{cat.label}</span>
                                                 </div>
                                                 <div className="flex items-center gap-4 text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                                                    <span>{count}× angewandt</span>
+                                                    <span>{t('timesApplied', { count })}</span>
                                                     {avgClaimed !== null && (
-                                                        <span style={{ color: cat.color }}>⌀ {avgClaimed}% beansprucht</span>
+                                                        <span style={{ color: cat.color }}>{t('avgClaimed', { pct: avgClaimed })}</span>
                                                     )}
-                                                    <span>bis {cat.max_justifiable_pct}%</span>
+                                                    <span>{t('upToPct', { pct: cat.max_justifiable_pct })}</span>
                                                 </div>
                                             </div>
                                         )
@@ -667,12 +669,12 @@ export default function ReportView({
                             {explanations.filter(e => e.status === 'explained').length > 0 && (
                                 <div className="glass-card p-5">
                                     <p className="text-sm font-semibold mb-3" style={{ color: 'var(--color-pl-text-primary)' }}>
-                                        Einzelfall-Übersicht (anonymisiert) — Art. 10
+                                        {t('caseOverviewArt10')}
                                     </p>
                                     <table className="w-full text-xs">
                                         <thead>
                                             <tr style={{ background: 'var(--theme-pl-action-ghost)' }}>
-                                                {['ID', 'Kategorie(n)', 'Beansprucht', 'Restlücke', 'Status'].map(h => (
+                                                {[t('colId'), t('colCategories'), t('colClaimed'), t('colResidualGap'), t('colStatusExpl')].map(h => (
                                                     <th key={h} className="px-3 py-2 text-left font-semibold" style={{ color: 'var(--color-pl-text-tertiary)' }}>{h}</th>
                                                 ))}
                                             </tr>
@@ -699,7 +701,7 @@ export default function ReportView({
                                                             <td className="px-3 py-2.5 font-semibold" style={{ color: residual === null ? 'var(--color-pl-text-tertiary)' : residual > 5 ? 'var(--color-pl-red)' : residual > 2 ? 'var(--color-pl-amber)' : 'var(--color-pl-green)' }}>
                                                                 {residual !== null ? `${residual.toFixed(1)}%` : '—'}
                                                             </td>
-                                                            <td className="px-3 py-2.5" style={{ color: 'var(--color-pl-green)' }}>Erklärt</td>
+                                                            <td className="px-3 py-2.5" style={{ color: 'var(--color-pl-green)' }}>{t('statusExplained')}</td>
                                                         </tr>
                                                     )
                                                 })}
@@ -716,7 +718,7 @@ export default function ReportView({
                             {remediationPlans.length === 0 ? (
                                 <div className="glass-card p-8 text-center">
                                     <p className="text-sm" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                                        Keine Maßnahmen dokumentiert für diese Analyse.
+                                        {t('noRemediation')}
                                     </p>
                                 </div>
                             ) : (
@@ -730,18 +732,18 @@ export default function ReportView({
                                         return (
                                             <div className="grid grid-cols-3 gap-4">
                                                 {[{
-                                                    label: 'Kritische Fälle',
-                                                    sub:   '≥ 5% Lücke (Art. 9)',
+                                                    label: t('criticalCases'),
+                                                    sub:   t('criticalCasesSub'),
                                                     value: criticalCount,
                                                     color: criticalCount > 0 ? 'var(--color-pl-red)' : 'var(--color-pl-green)',
                                                 }, {
-                                                    label: 'Maßnahmenpläne',
-                                                    sub:   'Pläne erstellt',
+                                                    label: t('remediationPlans'),
+                                                    sub:   t('plansCreated'),
                                                     value: plansCreated,
                                                     color: plansCreated > 0 ? 'var(--color-pl-brand)' : 'var(--color-pl-text-tertiary)',
                                                 }, {
-                                                    label: 'Noch ohne Plan',
-                                                    sub:   'Kein Plan vorhanden',
+                                                    label: t('withoutPlan'),
+                                                    sub:   t('noPlanAvailable'),
                                                     value: withoutPlan,
                                                     color: withoutPlan > 0 ? 'var(--color-pl-amber)' : 'var(--color-pl-green)',
                                                 }].map(({ label, sub, value, color }) => (
@@ -757,14 +759,14 @@ export default function ReportView({
 
                                     {/* Action types */}
                                     <div className="glass-card p-5">
-                                        <p className="text-sm font-semibold mb-3" style={{ color: 'var(--color-pl-text-primary)' }}>Maßnahmentypen</p>
+                                        <p className="text-sm font-semibold mb-3" style={{ color: 'var(--color-pl-text-primary)' }}>{t('actionTypes')}</p>
                                         <div className="space-y-2">
                                             {([
-                                                ['salary_increase',      'Gehaltserhöhung'],
-                                                ['job_reclassification', 'Neueinstufung'],
-                                                ['promotion',            'Beförderung'],
-                                                ['bonus_adjustment',     'Bonusanpassung'],
-                                                ['review',               'Überprüfung'],
+                                                ['salary_increase',      t('salaryIncrease')],
+                                                ['job_reclassification', t('jobReclassification')],
+                                                ['promotion',            t('promotion')],
+                                                ['bonus_adjustment',     t('bonusAdjustment')],
+                                                ['review',               t('review')],
                                             ] as [string, string][]).map(([key, label]) => {
                                                 const count = remediationPlans.filter(p => p.action_type === key).length
                                                 if (count === 0) return null
@@ -780,20 +782,20 @@ export default function ReportView({
 
                                     {/* Horizon breakdown */}
                                     <div className="glass-card p-5">
-                                        <p className="text-sm font-semibold mb-3" style={{ color: 'var(--color-pl-text-primary)' }}>Zeithorizonte</p>
+                                        <p className="text-sm font-semibold mb-3" style={{ color: 'var(--color-pl-text-primary)' }}>{t('horizons')}</p>
                                         <div className="space-y-2">
                                             {([
-                                                ['6m',   '0 – 6 Monate'],
-                                                ['1y',   '6 – 12 Monate'],
-                                                ['1.5y', '12 – 18 Monate'],
-                                                ['2-3y', '2 – 3 Jahre'],
+                                                ['6m',   t('horizon6m')],
+                                                ['1y',   t('horizon1y')],
+                                                ['1.5y', t('horizon15y')],
+                                                ['2-3y', t('horizon2to3y')],
                                             ] as [string, string][]).map(([key, label]) => {
                                                 const count = remediationPlans.flatMap(p => p.plan_steps ?? []).filter(s => s.horizon === key).length
                                                 if (count === 0) return null
                                                 return (
                                                     <div key={key} className="flex items-center justify-between py-2 border-b" style={{ borderColor: 'var(--color-pl-border)' }}>
                                                         <span className="text-sm" style={{ color: 'var(--color-pl-text-primary)' }}>{label}</span>
-                                                        <span className="text-xs" style={{ color: 'var(--color-pl-brand)' }}>{count} Schritte</span>
+                                                        <span className="text-xs" style={{ color: 'var(--color-pl-brand)' }}>{t('stepsCount', { count })}</span>
                                                     </div>
                                                 )
                                             })}
@@ -801,8 +803,7 @@ export default function ReportView({
                                     </div>
 
                                     <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                                        Gem. Art. 11 EU-RL 2023/970: Arbeitgeber, deren bereinigter Gender Pay Gap den 5%-Schwellenwert
-                                        überschreitet, sind zur Dokumentation von Maßnahmen verpflichtet.
+                                        {t('art11Note')}
                                     </p>
                                 </>
                             )}
@@ -814,54 +815,50 @@ export default function ReportView({
                         <div className="space-y-4">
                             <div className="glass-card p-6">
                                 <p className="text-sm font-semibold mb-4" style={{ color: 'var(--color-pl-text-primary)' }}>
-                                    Rechtliche Erklärung nach EU-Richtlinie 2023/970 Art. 9
+                                    {t('legalDeclarationTitle')}
                                 </p>
                                 <div className="space-y-3 text-sm" style={{ color: 'var(--color-pl-text-secondary)', lineHeight: 1.7 }}>
                                     <p>
-                                        <strong style={{ color: 'var(--color-pl-text-primary)' }}>{orgName}</strong> bestätigt,
-                                        dass vorliegender Bericht gemäß EU-Richtlinie 2023/970 und EntgTranspG erstellt wurde.
-                                        Die ausgewiesenen Daten basieren auf <strong style={{ color: 'var(--color-pl-text-primary)' }}>{r.total_employees} Beschäftigten</strong> (Datenstand: {r.reporting_year}).
+                                        {t('legalDeclarationBody', { orgName, count: r.total_employees, year: r.reporting_year })}
                                     </p>
                                     <p>
-                                        Entgeltlücke (Drei-Stufen-Darstellung gemäß Art. 9 und 10 EU 2023/970):
+                                        {t('threeStageGap')}
                                     </p>
                                     <ul className="space-y-1 pl-4" style={{ listStyleType: 'disc' }}>
                                         <li>
-                                            <strong>Unbereinigt:</strong>{' '}
-                                            <span style={{ color: gapColor(over.unadjusted_median) }}>{pct(over.unadjusted_median)}</span>{' '}(Median) /{' '}
-                                            <span style={{ color: gapColor(over.unadjusted_mean) }}>{pct(over.unadjusted_mean)}</span> (Mittelwert)
+                                            <strong>{t('unadjustedLabel')}</strong>{' '}
+                                            <span style={{ color: gapColor(over.unadjusted_median) }}>{pct(over.unadjusted_median)}</span>{' '}({t('medianLabel')}) /{' '}
+                                            <span style={{ color: gapColor(over.unadjusted_mean) }}>{pct(over.unadjusted_mean)}</span> ({t('meanLabel')})
                                         </li>
                                         <li>
-                                            <strong>Strukturell bereinigt (Art. 9, WIF-Methode):</strong>{' '}
-                                            <span style={{ color: gapColor(over.adjusted_median) }}>{pct(over.adjusted_median)}</span> (Median)
+                                            <strong>{t('adjustedLabel')}</strong>{' '}
+                                            <span style={{ color: gapColor(over.adjusted_median) }}>{pct(over.adjusted_median)}</span> ({t('medianLabel')})
                                         </li>
                                         <li>
-                                            <strong>Erklärt bereinigt nach individueller Begründung (Art. 10):</strong>{' '}
+                                            <strong>{t('explainedLabel')}</strong>{' '}
                                             <span style={{ color: explanationAdjustedGap != null ? gapColor(explanationAdjustedGap) : 'var(--color-pl-text-tertiary)' }}>
-                                                {explanationAdjustedGap != null ? pct(explanationAdjustedGap) : 'Keine Begründungen dokumentiert'}
+                                                {explanationAdjustedGap != null ? pct(explanationAdjustedGap) : t('noExplanationsDocumented')}
                                             </span>
                                         </li>
                                     </ul>
                                     <p>
                                         {over.exceeds_5pct
-                                            ? 'Der bereinigte Schwellenwert von 5% wird überschritten. Eine gemeinsame Entgeltbewertung gemäß Art. 9 Abs. 1 Buchstabe c wird eingeleitet. Die Arbeitnehmervertretung ist einzubeziehen.'
-                                            : 'Der bereinigte Schwellenwert von 5% wird nicht überschritten. Kein unmittelbarer gesetzlicher Handlungsbedarf.'}
+                                            ? t('thresholdExceededDecl')
+                                            : t('thresholdNotExceededDecl')}
                                     </p>
                                     <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                                        Hinweis: Verstöße gegen das Entgelttransparenzgebot können gemäß §§ 17–21 EntgTranspG sowie
-                                        Art. 23 EU 2023/970 zu Sanktionen und voller Entschädigungspflicht einschließlich
-                                        Nachzahlungen und immateriellen Schadensersatz führen. Beweislast liegt beim Arbeitgeber.
+                                        {t('sanctionsNote')}
                                     </p>
                                 </div>
                             </div>
 
                             {/* Signature fields */}
                             <div className="grid grid-cols-3 gap-4">
-                                {['HR-Leitung', 'Geschäftsführung', 'Arbeitnehmervertretung'].map(sig => (
+                                {[t('sigHrLead'), t('sigManagement'), t('sigWorksCouncil')].map(sig => (
                                     <div key={sig} className="glass-card p-5">
                                         <div className="h-16 border-b mb-3" style={{ borderColor: 'var(--color-pl-border)' }} />
                                         <p className="text-xs font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>{sig}</p>
-                                        <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>Datum, Unterschrift</p>
+                                        <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('dateSignature')}</p>
                                     </div>
                                 ))}
                             </div>

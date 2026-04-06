@@ -1,6 +1,20 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { getTranslations } from 'next-intl/server'
+import { rateLimit, RATE_LIMITS } from '@/lib/api/rateLimit'
 
-export async function POST(req: Request) {
+function escapeHtml(str: string): string {
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+}
+
+export async function POST(req: NextRequest) {
+    const limited = rateLimit(req, RATE_LIMITS.form)
+    if (limited) return limited
+
     try {
         const body = await req.json()
         const { name, company, email, message } = body
@@ -8,6 +22,8 @@ export async function POST(req: Request) {
         if (!name || !email || !message) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
         }
+
+        const t = await getTranslations('contact')
 
         // 1. Send Email Notification directly using the Resend REST API (avoids needing raw 'resend' package)
         const RESEND_API_KEY = process.env.RESEND_API_KEY
@@ -21,15 +37,15 @@ export async function POST(req: Request) {
                 body: JSON.stringify({
                     from: process.env.RESEND_FROM_EMAIL || 'hallo@complens.de',
                     to: process.env.CONTACT_EMAIL || 'hallo@complens.de',
-                    subject: `CompLens Lead: ${name} (${company || 'Keine Firma'})`,
+                    subject: `${t('emailSubjectPrefix')}: ${name} (${company || t('noCompany')})`,
                     html: `
-                        <h2>Neue Kontaktanfrage</h2>
-                        <p><strong>Name:</strong> ${name}</p>
-                        <p><strong>Firma:</strong> ${company || '-'}</p>
-                        <p><strong>E-Mail:</strong> ${email}</p>
+                        <h2>${escapeHtml(t('emailHeading'))}</h2>
+                        <p><strong>${escapeHtml(t('emailLabelName'))}:</strong> ${escapeHtml(name)}</p>
+                        <p><strong>${escapeHtml(t('emailLabelCompany'))}:</strong> ${escapeHtml(company || '-')}</p>
+                        <p><strong>${escapeHtml(t('emailLabelEmail'))}:</strong> ${escapeHtml(email)}</p>
                         <br/>
-                        <p><strong>Nachricht:</strong></p>
-                        <p>${message.replace(/\n/g, '<br/>')}</p>
+                        <p><strong>${escapeHtml(t('emailLabelMessage'))}:</strong></p>
+                        <p>${escapeHtml(message).replace(/\n/g, '<br/>')}</p>
                     `
                 })
             }).catch(e => console.error("Could not send email API:", e))
@@ -38,7 +54,7 @@ export async function POST(req: Request) {
         }
 
         // 2. Log to Google Sheets
-        // To use this, create a Google Apps Script (Extends -> Apps Script), deploy as a Web App, 
+        // To use this, create a Google Apps Script (Extends -> Apps Script), deploy as a Web App,
         // and put the URL in the environment GOOGLE_SHEETS_WEBHOOK_URL.
         const GOOGLE_WEBHOOK = process.env.GOOGLE_SHEETS_WEBHOOK_URL
         if (GOOGLE_WEBHOOK) {

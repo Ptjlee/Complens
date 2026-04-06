@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useRef } from 'react'
 import React from 'react'
+import { useTranslations } from 'next-intl'
 import {
     ChevronRight, Search, CheckCircle2,
     Clock, XCircle, AlertTriangle, Info, X, Save,
@@ -63,21 +64,21 @@ function numFmt(val: number | null, suffix = ' €') {
 }
 
 const SEVERITY_CONFIG: Record<IndividualFlag['severity'], {
-    bg: string; border: string; dot: string; label: string
+    bg: string; border: string; dot: string; labelKey: string
 }> = {
-    high:     { bg: 'rgba(239,68,68,0.10)',    border: 'rgba(239,68,68,0.35)',    dot: '#ef4444', label: 'Kritisch'       },
-    medium:   { bg: 'rgba(249,115,22,0.10)',   border: 'rgba(249,115,22,0.35)',   dot: '#f97316', label: 'Nicht konform'  },
-    low:      { bg: 'rgba(249,115,22,0.08)',   border: 'rgba(249,115,22,0.20)',   dot: '#f97316', label: 'Nicht konform'  },  // legacy
-    ok:       { bg: 'transparent',             border: 'transparent',             dot: '#34d399', label: 'Konform'        },
-    overpaid: { bg: 'rgba(139,92,246,0.12)',   border: 'rgba(139,92,246,0.40)',   dot: '#8b5cf6', label: 'Lohnvorteil'    },
+    high:     { bg: 'rgba(239,68,68,0.10)',    border: 'rgba(239,68,68,0.35)',    dot: '#ef4444', labelKey: 'severityHigh'       },
+    medium:   { bg: 'rgba(249,115,22,0.10)',   border: 'rgba(249,115,22,0.35)',   dot: '#f97316', labelKey: 'severityMedium'  },
+    low:      { bg: 'rgba(249,115,22,0.08)',   border: 'rgba(249,115,22,0.20)',   dot: '#f97316', labelKey: 'severityMedium'  },  // legacy
+    ok:       { bg: 'transparent',             border: 'transparent',             dot: '#34d399', labelKey: 'severityOk'        },
+    overpaid: { bg: 'rgba(139,92,246,0.12)',   border: 'rgba(139,92,246,0.40)',   dot: '#8b5cf6', labelKey: 'severityOverpaid'    },
 }
 
-const STATUS_CONFIG: Record<string, { icon: React.ReactNode; label: string; color: string }> = {
-    open:      { icon: <AlertTriangle size={13} />,  label: 'Offen',       color: '#f59e0b' },
-    in_review: { icon: <Clock size={13} />,           label: 'In Bearbeitung', color: '#60a5fa' },
-    explained: { icon: <CheckCircle2 size={13} />,   label: 'Erklärt',     color: '#34d399' },
-    konform:   { icon: <CheckCircle2 size={13} />,   label: 'Konform',     color: '#6ee7b7' },
-    rejected:  { icon: <XCircle size={13} />,         label: 'Abgelehnt',   color: '#ef4444' },
+const STATUS_CONFIG: Record<string, { icon: React.ReactNode; labelKey: string; color: string }> = {
+    open:      { icon: <AlertTriangle size={13} />,  labelKey: 'statusOpen',       color: '#f59e0b' },
+    in_review: { icon: <Clock size={13} />,           labelKey: 'statusInReview',   color: '#60a5fa' },
+    explained: { icon: <CheckCircle2 size={13} />,   labelKey: 'statusExplained',  color: '#34d399' },
+    konform:   { icon: <CheckCircle2 size={13} />,   labelKey: 'statusKonform',    color: '#6ee7b7' },
+    rejected:  { icon: <XCircle size={13} />,         labelKey: 'statusRejected',   color: '#ef4444' },
 }
 
 // ────────────────────────────────────────────────────────────
@@ -159,6 +160,8 @@ function ExplanationDrawer({
     onSaved:          (ex: Explanation) => void
     showNames:        boolean
 }) {
+    const t = useTranslations('employees')
+    const te = useTranslations('explanations')
     const initCats: Array<{ key: string; comment: string; claimed_pct?: number }> = existing
         ? ((existing as Explanation & { categories_json?: Array<{ key: string; comment: string; claimed_pct?: number }> }).categories_json ?? [])
         : []
@@ -221,7 +224,7 @@ function ExplanationDrawer({
     }
 
     async function handleSave() {
-        if (selected.size === 0) { setError('Wählen Sie mindestens eine Kategorie.'); return }
+        if (selected.size === 0) { setError(t('selectAtLeastOne')); return }
         setError('')
         const categories = [...selected].map(key => ({
             key,
@@ -244,7 +247,7 @@ function ExplanationDrawer({
             })
         } catch (err) {
             const msg = err instanceof Error ? err.message : String(err)
-            setError('Fehler: ' + msg)
+            setError(t('errorPrefix') + msg)
             console.error('[handleSave Begründung]', err)
         } finally {
             setIsSaving(false)
@@ -269,7 +272,7 @@ function ExplanationDrawer({
                     style={{ borderColor: 'var(--color-pl-border)' }}>
                     <div>
                         <p className="text-xs font-semibold uppercase tracking-wide mb-0.5"
-                            style={{ color: 'var(--color-pl-text-tertiary)' }}>EU Art. 10 Individuelle Analyse</p>
+                            style={{ color: 'var(--color-pl-text-tertiary)' }}>{te('drawerTitle')}</p>
                         <h3 className="text-sm font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>
                             {displayName}
                             <span className="ml-2 font-normal" style={{ color: 'var(--color-pl-text-tertiary)' }}>
@@ -289,9 +292,9 @@ function ExplanationDrawer({
                 <div className="px-6 py-3 grid grid-cols-3 gap-2 border-b flex-shrink-0"
                     style={{ borderColor: 'var(--color-pl-border)', background: 'var(--theme-pl-action-ghost)' }}>
                     {[
-                        { label: 'Stundenlohn', value: hrFmt(flag.hourly_rate) },
-                        { label: 'Kohorte Median', value: hrFmt(flag.cohort_median) },
-                        { label: 'Ø Gegengeschlecht', value: flag.opposite_gender_median ? hrFmt(flag.opposite_gender_median) : '—' },
+                        { label: t('hourlyRate'), value: hrFmt(flag.hourly_rate) },
+                        { label: t('cohortMedian'), value: hrFmt(flag.cohort_median) },
+                        { label: t('oppositeGenderMedian'), value: flag.opposite_gender_median ? hrFmt(flag.opposite_gender_median) : '—' },
                     ].map(({ label, value }) => (
                         <div key={label} className="p-2.5 rounded-lg text-center"
                             style={{ background: 'var(--theme-pl-action-ghost)', border: '1px solid var(--color-pl-border)' }}>
@@ -307,7 +310,7 @@ function ExplanationDrawer({
                     <div>
                         <p className="text-xs font-semibold uppercase tracking-wide mb-2"
                             style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                            Begründungskategorien (Mehrfachauswahl möglich)
+                            {te('categoriesTitle')}
                         </p>
 
                         {/* 25% combined cap progress bar — Art. 18 */}
@@ -315,12 +318,12 @@ function ExplanationDrawer({
                             style={{ background: 'var(--theme-pl-action-ghost)', border: `1px solid ${isCapped ? 'rgba(245,158,11,0.4)' : 'var(--theme-pl-action-hover)'}` }}>
                             <div className="flex justify-between items-center mb-1.5">
                                 <span className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                                    Begründungsdeckel (Art. 18 EU-RL)
+                                    {te('capTitle')}
                                 </span>
                                 <span className="text-xs font-bold"
                                     style={{ color: isCapped ? '#f59e0b' : justifiedPctRaw > 20 ? '#f59e0b' : 'var(--color-pl-text-secondary)' }}>
                                     {Math.min(justifiedPctRaw, MAX_JUSTIFIABLE_CAP).toFixed(0)} / {MAX_JUSTIFIABLE_CAP}%
-                                    {isCapped && ' — Begrenzt'}
+                                    {isCapped && ` — ${te('capLimited')}`}
                                 </span>
                             </div>
                             <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--theme-pl-action-hover)' }}>
@@ -332,8 +335,8 @@ function ExplanationDrawer({
                             </div>
                             <p className="text-xs mt-1.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>
                                 {isCapped
-                                    ? `⚠ Gewählte Kategorien ergeben ${justifiedPctRaw}% — auf ${MAX_JUSTIFIABLE_CAP}% begrenzt. Eine höhere Abweichung deutet auf eine falsche Kohorteneinordnung hin.`
-                                    : `Der Gesamtbetrag aller Begründungen ist auf ${MAX_JUSTIFIABLE_CAP}% begrenzt (EU-Richtlinie Art. 18). Verbleibende Lücken über 5% können eine gemeinsame Entgeltprüfung auslösen.`
+                                    ? te('capExceeded', { pct: justifiedPctRaw, cap: MAX_JUSTIFIABLE_CAP })
+                                    : te('capNormal', { cap: MAX_JUSTIFIABLE_CAP })
                                 }
                             </p>
                         </div>
@@ -376,7 +379,7 @@ function ExplanationDrawer({
                                             </div>
                                             <span className="text-xs font-bold ml-2 flex-shrink-0"
                                                 style={{ color: isSelected ? cat.color : 'var(--color-pl-text-tertiary)' }}>
-                                                bis {cat.max_justifiable_pct}%
+                                                {te('upTo', { pct: cat.max_justifiable_pct })}
                                             </span>
                                         </button>
                                         {isSelected && (
@@ -386,14 +389,14 @@ function ExplanationDrawer({
                                                 <div className="mb-3">
                                                     <div className="flex justify-between items-baseline mb-2">
                                                         <span className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                                                            Beanspruchter Betrag
+                                                            {te('claimedAmount')}
                                                         </span>
                                                         <div className="flex items-baseline gap-1">
                                                             <span className="text-base font-bold tabular-nums" style={{ color: cat.color }}>
                                                                 {(claimedPcts[cat.key] ?? 0).toFixed(1)}%
                                                             </span>
                                                             <span className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                                                                / bis {cat.max_justifiable_pct}%
+                                                                / {te('upTo', { pct: cat.max_justifiable_pct })}
                                                             </span>
                                                         </div>
                                                     </div>
@@ -439,13 +442,13 @@ function ExplanationDrawer({
 
                                                 {/* Comment */}
                                                 <p className="text-xs mb-1.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                                                    Kommentar zu „{cat.label}&quot;
+                                                    {t('commentOn', { label: cat.label })}
                                                 </p>
                                                 <textarea
                                                     rows={2}
                                                     value={comments[cat.key] ?? ''}
                                                     onChange={e => setComments(p => ({ ...p, [cat.key]: e.target.value }))}
-                                                    placeholder={`Begründen Sie, warum ${(claimedPcts[cat.key] ?? 0).toFixed(1)}% auf ${cat.label.toLowerCase()} entfallen…`}
+                                                    placeholder={t('commentPlaceholder', { pct: (claimedPcts[cat.key] ?? 0).toFixed(1), label: cat.label.toLowerCase() })}
                                                     className="input-base text-xs resize-none w-full"
                                                 />
                                             </div>
@@ -461,9 +464,9 @@ function ExplanationDrawer({
                         <div className="p-4 rounded-xl space-y-2"
                             style={{ background: 'var(--theme-pl-action-ghost)', border: '1px solid var(--color-pl-border)' }}>
                             <p className="text-xs font-semibold uppercase tracking-wide mb-1"
-                                style={{ color: 'var(--color-pl-text-tertiary)' }}>Lückenberechnung</p>
+                                style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('gapCalculation')}</p>
                             <div className="flex justify-between text-xs">
-                                <span style={{ color: 'var(--color-pl-text-secondary)' }}>Festgestellte Lücke</span>
+                                <span style={{ color: 'var(--color-pl-text-secondary)' }}>{t('identifiedGap')}</span>
                                 <span style={{ color: '#ef4444', fontWeight: 700 }}>{totalGapPct.toFixed(1)}%</span>
                             </div>
                             {[...selected].map(key => {
@@ -471,7 +474,7 @@ function ExplanationDrawer({
                                 const claimed = claimedPcts[key] ?? 0
                                 return (
                                     <div key={key} className="flex justify-between text-xs">
-                                        <span style={{ color: 'var(--color-pl-text-tertiary)' }}>Durch „{cat.label}" beansprucht</span>
+                                        <span style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('claimedBy', { category: cat.label })}</span>
                                         <span style={{ color: cat.color, fontWeight: 600 }}>
                                             −{Math.min(claimed, totalGapPct).toFixed(1)}%
                                         </span>
@@ -480,14 +483,14 @@ function ExplanationDrawer({
                             })}
                             <div className="border-t pt-2 flex justify-between text-xs"
                                 style={{ borderColor: 'var(--color-pl-border)' }}>
-                                <span style={{ color: 'var(--color-pl-text-primary)', fontWeight: 600 }}>Verbleibende Restlücke</span>
+                                <span style={{ color: 'var(--color-pl-text-primary)', fontWeight: 600 }}>{t('remainingResidualGap')}</span>
                                 <span style={{ color: residualPct > 5 ? '#ef4444' : '#34d399', fontWeight: 700 }}>
                                     {residualPct > 0 ? `-${residualPct.toFixed(1)}%` : '0%'}
                                 </span>
                             </div>
                             {residualPct > 5 && (
                                 <p className="text-xs pt-1" style={{ color: '#f59e0b' }}>
-                                    ⚠ Restlücke &gt; 5% — Maßnahmenplan erforderlich (EU Art. 9)
+                                    {t('residualOver5Warning')}
                                 </p>
                             )}
                         </div>
@@ -496,12 +499,12 @@ function ExplanationDrawer({
                     {/* ── Action plan ── */}
                     <div>
                         <p className="text-xs font-semibold uppercase tracking-wide mb-1.5"
-                            style={{ color: 'var(--color-pl-text-tertiary)' }}>Maßnahmenplan</p>
+                            style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('actionPlanTitle')}</p>
                         <p className="text-xs mb-2" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                            Beschreiben Sie konkrete Schritte zur Schließung der Restlücke (Zeitplan, Verantwortliche, Zielwerte).
+                            {t('actionPlanDesc')}
                         </p>
                         <textarea rows={4} value={actionPlan} onChange={e => setActionPlan(e.target.value)}
-                            placeholder="z.B. Gehaltsanpassung um 3% in Q3 2026…"
+                            placeholder={t('actionPlanPlaceholder')}
                             className="input-base text-sm resize-none w-full" />
                     </div>
 
@@ -515,10 +518,10 @@ function ExplanationDrawer({
                     {existing && (
                         <div className="p-3 rounded-lg text-xs"
                             style={{ background: 'rgba(52,211,153,0.06)', border: '1px solid rgba(52,211,153,0.2)' }}>
-                            <p style={{ color: '#34d399', fontWeight: 600 }}>✓ Begründung gespeichert</p>
+                            <p style={{ color: '#34d399', fontWeight: 600 }}>{t('explanationSaved')}</p>
                             <p style={{ color: 'var(--color-pl-text-tertiary)' }}>
                                 {new Date(existing.created_at ?? '').toLocaleDateString('de-DE')}
-                                {' · '}{selected.size} Kategorie(n) · bis {justifiedPct}% erklärbar
+                                {' · '}{t('categoriesCount', { count: selected.size, pct: justifiedPct })}
                             </p>
                         </div>
                     )}
@@ -527,9 +530,9 @@ function ExplanationDrawer({
                 {/* Footer */}
                 <div className="px-6 py-4 border-t flex gap-3 flex-shrink-0"
                     style={{ borderColor: 'var(--color-pl-border)', background: 'var(--theme-pl-action-ghost)' }}>
-                    <button onClick={onClose} className="btn-ghost flex-1 text-sm">Schließen</button>
+                    <button onClick={onClose} className="btn-ghost flex-1 text-sm">{t('closeBtn')}</button>
                     <button onClick={handleSave} disabled={isSaving} className="btn-primary flex-1 text-sm">
-                        {isSaving ? 'Speichern…' : <><Save size={14} /> Begründung speichern</>}
+                        {isSaving ? t('saving') : <><Save size={14} /> {t('saveExplanation')}</>}
                     </button>
                 </div>
             </div>
@@ -550,6 +553,7 @@ export default function EmployeesTab({
     adjustedMedian:       number   // overall.adjusted_median (fraction, e.g. 0.071 = 7.1%)
     wifFactors?:          string[] // from AnalysisPage selectedWif — triggers live recalc
 }) {
+    const t = useTranslations('employees')
     const [search, setSearch]           = useState('')
     const [filterDept, setFilterDept]   = useState('')
     const [filterGrade, setFilterGrade] = useState('')
@@ -679,10 +683,10 @@ export default function EmployeesTab({
             {/* Stats bar */}
             <div className="grid grid-cols-4 gap-3">
                 {[
-                    { label: 'Gesamt',   value: flags.length,      color: 'var(--color-pl-text-secondary)' },
-                    { label: 'Offen',    value: openCount,         color: '#f59e0b' },
-                    { label: 'Erklärt', value: explainedCount,    color: '#34d399' },
-                    { label: 'Ausgeschlossen', value: excludedCount, color: '#f87171' },
+                    { label: t('totalLabel'),   value: flags.length,      color: 'var(--color-pl-text-secondary)' },
+                    { label: t('openLabel'),    value: openCount,         color: '#f59e0b' },
+                    { label: t('explainedLabel'), value: explainedCount,    color: '#34d399' },
+                    { label: t('excludedLabel'), value: excludedCount, color: '#f87171' },
                 ].map(({ label, value, color }) => (
                     <div key={label} className="glass-card p-3 text-center">
                         <p className="text-xl font-bold" style={{ color }}>{value}</p>
@@ -691,7 +695,7 @@ export default function EmployeesTab({
                 ))}
             </div>
 
-            {/* ── Bereinigter Gender Pay Gap nach Begründungen ── */}
+            {/* ── {t('adjustedGapAfterExplanations')} ── */}
             {existingExplanations.length > 0 && (() => {
                 type CatEntry = { claimed_pct?: number }
                 const explMap = new Map(existingExplanations.map(e => [
@@ -727,25 +731,25 @@ export default function EmployeesTab({
                         <div className="flex items-start justify-between gap-4">
                             <div className="flex-1">
                                 <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'rgba(52,211,153,0.75)' }}>
-                                    Bereinigter Gender Pay Gap nach Begründungen
+                                    {t('adjustedGapAfterExplanations')}
                                 </p>
                                 <div className="flex gap-6 text-xs">
                                     <div>
-                                        <p style={{ color: 'var(--color-pl-text-tertiary)' }}>Begründet</p>
+                                        <p style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('justified')}</p>
                                         <p className="font-semibold mt-0.5" style={{ color: 'var(--color-pl-text-primary)' }}>
                                             {existingExplanations.length} / {flaggedNonOk.length}
                                         </p>
                                     </div>
                                     <div>
-                                        <p style={{ color: 'var(--color-pl-text-tertiary)' }}>Erklärt</p>
+                                        <p style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('explained')}</p>
                                         <p className="font-semibold mt-0.5" style={{ color: 'var(--color-pl-text-primary)' }}>{erklaertCount}</p>
                                     </div>
                                     <div>
-                                        <p style={{ color: 'var(--color-pl-text-tertiary)' }}>Vollständig erklärt (&lt;5%)</p>
+                                        <p style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('fullyExplainedLabel')}</p>
                                         <p className="font-semibold mt-0.5" style={{ color: '#34d399' }}>{fullyExplained}</p>
                                     </div>
                                     <div>
-                                        <p style={{ color: 'var(--color-pl-text-tertiary)' }}>Noch offen</p>
+                                        <p style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('stillOpen')}</p>
                                         <p className="font-semibold mt-0.5" style={{ color: flaggedNonOk.length - fullyExplained > 0 ? '#f59e0b' : '#34d399' }}>
                                             {flaggedNonOk.length - fullyExplained}
                                         </p>
@@ -753,7 +757,7 @@ export default function EmployeesTab({
                                 </div>
                             </div>
                             <div className="text-right flex-shrink-0">
-                                <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>Median Restlücke</p>
+                                <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('medianResidualGap')}</p>
                                 <p className="text-2xl font-bold" style={{ color: residualColor }}>
                                     {residualAdjusted > 0 ? `-${residualAdjusted.toFixed(1)}%` : '0%'}
                                 </p>
@@ -769,34 +773,34 @@ export default function EmployeesTab({
                     <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
                         style={{ color: 'var(--color-pl-text-tertiary)' }} />
                     <input type="text" value={search} onChange={e => setSearch(e.target.value)}
-                        placeholder="Suchen…" className="input-base text-xs py-1.5 w-full"
+                        placeholder={t('searchPlaceholder')} className="input-base text-xs py-1.5 w-full"
                         style={{ paddingLeft: '2rem' }} />
                 </div>
                 <select value={filterDept} onChange={e => setFilterDept(e.target.value)}
                     className="input-base text-xs py-1.5">
-                    <option value="">Alle Abteilungen</option>
+                    <option value="">{t('allDepartments')}</option>
                     {departments.map(d => <option key={d} value={d}>{d}</option>)}
                 </select>
                 <select value={filterGrade} onChange={e => setFilterGrade(e.target.value)}
                     className="input-base text-xs py-1.5">
-                    <option value="">Alle Gruppen</option>
+                    <option value="">{t('allGrades')}</option>
                     {grades.map(g => <option key={g} value={g}>{g}</option>)}
                 </select>
                 <select value={filterSeverity} onChange={e => setFilterSeverity(e.target.value)}
                     className="input-base text-xs py-1.5">
-                    <option value="">Alle Schweregrade</option>
-                    <option value="high">Kritisch (Unterverg. ≥25%)</option>
-                    <option value="medium">Nicht konform (Unterverg. 5–25%)</option>
-                    <option value="overpaid">Lohnvorteil (≥+5%)</option>
-                    <option value="ok">Konform</option>
+                    <option value="">{t('allSeverities')}</option>
+                    <option value="high">{t('severityHighFilter')}</option>
+                    <option value="medium">{t('severityMediumFilter')}</option>
+                    <option value="overpaid">{t('severityOverpaidFilter')}</option>
+                    <option value="ok">{t('severityOkFilter')}</option>
                 </select>
                 <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
                     className="input-base text-xs py-1.5">
-                    <option value="">Alle Status</option>
-                    <option value="open">Offen</option>
-                    <option value="in_review">In Bearbeitung</option>
-                    <option value="explained">Erklärt</option>
-                    <option value="konform">Konform</option>
+                    <option value="">{t('allStatuses')}</option>
+                    <option value="open">{t('statusOpenFilter')}</option>
+                    <option value="in_review">{t('statusInReviewFilter')}</option>
+                    <option value="explained">{t('statusExplainedFilter')}</option>
+                    <option value="konform">{t('statusKonformFilter')}</option>
                 </select>
                 {hasNames && (
                     <button onClick={() => setShowNames(v => !v)}
@@ -807,11 +811,11 @@ export default function EmployeesTab({
                             color: showNames ? '#818cf8' : 'var(--color-pl-text-tertiary)',
                         }}>
                         {showNames ? <Eye size={12} /> : <EyeOff size={12} />}
-                        {showNames ? 'Namen sichtbar' : 'Anonym'}
+                        {showNames ? t('namesVisible') : t('anonymous')}
                     </button>
                 )}
                 <span className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                    {filtered.length} von {flags.length}
+                    {t('ofTotal', { filtered: filtered.length, total: flags.length })}
                 </span>
             </div>
 
@@ -825,31 +829,31 @@ export default function EmployeesTab({
                         color: 'var(--color-pl-text-tertiary)',
                         gridTemplateColumns: '1.1fr 0.75fr 0.9fr 1fr 1fr 1fr 1fr 1.3fr 1.1fr 1fr 0.8fr 0.2fr',
                     }}>
-                    <div>Mitarbeitende</div>
-                    <div>Bereich / Gruppe</div>
-                    <div className="text-right">Grundgehalt</div>
-                    <div className="text-right">Var. Verg.</div>
+                    <div>{t('colEmployee')}</div>
+                    <div>{t('colDeptGrade')}</div>
+                    <div className="text-right">{t('colBaseSalary')}</div>
+                    <div className="text-right">{t('colVariablePay')}</div>
                     <div className="text-right">
-                        <TooltipHeader label="Andere Verg.">
-                            <p className="font-semibold text-xs mb-1.5" style={{ color: 'var(--color-pl-text-primary)' }}>Andere Verg. (p.a.)</p>
-                            <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>Summe aus:</p>
-                            <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>· Überstundenvergütung</p>
-                            <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>· Sachbezüge / Benefits in Kind</p>
-                            <p className="text-xs mt-2" style={{ color: 'var(--color-pl-text-tertiary)' }}>Nicht im Stundenlohn enthalten, sofern nicht angegeben.</p>
+                        <TooltipHeader label={t('colOtherPay')}>
+                            <p className="font-semibold text-xs mb-1.5" style={{ color: 'var(--color-pl-text-primary)' }}>{t('colOtherPayTooltipTitle')}</p>
+                            <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('colOtherPayTooltipDesc')}</p>
+                            <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('colOtherPayOvertime')}</p>
+                            <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('colOtherPayBenefits')}</p>
+                            <p className="text-xs mt-2" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('colOtherPayNote')}</p>
                         </TooltipHeader>
                     </div>
-                    <div className="text-right">Std.-Lohn</div>
-                    <div className="text-right">Kohorte</div>
-                    <div className="text-right">Lücke</div>
-                    <div className="text-center">Schwere</div>
-                    <div className="text-center">Nach Erkl.</div>
-                    <div className="text-center">Status</div>
+                    <div className="text-right">{t('colHourlyRate')}</div>
+                    <div className="text-right">{t('colCohort')}</div>
+                    <div className="text-right">{t('colGap')}</div>
+                    <div className="text-center">{t('colSeverity')}</div>
+                    <div className="text-center">{t('colAfterExplanation')}</div>
+                    <div className="text-center">{t('colStatus')}</div>
                     <div></div>
                 </div>
 
                 {filtered.length === 0 && (
                     <div className="px-4 py-10 text-center text-sm" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                        Keine Einträge gefunden.
+                        {t('noEntries')}
                     </div>
                 )}
 
@@ -904,7 +908,7 @@ export default function EmployeesTab({
                                             <p className="text-xs font-medium" style={{ color: 'var(--color-pl-text-secondary)' }}>
                                                 {numFmt(annual)}
                                             </p>
-                                            <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>p.a.</p>
+                                            <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('perAnnum')}</p>
                                         </>
                                     )
                                 })()}
@@ -975,7 +979,7 @@ export default function EmployeesTab({
                                 {f.severity !== 'ok' ? (
                                     <span className="text-xs px-2 py-0.5 rounded-full font-medium"
                                         style={{ background: sc.bg, border: `1px solid ${sc.border}`, color: sc.dot }}>
-                                        {sc.label}
+                                        {t(sc.labelKey)}
                                     </span>
                                 ) : (
                                     <span className="text-xs" style={{ color: '#34d399' }}>✓</span>
@@ -994,7 +998,7 @@ export default function EmployeesTab({
                                         <div className="text-center">
                                             <p className="text-xs font-bold" style={{ color: col }}>
                                             {residual > 0 ? `-${residual.toFixed(1)}%` : '0%'}</p>
-                                            <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>Restlücke</p>
+                                            <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('residualGap')}</p>
                                         </div>
                                     )
                                 })() : (
@@ -1005,7 +1009,7 @@ export default function EmployeesTab({
                             {/* Status */}
                             <div className="flex justify-center items-center gap-1" style={{ color: stCfg.color }}>
                                 {stCfg.icon}
-                                <span className="text-xs hidden xl:inline">{stCfg.label}</span>
+                                <span className="text-xs hidden xl:inline">{t(stCfg.labelKey)}</span>
                             </div>
 
                             {/* Arrow */}

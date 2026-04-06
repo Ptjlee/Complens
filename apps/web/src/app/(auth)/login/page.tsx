@@ -6,10 +6,12 @@ import { login } from '../actions'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { Logo } from '@/components/ui/Logo'
 import { useSearchParams } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 
 function LoginForm() {
     const searchParams = useSearchParams()
     const urlError = searchParams.get('error')
+    const t = useTranslations('auth')
 
     const [showPassword, setShowPassword] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -17,9 +19,9 @@ function LoginForm() {
 
     useEffect(() => {
         if (urlError === 'auth_callback_failed') {
-            setError('Der Verifizierungslink ist ungültig oder abgelaufen. Möglicherweise wurde Ihre E-Mail bereits bestätigt. Bitte versuchen Sie, sich anzumelden.')
+            setError(t('authCallbackFailed'))
         }
-    }, [urlError])
+    }, [urlError, t])
 
     async function handleSubmit(formData: FormData) {
         setLoading(true)
@@ -41,10 +43,10 @@ function LoginForm() {
 
             <div className="mb-8">
                 <h1 className="text-2xl font-bold mb-1.5" style={{ color: 'var(--color-pl-text-primary)' }}>
-                    Willkommen zurück
+                    {t('welcomeBack')}
                 </h1>
                 <p className="text-sm" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                    Melden Sie sich an, um Ihre Entgeltanalysen zu öffnen.
+                    {t('loginSubtitle')}
                 </p>
             </div>
 
@@ -70,7 +72,7 @@ function LoginForm() {
                         className="block text-sm font-medium mb-1.5"
                         style={{ color: 'var(--color-pl-text-secondary)' }}
                     >
-                        E-Mail-Adresse
+                        {t('email')}
                     </label>
                     <input
                         id="email"
@@ -78,7 +80,7 @@ function LoginForm() {
                         type="email"
                         autoComplete="email"
                         required
-                        placeholder="name@unternehmen.de"
+                        placeholder={t('emailPlaceholder')}
                         className="input-base"
                     />
                 </div>
@@ -91,14 +93,14 @@ function LoginForm() {
                             className="text-sm font-medium"
                             style={{ color: 'var(--color-pl-text-secondary)' }}
                         >
-                            Passwort
+                            {t('password')}
                         </label>
                         <Link
                             href="/forgot-password"
                             className="text-xs font-medium hover:underline"
                             style={{ color: 'var(--color-pl-brand-light)' }}
                         >
-                            Passwort vergessen?
+                            {t('forgotPassword')}
                         </Link>
                     </div>
                     <div className="relative">
@@ -108,7 +110,7 @@ function LoginForm() {
                             type={showPassword ? 'text' : 'password'}
                             autoComplete="current-password"
                             required
-                            placeholder="••••••••"
+                            placeholder={t('passwordPlaceholder')}
                             className="input-base pr-10"
                         />
                         <button
@@ -131,9 +133,9 @@ function LoginForm() {
                     style={{ opacity: loading ? 0.7 : 1 }}
                 >
                     {loading ? (
-                        <><Loader2 size={15} className="animate-spin" /> Wird angemeldet…</>
+                        <><Loader2 size={15} className="animate-spin" /> {t('loggingIn')}</>
                     ) : (
-                        'Anmelden'
+                        t('login')
                     )}
                 </button>
             </form>
@@ -141,33 +143,34 @@ function LoginForm() {
             {/* Divider */}
             <div className="flex items-center gap-3 my-6">
                 <div className="flex-1 h-px" style={{ background: 'var(--color-pl-border)' }} />
-                <span className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>oder</span>
+                <span className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('or')}</span>
                 <div className="flex-1 h-px" style={{ background: 'var(--color-pl-border)' }} />
             </div>
 
             {/* Signup link */}
             <p className="text-center text-sm" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                Noch kein Konto?{' '}
+                {t('noAccount')}{' '}
                 <Link
                     href="/signup"
                     className="font-semibold hover:underline"
                     style={{ color: 'var(--color-pl-brand-light)' }}
                 >
-                    7 Tage kostenlos testen
+                    {t('freeTrial')}
                 </Link>
             </p>
 
             {/* GDPR trust note */}
             <p className="text-center text-xs mt-6" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                Ihre Daten werden ausschließlich auf EU-Servern in Frankfurt gespeichert.
+                {t('gdprNote')}
             </p>
         </div>
     )
 }
 
 export default function LoginPage() {
+    const t = useTranslations('auth')
     return (
-        <Suspense fallback={<div>Laden...</div>}>
+        <Suspense fallback={<div>{t('loading')}</div>}>
             <LoginForm />
         </Suspense>
     )

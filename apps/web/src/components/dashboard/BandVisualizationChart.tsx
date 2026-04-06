@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Info } from 'lucide-react'
+import { useTranslations, useLocale } from 'next-intl'
 import type { BandGradeSummary } from '@/lib/band/getBandContext'
 
 // ============================================================
@@ -27,22 +28,20 @@ function Tip({ text }: { text: string }) {
 }
 
 // ============================================================
-// Currency formatter
-// ============================================================
-const eur = (v: number | null) =>
-    v == null ? '—' : v.toLocaleString('de-DE', { maximumFractionDigits: 0 }) + ' €'
-
-// ============================================================
 // Single grade band row — horizontal box plot
 // ============================================================
 function GradeBandRow({
     grade,
     mode,
     globalMax,
+    eur,
+    t,
 }: {
     grade: BandGradeSummary
     mode: 'base' | 'total'
     globalMax: number
+    eur: (v: number | null) => string
+    t: ReturnType<typeof useTranslations>
 }) {
     const min    = mode === 'base' ? grade.internal_min_base    : grade.internal_min_total
     const max    = mode === 'base' ? grade.internal_max_base    : grade.internal_max_total
@@ -77,7 +76,7 @@ function GradeBandRow({
         return (
             <div className="flex items-center gap-3 py-3 border-b" style={{ borderColor: 'var(--color-pl-border)' }}>
                 <span className="text-xs font-bold w-10 flex-shrink-0" style={{ color: 'var(--color-pl-text-primary)' }}>{grade.job_grade}</span>
-                <span className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>Keine Mitarbeiterdaten für diese Gruppe</span>
+                <span className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('noEmployeeDataForGrade')}</span>
             </div>
         )
     }
@@ -107,7 +106,7 @@ function GradeBandRow({
                     {grade.job_grade}
                 </span>
                 {grade.internal_n != null && (
-                    <span className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>{grade.internal_n} MA</span>
+                    <span className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>{grade.internal_n} {t('employeesShort')}</span>
                 )}
                 {gapPct != null && (
                     <span className="text-xs font-semibold ml-auto" style={{ color: gapColor }}>
@@ -123,7 +122,7 @@ function GradeBandRow({
                 {sMktP25 != null && sMktP75 != null && (
                     <div
                         className="absolute h-full rounded"
-                        title={`Marktdaten: P25 ${eur(mktP25)} – P75 ${eur(mktP75)} (${grade.market_source ?? ''})`}
+                        title={t('marketDataTitle', { p25: eur(mktP25), p75: eur(mktP75), source: grade.market_source ?? '' })}
                         style={{
                             left:       `${sMktP25}%`,
                             width:      `${sMktP75 - sMktP25}%`,
@@ -138,7 +137,7 @@ function GradeBandRow({
                 {sTMin != null && sTMax != null && sTMin < sTMax && (
                     <div
                         className="absolute h-full"
-                        title={`Zielband: ${eur(targetMin)} – ${eur(targetMax)}`}
+                        title={t('targetBandTitle', { min: eur(targetMin), max: eur(targetMax) })}
                         style={{
                             left:   `${sTMin}%`,
                             width:  `${sTMax - sTMin}%`,
@@ -203,7 +202,7 @@ function GradeBandRow({
                 {sFMed != null && (
                     <div
                         className="absolute"
-                        title={`♀ Median: ${eur(fMed)} (${grade.internal_female_count ?? 0} Frauen)`}
+                        title={t('femaleMedTitle', { value: eur(fMed), count: grade.internal_female_count ?? 0 })}
                         style={{
                             top:       '50%',
                             left:      `${sFMed}%`,
@@ -219,7 +218,7 @@ function GradeBandRow({
                 {sMeMed != null && (
                     <div
                         className="absolute rounded-full"
-                        title={`♂ Median: ${eur(mMed)} (${grade.internal_male_count ?? 0} Männer)`}
+                        title={t('maleMedTitle', { value: eur(mMed), count: grade.internal_male_count ?? 0 })}
                         style={{
                             top:       '50%',
                             left:      `${sMeMed}%`,
@@ -238,7 +237,7 @@ function GradeBandRow({
                     {eur(min)}
                 </span>
                 <span className="text-xs font-medium" style={{ color: 'var(--color-pl-text-secondary)', fontSize: 10 }}>
-                    Median {eur(median)}
+                    {t('medianLabel', { value: eur(median) })}
                 </span>
                 <span className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)', fontSize: 10 }}>
                     {eur(max)}
@@ -261,6 +260,11 @@ export default function BandVisualizationChart({
     compact?: boolean
 }) {
     const [mode, setMode] = useState<BandVisualizationMode>('base')
+    const t = useTranslations('salaryBands')
+    const locale = useLocale()
+
+    const eur = (v: number | null) =>
+        v == null ? '—' : v.toLocaleString(locale, { maximumFractionDigits: 0 }) + ' €'
 
     const visGrades = grades.filter(g => g.internal_n != null && g.internal_n > 0 || g.internal_min_base != null)
 
@@ -279,7 +283,7 @@ export default function BandVisualizationChart({
     if (visGrades.length === 0) {
         return (
             <p className="text-sm text-center py-6" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                Keine Mitarbeiterdaten für die Bandvisualisierung vorhanden.
+                {t('noEmployeeDataForVis')}
             </p>
         )
     }
@@ -296,7 +300,7 @@ export default function BandVisualizationChart({
                             color:      mode === m ? 'var(--color-pl-brand-light)' : 'var(--color-pl-text-tertiary)',
                             fontWeight: mode === m ? 600 : 400,
                         }}>
-                            {m === 'base' ? 'Grundgehalt' : 'Gesamtvergütung'}
+                            {m === 'base' ? t('baseSalary') : t('totalCompensation')}
                         </button>
                     ))}
                 </div>
@@ -306,37 +310,37 @@ export default function BandVisualizationChart({
                     <span className="flex items-center gap-1">
                         <span style={{ display: 'inline-block', width: 24, height: 6, background: 'var(--color-pl-brand)', opacity: 0.55, borderRadius: 2 }} />
                         IQR (P25–P75)
-                        <Tip text="Interquartilbereich: 50% der Mitarbeitenden liegen innerhalb dieser Zone. Berechnet aus importierten Mitarbeiterdaten." />
+                        <Tip text={t('iqrTip')} />
                     </span>
                     <span className="flex items-center gap-1">
                         <span style={{ display: 'inline-block', width: 2, height: 14, background: 'var(--color-pl-brand)' }} />
                         Median
-                        <Tip text="Zentralwert (50. Perzentil). EU Art. 9 Referenzgröße für Entgeltberichterstattung." />
+                        <Tip text={t('medianTip')} />
                     </span>
                     {hasFemale && <>
                         <span className="flex items-center gap-1">
                             <span style={{ display: 'inline-block', width: 8, height: 8, background: 'var(--color-pl-accent)', transform: 'rotate(45deg)' }} />
                             ♀ Median
-                            <Tip text="Medianeinkommen aller Frauen in dieser Gruppe (Grundgehalt, brutto/jährlich)." />
+                            <Tip text={t('femaleMedTip')} />
                         </span>
                         <span className="flex items-center gap-1">
                             <span style={{ display: 'inline-block', width: 8, height: 8, background: 'var(--color-pl-brand-light)', borderRadius: '50%' }} />
                             ♂ Median
-                            <Tip text="Medianeinkommen aller Männer in dieser Gruppe (Grundgehalt, brutto/jährlich)." />
+                            <Tip text={t('maleMedTip')} />
                         </span>
                     </>}
                     {hasTarget && (
                         <span className="flex items-center gap-1">
                             <span style={{ display: 'inline-block', width: 20, height: 10, border: '2px dashed rgba(99,102,241,0.55)', borderRadius: 2 }} />
-                            Zielband
-                            <Tip text="Manuell gepflegter Gehaltsrahmen (Min–Max). Wird für Compa-Ratio-Berechnung und EU Art. 5 Auskunftsrecht verwendet." />
+                            {t('targetBandLabel')}
+                            <Tip text={t('targetBandTip')} />
                         </span>
                     )}
                     {hasMarket && (
                         <span className="flex items-center gap-1">
                             <span style={{ display: 'inline-block', width: 20, height: 10, background: 'rgba(148,163,184,0.25)', border: '1px dashed rgba(148,163,184,0.5)', borderRadius: 2 }} />
-                            Markt P25–P75
-                            <Tip text="Externer Marktbenchmark (P25–P75). Quelle und Referenzjahr manuell eingetragen. Nicht aus Mitarbeiterdaten berechnet." />
+                            {t('marketP25P75Label')}
+                            <Tip text={t('marketP25P75Tip')} />
                         </span>
                     )}
                 </div>
@@ -350,14 +354,15 @@ export default function BandVisualizationChart({
                         grade={g}
                         mode={mode}
                         globalMax={globalMax}
+                        eur={eur}
+                        t={t}
                     />
                 ))}
             </div>
 
             {!compact && (
                 <p className="text-xs mt-3" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                    Alle Gehaltswerte in EUR (Brutto, jährlich). Gruppen mit weniger als 5 Mitarbeitenden werden nicht angezeigt.
-                    Datenquelle: importierte Mitarbeiterdaten.
+                    {t('footerDisclaimer')}
                 </p>
             )}
         </div>

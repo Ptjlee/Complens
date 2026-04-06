@@ -71,7 +71,7 @@ export const PLAN_META: Record<PlanId, {
     },
 }
 
-export const FEATURE_LABELS: Record<Feature, string> = {
+const FEATURE_LABELS_DE: Record<Feature, string> = {
     pdf_export:           'PDF-Export',
     ppt_export:           'PowerPoint-Export',
     ai_import:            'Automatische Spaltenerkennung',
@@ -80,6 +80,24 @@ export const FEATURE_LABELS: Record<Feature, string> = {
     unlimited_employees:  'Unbegrenzte Mitarbeitende',
     multi_user:           'Mehrere Nutzer',
 }
+
+const FEATURE_LABELS_EN: Record<Feature, string> = {
+    pdf_export:           'PDF Export',
+    ppt_export:           'PowerPoint Export',
+    ai_import:            'Automatic Column Detection',
+    ai_explanations:      'Individual Pay Analysis',
+    ai_narrative:         'Report Generator',
+    unlimited_employees:  'Unlimited Employees',
+    multi_user:           'Multiple Users',
+}
+
+/** Returns feature labels for the given locale. Falls back to German. */
+export function getFeatureLabels(locale: string): Record<Feature, string> {
+    return locale === 'en' ? FEATURE_LABELS_EN : FEATURE_LABELS_DE
+}
+
+/** @deprecated Use getFeatureLabels(locale) instead. Kept for backward-compat during migration. */
+export const FEATURE_LABELS: Record<Feature, string> = FEATURE_LABELS_DE
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

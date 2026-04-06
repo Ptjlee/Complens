@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslations } from 'next-intl'
 import {
     Sparkles, Loader2, ChevronDown, ChevronRight,
     CheckCircle2, Clock, XCircle, Wrench,
@@ -18,46 +19,64 @@ import type { RemediationPlan, ActionType, PlanStatus, PlanHorizon, PlanStep, Em
 import type { IndividualFlag, AnalysisResult } from '@/lib/calculations/types'
 
 // ============================================================
-// Constants
+// Constants (non-translatable)
 // ============================================================
 
 const SEVERITY_ORDER: Record<string, number> = { high: 0, medium: 1, low: 2, overpaid: 3 }
 
-const SEVERITY_META: Record<string, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
-    high:    { label: 'Kritisch',      color: '#ef4444', bg: 'rgba(239,68,68,0.1)',    icon: <AlertTriangle size={13} /> },
-    medium:  { label: 'Nicht konform', color: '#f97316', bg: 'rgba(249,115,22,0.1)',   icon: <Eye size={13} /> },
-    low:     { label: 'Nicht konform', color: '#f97316', bg: 'rgba(249,115,22,0.08)',  icon: <Eye size={13} /> },
-    overpaid:{ label: 'Lohnvorteil',   color: '#8b5cf6', bg: 'rgba(139,92,246,0.1)',   icon: <TrendingDown size={13} /> },
+const SEVERITY_STYLES: Record<string, { color: string; bg: string; icon: React.ReactNode }> = {
+    high:    { color: '#ef4444', bg: 'rgba(239,68,68,0.1)',    icon: <AlertTriangle size={13} /> },
+    medium:  { color: '#f97316', bg: 'rgba(249,115,22,0.1)',   icon: <Eye size={13} /> },
+    low:     { color: '#f97316', bg: 'rgba(249,115,22,0.08)',  icon: <Eye size={13} /> },
+    overpaid:{ color: '#8b5cf6', bg: 'rgba(139,92,246,0.1)',   icon: <TrendingDown size={13} /> },
 }
 
-const ACTION_TYPES: { value: ActionType; label: string }[] = [
-    { value: 'salary_increase',      label: 'Gehaltsanpassung (Basis + Variable)' },
-    { value: 'job_reclassification', label: 'Neueinstufung' },
-    { value: 'promotion',            label: 'Beförderung' },
-    { value: 'review',               label: 'Manuelle Prüfung' },
-    // 'bonus_adjustment' intentionally omitted — legacy type, still rendered for existing steps
-]
-
-const STATUS_META: Record<PlanStatus, { label: string; icon: React.ReactNode; color: string }> = {
-    open:        { label: 'Offen',         icon: <Clock size={12} />,         color: '#64748b' },
-    in_progress: { label: 'In Bearbeitung',icon: <Loader2 size={12} />,       color: 'var(--color-pl-brand)' },
-    completed:   { label: 'Abgeschlossen', icon: <CheckCircle2 size={12} />,  color: '#22c55e' },
-    dismissed:   { label: 'Abgelehnt',     icon: <XCircle size={12} />,       color: '#6b7280' },
+const STATUS_ICONS: Record<PlanStatus, { icon: React.ReactNode; color: string }> = {
+    open:        { icon: <Clock size={12} />,         color: '#64748b' },
+    in_progress: { icon: <Loader2 size={12} />,       color: 'var(--color-pl-brand)' },
+    completed:   { icon: <CheckCircle2 size={12} />,  color: '#22c55e' },
+    dismissed:   { icon: <XCircle size={12} />,       color: '#6b7280' },
 }
 
-const DEADLINES: { value: PlanHorizon; label: string }[] = [
-    { value: '6m',   label: 'Kurzfristig · 6 Monate' },
-    { value: '1y',   label: 'Mittelfristig · 1 Jahr' },
-    { value: '1.5y', label: 'Mittelfristig · 18 Monate' },
-    { value: '2-3y', label: 'Langfristig · 2–3 Jahre' },
-]
+// ============================================================
+// Hook: translated labels for remediation constants
+// ============================================================
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const HORIZON_LABELS: Record<PlanHorizon, string> = {
-    '6m':   'Kurzfristig · 6 Monate',
-    '1y':   'Mittelfristig · 1 Jahr',
-    '1.5y': 'Mittelfristig · 18 Monate',
-    '2-3y': 'Langfristig · 2–3 Jahre',
+function useRemediationLabels() {
+    const t = useTranslations('remediationPage')
+    return {
+        severityMeta: {
+            high:    { label: t('severityHigh'),         ...SEVERITY_STYLES.high },
+            medium:  { label: t('severityNonCompliant'), ...SEVERITY_STYLES.medium },
+            low:     { label: t('severityNonCompliant'), ...SEVERITY_STYLES.low },
+            overpaid:{ label: t('severityOverpaid'),     ...SEVERITY_STYLES.overpaid },
+        } as Record<string, { label: string; color: string; bg: string; icon: React.ReactNode }>,
+        actionTypes: [
+            { value: 'salary_increase'      as ActionType, label: t('actionSalaryIncrease') },
+            { value: 'job_reclassification' as ActionType, label: t('actionReclassification') },
+            { value: 'promotion'            as ActionType, label: t('actionPromotion') },
+            { value: 'review'               as ActionType, label: t('actionReview') },
+            // 'bonus_adjustment' intentionally omitted — legacy type, still rendered for existing steps
+        ],
+        statusMeta: {
+            open:        { label: t('statusOpen'),       ...STATUS_ICONS.open },
+            in_progress: { label: t('statusInProgress'), ...STATUS_ICONS.in_progress },
+            completed:   { label: t('statusCompleted'),  ...STATUS_ICONS.completed },
+            dismissed:   { label: t('statusDismissed'),  ...STATUS_ICONS.dismissed },
+        } as Record<PlanStatus, { label: string; icon: React.ReactNode; color: string }>,
+        deadlines: [
+            { value: '6m'   as PlanHorizon, label: t('deadlineShort') },
+            { value: '1y'   as PlanHorizon, label: t('deadlineMedium1y') },
+            { value: '1.5y' as PlanHorizon, label: t('deadlineMedium18m') },
+            { value: '2-3y' as PlanHorizon, label: t('deadlineLong') },
+        ],
+        horizonLabels: {
+            '6m':   t('deadlineShort'),
+            '1y':   t('deadlineMedium1y'),
+            '1.5y': t('deadlineMedium18m'),
+            '2-3y': t('deadlineLong'),
+        } as Record<PlanHorizon, string>,
+    }
 }
 
 const HORIZON_COLORS: Record<PlanHorizon, string> = {
@@ -234,22 +253,27 @@ function StatCard({ label, value, color }: { label: string; value: number; color
 
 // ─── Budget Simulation Panel ─────────────────────────────────
 
-const HORIZON_BUCKETS: { key: PlanHorizon; label: string; shortLabel: string; color: string }[] = [
-    { key: '6m',   label: 'Kurzfristig (6 Mon.)',     shortLabel: '6 Mon.',     color: '#34d399' },
-    { key: '1y',   label: 'Mittelfristig (1 Jahr)',   shortLabel: '1 Jahr',     color: '#60a5fa' },
-    { key: '1.5y', label: 'Mittelfristig (18 Mon.)',  shortLabel: '18 Mon.',    color: '#f59e0b' },
-    { key: '2-3y', label: 'Langfristig (2–3 Jahre)',  shortLabel: '2–3 Jahre',  color: '#a78bfa' },
-]
+const HORIZON_BUCKET_COLORS: Record<PlanHorizon, string> = {
+    '6m': '#34d399', '1y': '#60a5fa', '1.5y': '#f59e0b', '2-3y': '#a78bfa',
+}
 
 function BudgetSimPanel({
     allFlags,
     plans,
     planIndex,
+    t,
 }: {
     allFlags: IndividualFlag[]
     plans: RemediationPlan[]
     planIndex: Map<string, RemediationPlan>
+    t: ReturnType<typeof useTranslations<'remediationPage'>>
 }) {
+    const horizonBuckets: { key: PlanHorizon; label: string; shortLabel: string; color: string }[] = [
+        { key: '6m',   label: t('horizonShort6m'),     shortLabel: t('shortLabel6m'),     color: '#34d399' },
+        { key: '1y',   label: t('horizonMedium1y'),    shortLabel: t('shortLabel1y'),     color: '#60a5fa' },
+        { key: '1.5y', label: t('horizonMedium18m'),   shortLabel: t('shortLabel18m'),    color: '#f59e0b' },
+        { key: '2-3y', label: t('horizonLong2to3y'),   shortLabel: t('shortLabel2to3y'),  color: '#a78bfa' },
+    ]
     // ── 1. Payroll baseline from raw import fields ──────────────
     const totalPayroll = allFlags.reduce((sum, f) => sum + calcAnnualTotal(f), 0)
 
@@ -315,10 +339,10 @@ function BudgetSimPanel({
             {/* Panel header */}
             <div className="flex items-center gap-2 px-5 py-3 border-b" style={{ borderColor: 'rgba(99,102,241,0.15)' }}>
                 <span className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--color-pl-accent)' }}>
-                    💶 Budget-Simulation
+                    💶 {t('budgetSimulation')}
                 </span>
                 <span className="text-xs ml-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                    · Hochrechnung auf Basis {plannedEmployees} Maßnahmenplan{plannedEmployees !== 1 ? 'e' : ''} (Echtzeit)
+                    {t('budgetProjection', { count: plannedEmployees })}
                 </span>
             </div>
 
@@ -326,34 +350,34 @@ function BudgetSimPanel({
 
                 {/* Status Quo */}
                 <div className="px-5 py-4">
-                    <p className="text-xs mb-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>Gesamtlohnkosten (Ist)</p>
+                    <p className="text-xs mb-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('totalPayrollCurrent')}</p>
                     <p className="text-xl font-bold" style={{ color: 'var(--color-pl-text-primary)' }}>{eur(totalPayroll)}</p>
-                    <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>{allFlags.length} Mitarbeitende · Jahresbasis</p>
+                    <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('employeesAnnualBasis', { count: allFlags.length })}</p>
                 </div>
 
                 {/* Measure cost */}
                 <div className="px-5 py-4">
-                    <p className="text-xs mb-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>Kosten aller Maßnahmen</p>
+                    <p className="text-xs mb-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('totalMeasureCost')}</p>
                     <p className="text-xl font-bold" style={{ color: totalMeasureCost > 0 ? '#f59e0b' : '#64748b' }}>
                         {totalMeasureCost > 0 ? '+' : ''}{eur(totalMeasureCost)}
                     </p>
                     <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                        {impactPct > 0 ? `+${impactPct.toFixed(2)}% der Gesamtlohnkosten` : 'Noch keine Zielgehälter gesetzt'}
+                        {impactPct > 0 ? t('pctOfPayroll', { pct: impactPct.toFixed(2) }) : t('noTargetSalariesSet')}
                     </p>
                 </div>
 
                 {/* After-measure total */}
                 <div className="px-5 py-4">
-                    <p className="text-xs mb-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>Lohnkosten nach Maßnahmen</p>
+                    <p className="text-xs mb-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('payrollAfterMeasures')}</p>
                     <p className="text-xl font-bold" style={{ color: '#34d399' }}>{eur(afterPayroll)}</p>
-                    <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>Bei vollständiger Umsetzung</p>
+                    <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('ifFullyImplemented')}</p>
                 </div>
 
                 {/* Timeline breakdown */}
                 <div className="px-5 py-4">
-                    <p className="text-xs mb-2" style={{ color: 'var(--color-pl-text-tertiary)' }}>Kosten nach Zeithorizont</p>
+                    <p className="text-xs mb-2" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('costByHorizon')}</p>
                     <div className="space-y-1.5">
-                        {HORIZON_BUCKETS.map(b => (
+                        {horizonBuckets.map(b => (
                             <div key={b.key} className="flex items-center justify-between gap-2">
                                 <span className="flex items-center gap-1.5">
                                     <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: b.color }} />
@@ -372,7 +396,7 @@ function BudgetSimPanel({
             {impactPct > 0 && (
                 <div className="px-5 py-3 border-t" style={{ borderColor: 'rgba(99,102,241,0.12)' }}>
                     <div className="flex items-center gap-3">
-                        <span className="text-xs flex-shrink-0" style={{ color: 'var(--color-pl-text-tertiary)' }}>Maßnahmen-Impact</span>
+                        <span className="text-xs flex-shrink-0" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('measureImpact')}</span>
                         <div className="flex-1 rounded-full overflow-hidden h-1.5" style={{ background: 'rgba(255,255,255,0.06)' }}>
                             <div
                                 className="h-full rounded-full transition-all duration-500"
@@ -405,6 +429,8 @@ function PlanRow({
     standardWeeklyHours,
     onPlanChange,
     preloadedExplanation,
+    labels,
+    t,
 }: {
     flag: IndividualFlag
     plan: RemediationPlan | undefined
@@ -414,6 +440,8 @@ function PlanRow({
     standardWeeklyHours: number
     onPlanChange: (p: RemediationPlan) => void
     preloadedExplanation: EmployeeExplanation | null
+    labels: ReturnType<typeof useRemediationLabels>
+    t: ReturnType<typeof useTranslations<'remediationPage'>>
 }) {
     const [open, setOpen]               = useState(false)
     const [isSaving, setIsSaving]       = useState(false)
@@ -469,7 +497,7 @@ function PlanRow({
         if (plan.plan_steps?.length) setPlanSteps(plan.plan_steps)
     }, [plan?.id])  // fires when plan first arrives from DB
 
-    const sev = SEVERITY_META[flag.severity] ?? SEVERITY_META.medium
+    const sev = labels.severityMeta[flag.severity] ?? labels.severityMeta.medium
     const annualCurrent = flag.hourly_rate * flag.imported_annualised_hours
     const annualMedian  = flag.cohort_median * flag.imported_annualised_hours
     // Cohort gap = basis for severity + EU Art.4 remediation; gender gap is a separate reporting KPI
@@ -499,7 +527,7 @@ function PlanRow({
 
     async function handleGenerate() {
         if (planSteps.length === 0) {
-            setAiError('Bitte erst mindestens einen Maßnahmenschritt planen (Kurzfristig / Mittelfristig / Langfristig), bevor der Plan generiert wird.')
+            setAiError(t('generateErrorNoSteps'))
             return
         }
         setAiLoading(true)
@@ -536,10 +564,10 @@ function PlanRow({
             }
             if (saved) {
                 onPlanChange(saved)
-                setSaveMsg('✓ Gespeichert')
+                setSaveMsg('✓ ' + t('saved'))
                 setTimeout(() => setSaveMsg(''), 3000)
             } else {
-                setSaveMsg('⚠️ Plan konnte nicht gespeichert werden (DB-Antwort leer)')
+                setSaveMsg('⚠️ ' + t('saveFailedEmpty'))
             }
         } catch (err) {
             const msg = err instanceof Error ? err.message : String(err)
@@ -552,7 +580,7 @@ function PlanRow({
 
     async function handleDelete() {
         if (!plan?.id) return
-        if (!confirm('Plan wirklich löschen?')) return
+        if (!confirm(t('confirmDelete'))) return
         const { error } = await deleteRemediationPlan(plan.id)
         if (!error) {
             // Notify parent to remove plan
@@ -588,21 +616,21 @@ function PlanRow({
                         {displayName(flag)}
                     </span>
                     <span className="text-xs truncate" style={{ color: 'var(--color-pl-text-tertiary)', marginTop: 2 }}>
-                        {flag.employee_id || 'Ohne ID'}
+                        {flag.employee_id || t('noId')}
                     </span>
                 </span>
 
                 {/* Abteilung: w-36 flex-shrink-0 hidden 2xl:flex */}
                 <span className="w-36 flex-col justify-center min-w-0 flex-shrink-0 hidden 2xl:flex">
                     <span className="text-sm truncate" style={{ color: 'var(--color-pl-text-primary)' }}>
-                        {flag.department ?? 'Keine Abteilung'}
+                        {flag.department ?? t('noDepartment')}
                     </span>
                 </span>
                 
                 {/* Gruppe: w-32 flex-shrink-0 hidden 2xl:flex */}
                 <span className="w-32 flex-col justify-center min-w-0 flex-shrink-0 hidden 2xl:flex">
                     <span className="text-sm truncate" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                        {flag.job_grade ?? 'Keine Gruppe'}
+                        {flag.job_grade ?? t('noGrade')}
                     </span>
                 </span>
 
@@ -632,14 +660,14 @@ function PlanRow({
                         {gapPct >= 0 ? '+' : ''}{gapPct.toFixed(1)}%
                     </span>
                     <span className="text-[11px] font-medium hidden md:block" style={{ color: 'var(--color-pl-text-tertiary)', marginTop: 2 }}>
-                        Lücke
+                        {t('gap')}
                     </span>
                 </span>
 
                 {/* Restlücke: w-24 — green/red once explanation is loaded */}
                 <span
                     className="w-24 flex flex-col text-right flex-shrink-0 hidden md:flex"
-                    title={cachedResidual != null ? 'Verbleibende Restlücke nach Begründung' : 'Expandieren um Begründung zu laden'}
+                    title={cachedResidual != null ? t('residualGapTooltipLoaded') : t('residualGapTooltipExpand')}
                 >
                     <span className="text-sm font-semibold truncate" style={{ color: cachedResidual == null ? 'var(--color-pl-text-tertiary)' : cachedResidual < 5 ? '#34d399' : '#ef4444' }}>
                         {cachedResidual != null
@@ -650,7 +678,7 @@ function PlanRow({
                         }
                     </span>
                     <span className="text-[11px] font-medium" style={{ color: 'var(--color-pl-text-tertiary)', marginTop: 2 }}>
-                        Restlücke
+                        {t('residualGap')}
                     </span>
                 </span>
 
@@ -664,9 +692,9 @@ function PlanRow({
                         return (
                             <span key={horizon} className="w-12 flex justify-center flex-shrink-0"
                                 title={[
-                                    'Kurzfristig (0–6 Monate)',
-                                    'Mittelfristig (6–12 Monate)',
-                                    'Langfristig (12+ Monate)',
+                                    t('horizonTooltipShort'),
+                                    t('horizonTooltipMedium'),
+                                    t('horizonTooltipLong'),
                                 ][i]}>
                                 {hasHorizon ? (
                                     <span style={{ color: '#34d399', fontSize: 13, fontWeight: 800 }}>✓</span>
@@ -710,19 +738,19 @@ function PlanRow({
 
                             {/* Box 1: Jahresgehalt with base/variable split */}
                             <div className="rounded-lg p-3" style={{ background: 'var(--color-pl-surface-raised)', border: '1px solid var(--color-pl-border)' }}>
-                                <p className="text-xs mb-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>Jahresvergütung</p>
+                                <p className="text-xs mb-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('annualCompensation')}</p>
                                 <p className="text-sm font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>{eur(annualCurrent)}</p>
                                 <div className="mt-1 space-y-0.5">
-                                    <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>&#9632; Grund: {eur(annualBase)}</p>
+                                    <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>&#9632; {t('basePay')} {eur(annualBase)}</p>
                                     {annualVariable > 0 && (
-                                        <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>&#9632; Variabel: {eur(annualVariable)}</p>
+                                        <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>&#9632; {t('variablePay')} {eur(annualVariable)}</p>
                                     )}
                                 </div>
                             </div>
 
                             {/* Box 2: Kohorte Median */}
                             <div className="rounded-lg p-3" style={{ background: 'var(--color-pl-surface-raised)', border: '1px solid var(--color-pl-border)' }}>
-                                <p className="text-xs mb-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>Kohorte Median</p>
+                                <p className="text-xs mb-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('cohortMedian')}</p>
                                 <p className="text-sm font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>{eur(annualMedian)}</p>
                                 <p className="text-xs mt-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>{eur(flag.cohort_median, 2)}/h</p>
                             </div>
@@ -730,17 +758,17 @@ function PlanRow({
                             {/* Box 3: Zielvergütung (final plan state) — only when plan has targets */}
                             {hasPlanTarget && (
                                 <div className="rounded-lg p-3" style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.28)' }}>
-                                    <p className="text-xs mb-1" style={{ color: 'var(--color-pl-accent)' }}>Zielvergütung</p>
+                                    <p className="text-xs mb-1" style={{ color: 'var(--color-pl-accent)' }}>{t('targetCompensation')}</p>
                                     <p className="text-sm font-semibold" style={{ color: 'var(--color-pl-accent)' }}>{eur(final.runningTotal)}</p>
                                     <div className="mt-1 space-y-0.5">
-                                        <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>&#9632; Grund: {eur(final.runningBase)}</p>
+                                        <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>&#9632; {t('basePay')} {eur(final.runningBase)}</p>
                                         {final.runningVariable > 0 && (
-                                            <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>&#9632; Variabel: {eur(final.runningVariable)}</p>
+                                            <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>&#9632; {t('variablePay')} {eur(final.runningVariable)}</p>
                                         )}
                                         <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>→ {eur(final.runningHourly, 2)}/h</p>
                                         {gapAfterPlan != null && (
                                             <p className="text-xs font-semibold" style={{ color: Math.abs(gapAfterPlan) < 5 ? '#34d399' : '#ef4444' }}>
-                                                Lücke nach Plan: {gapAfterPlan >= 0 ? '+' : ''}{gapAfterPlan.toFixed(1)}%
+                                                {t('gapAfterPlan')} {gapAfterPlan >= 0 ? '+' : ''}{gapAfterPlan.toFixed(1)}%
                                             </p>
                                         )}
                                     </div>
@@ -749,14 +777,14 @@ function PlanRow({
 
                             {/* Box 4: Lücke */}
                             <div className="rounded-lg p-3" style={{ background: 'var(--color-pl-surface-raised)', border: '1px solid var(--color-pl-border)' }}>
-                                <p className="text-xs mb-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>Lücke (Kohorte)</p>
+                                <p className="text-xs mb-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('gapCohort')}</p>
                                 <p className="text-sm font-semibold" style={{ color: sev.color }}>{gapPct >= 0 ? '+' : ''}{gapPct.toFixed(1)}%</p>
                             </div>
 
                             {/* Box 5: Restlücke — conditional */}
                             {explanation && (
                                 <div className="rounded-lg p-3" style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.25)' }}>
-                                    <p className="text-xs mb-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>Verbleibende Restlücke</p>
+                                    <p className="text-xs mb-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('remainingResidualGap')}</p>
                                     <p className="text-sm font-semibold" style={{ color: residualPct < 5 ? '#34d399' : '#ef4444' }}>{residualPct.toFixed(1)}%</p>
                                 </div>
                             )}
@@ -767,14 +795,14 @@ function PlanRow({
                     {/* ── Begründung aus Analyse-Modul ── */}
                     {explLoading && (
                         <div className="flex items-center gap-2 text-xs py-2" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                            <Loader2 size={11} className="animate-spin" /> Lade Begründung…
+                            <Loader2 size={11} className="animate-spin" /> {t('loadingExplanation')}
                         </div>
                     )}
                     {!explLoading && explanation && (
                         <div className="rounded-xl p-3 space-y-2" style={{ background: 'rgba(52,211,153,0.04)', border: '1px solid rgba(52,211,153,0.18)' }}>
                             <div className="flex items-center justify-between">
                                 <p className="text-xs font-semibold" style={{ color: '#34d399' }}>
-                                    Begründung aus Analyse
+                                    {t('explanationFromAnalysis')}
                                 </p>
                                 {(() => {
                                     const cats = explanation.categories_json ?? []
@@ -783,7 +811,7 @@ function PlanRow({
                                     const residual = Math.max(0, gap - total)
                                     return (
                                         <span className="text-xs" style={{ color: residual < 0.5 ? '#34d399' : '#f59e0b' }}>
-                                            {total.toFixed(1)}% erklärt · {residual.toFixed(1)}% Restlücke
+                                            {t('explainedResidualGap', { explained: total.toFixed(1), residual: residual.toFixed(1) })}
                                         </span>
                                     )
                                 })()}
@@ -805,7 +833,7 @@ function PlanRow({
                             {/* HR action plan from analysis */}
                             {explanation.action_plan && (
                                 <p className="text-xs leading-relaxed" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                                    <span className="font-medium">HR-Aktionsplan: </span>
+                                    <span className="font-medium">{t('hrActionPlan')}</span>
                                     {explanation.action_plan}
                                 </p>
                             )}
@@ -813,7 +841,7 @@ function PlanRow({
                     )}
                     {!explLoading && !explanation && (
                         <p className="text-xs italic" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                            Keine Begründung im Analyse-Modul erfasst.
+                            {t('noExplanationRecorded')}
                         </p>
                     )}
 
@@ -821,11 +849,11 @@ function PlanRow({
                     <div>
                         <div className="flex items-start justify-between mb-1">
                             <div>
-                                <p className="text-xs font-semibold" style={{ color: 'var(--color-pl-text-secondary)' }}>Maßnahmenplan</p>
+                                <p className="text-xs font-semibold" style={{ color: 'var(--color-pl-text-secondary)' }}>{t('remediationPlan')}</p>
                                 <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>
                                     {planSteps.length > 0
-                                        ? '„Plan generieren" fasst Ihre definierten Schritte als formellen Maßnahmenplan zusammen.'
-                                        : 'Definieren Sie zuerst Ihre Planschritte — dann fasst „Plan generieren" diese als Maßnahmenplan zusammen.'}
+                                        ? t('planGenerateHintWithSteps')
+                                        : t('planGenerateHintNoSteps')}
                                 </p>
                             </div>
                             <button
@@ -841,8 +869,8 @@ function PlanRow({
                                 }}
                             >
                                 {aiLoading
-                                    ? <><Loader2 size={11} className="animate-spin" /> Generiert…</>
-                                    : <><Sparkles size={11} /> {aiText ? 'Neu generieren' : 'Plan generieren'}</>}
+                                    ? <><Loader2 size={11} className="animate-spin" /> {t('generating')}</>
+                                    : <><Sparkles size={11} /> {aiText ? t('regenerate') : t('generatePlan')}</>}
                             </button>
                         </div>
 
@@ -867,19 +895,18 @@ function PlanRow({
                                 style={{ background: 'var(--color-pl-surface-raised)', border: '1px dashed var(--color-pl-border)' }}>
                                 {planSteps.length === 0 ? (<>
                                     <p className="text-xs font-medium mb-1" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                                        Erst Schritte planen, dann generieren
+                                        {t('stepsFirstThenGenerate')}
                                     </p>
                                     <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)', lineHeight: 1.6 }}>
-                                        Fügen Sie unten einen oder mehrere Planschritte hinzu (kurzfristig / mittelfristig / langfristig) mit den geplanten Vergütungsanpassungen.<br />
-                                        Sobald mindestens ein Schritt definiert ist, erstellt „<strong style={{ color: 'var(--color-pl-accent)' }}>Plan generieren</strong>" daraus automatisch einen formellen, dokumentierbaren Maßnahmenplan.
+                                        {t('stepsFirstExplanation')}
                                     </p>
                                 </>) : (<>
                                     <Sparkles size={16} className="mx-auto mb-2" style={{ color: 'var(--color-pl-accent)', opacity: 0.7 }} />
                                     <p className="text-xs font-medium mb-1" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                                        {planSteps.length} Schritt{planSteps.length > 1 ? 'e' : ''} definiert — bereit zur Generierung
+                                        {t('stepsReadyToGenerate', { count: planSteps.length })}
                                     </p>
                                     <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                                        Klicken Sie auf „<strong style={{ color: 'var(--color-pl-accent)' }}>Plan generieren</strong>", um einen schriftlichen Maßnahmenplan auf Basis Ihrer Schritte zu erstellen.
+                                        {t('clickGeneratePlan')}
                                     </p>
                                 </>)}
                             </div>
@@ -890,7 +917,7 @@ function PlanRow({
                     <div>
                         <div className="flex items-center justify-between mb-3">
                             <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                                Maßnahmenplan · Phasierter Zeitplan
+                                {t('phasedTimeline')}
                             </p>
                             <div className="flex items-center gap-2">
                                 {planSteps.length < 5 && (
@@ -902,7 +929,7 @@ function PlanRow({
                                         className="text-xs px-2.5 py-1 rounded-lg transition-all"
                                         style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)', color: '#60a5fa' }}
                                     >
-                                        + Schritt
+                                        {t('addStep')}
                                     </button>
                                 )}
                             </div>
@@ -930,7 +957,7 @@ function PlanRow({
                                                 className="flex-1 text-xs rounded-lg px-2 py-1"
                                                 style={{ background: 'transparent', border: 'none', color: horizCol, fontWeight: 600, outline: 'none', cursor: 'pointer' }}
                                             >
-                                                {DEADLINES.map(d => (
+                                                {labels.deadlines.map(d => (
                                                     <option key={d.value} value={d.value}
                                                         style={{ background: 'var(--color-pl-surface-raised)', color: 'var(--color-pl-text-primary)' }}>
                                                         {d.label}
@@ -952,17 +979,17 @@ function PlanRow({
                                             {/* Row 1: action + status */}
                                             <div className="grid grid-cols-2 gap-2">
                                                 <div>
-                                                    <label className="text-xs mb-1 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>Maßnahme</label>
+                                                    <label className="text-xs mb-1 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('labelAction')}</label>
                                                     <select value={step.action_type} onChange={e => updateStep({ action_type: e.target.value as ActionType })} style={selectStyle()}>
-                                                        {ACTION_TYPES.map(a => (
+                                                        {labels.actionTypes.map(a => (
                                                             <option key={a.value} value={a.value}>{a.label}</option>
                                                         ))}
                                                     </select>
                                                 </div>
                                                 <div>
-                                                    <label className="text-xs mb-1 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>Status</label>
+                                                    <label className="text-xs mb-1 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('labelStatus')}</label>
                                                     <select value={step.status} onChange={e => updateStep({ status: e.target.value as PlanStatus })} style={selectStyle()}>
-                                                        {Object.entries(STATUS_META).map(([k, v]) => (
+                                                        {Object.entries(labels.statusMeta).map(([k, v]) => (
                                                             <option key={k} value={k}>{v.label}</option>
                                                         ))}
                                                     </select>
@@ -971,12 +998,12 @@ function PlanRow({
 
                                             {/* Row 2: description */}
                                             <div>
-                                                <label className="text-xs mb-1 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>Beschreibung</label>
+                                                <label className="text-xs mb-1 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('labelDescription')}</label>
                                                 <input
                                                     type="text"
                                                     value={step.description}
                                                     onChange={e => updateStep({ description: e.target.value })}
-                                                    placeholder="z. B. Gehaltsanpassung um 3 % an Kohortennmedian…"
+                                                    placeholder={t('descriptionPlaceholder')}
                                                     style={{ ...selectStyle() }}
                                                 />
                                             </div>
@@ -992,7 +1019,7 @@ function PlanRow({
                                                      return (<>
                                                     {showPrevNote && (
                                                         <p className="text-xs px-3 py-1.5 rounded-lg" style={{ background: 'rgba(52,211,153,0.06)', color: 'var(--color-pl-text-tertiary)', border: '1px solid rgba(52,211,153,0.15)' }}>
-                                                            Basis nach Vorschritten: <strong style={{ color: '#34d399' }}>{eur(stepBase)}</strong>
+                                                            {t('basisAfterPriorSteps')} <strong style={{ color: '#34d399' }}>{eur(stepBase)}</strong>
                                                         </p>
                                                     )}
 
@@ -1018,11 +1045,11 @@ function PlanRow({
                                                             {/* LEFT: Grundgehalt */}
                                                             <div className="space-y-1.5">
                                                                 <p className="text-xs font-semibold" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                                                                    Grundgehalt <span style={{ fontWeight: 400, color: 'var(--color-pl-text-tertiary)' }}>· aktuell {eur(stepBase)}</span>
+                                                                    {t('baseSalaryLabel')} <span style={{ fontWeight: 400, color: 'var(--color-pl-text-tertiary)' }}>{t('currentPrefix', { amount: eur(stepBase) })}</span>
                                                                 </p>
                                                                 <div className="grid grid-cols-2 gap-1.5">
                                                                     <div>
-                                                                        <label className="text-xs mb-0.5 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>Erhöhung %</label>
+                                                                        <label className="text-xs mb-0.5 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('increasePercent')}</label>
                                                                         <div className="relative">
                                                                             <input
                                                                                 type="text" inputMode="decimal"
@@ -1042,14 +1069,14 @@ function PlanRow({
                                                                                     const pct = parseFloat(e.target.value.replace(',', '.'))
                                                                                     if (!isNaN(pct)) setPctStrings(s => ({ ...s, [step.id]: pct.toFixed(1) }))
                                                                                 }}
-                                                                                placeholder="z. B. 5"
+                                                                                placeholder={t('pctPlaceholder')}
                                                                                 style={{ ...selectStyle(), paddingRight: '1.8rem', fontSize: '0.75rem', padding: '0.35rem 1.8rem 0.35rem 0.6rem' }}
                                                                             />
                                                                             <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs pointer-events-none" style={{ color: 'var(--color-pl-text-tertiary)' }}>%</span>
                                                                         </div>
                                                                     </div>
                                                                     <div>
-                                                                        <label className="text-xs mb-0.5 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>Zielgehalt €/Jahr</label>
+                                                                        <label className="text-xs mb-0.5 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('targetSalaryEurYear')}</label>
                                                                         <input
                                                                             type="text"
                                                                             value={step.target_salary != null ? step.target_salary.toLocaleString('de-DE') : ''}
@@ -1082,11 +1109,11 @@ function PlanRow({
                                                             {/* RIGHT: Variables Entgelt */}
                                                             <div className="space-y-1.5">
                                                                 <p className="text-xs font-semibold" style={{ color: 'var(--color-pl-accent)' }}>
-                                                                    Variables Entgelt <span style={{ fontWeight: 400, color: 'var(--color-pl-text-tertiary)' }}>· {eur(prevVariable)} ({curBonusPct.toFixed(1)}%)</span>
+                                                                    {t('variablePayLabel')} <span style={{ fontWeight: 400, color: 'var(--color-pl-text-tertiary)'}}>· {eur(prevVariable)} ({curBonusPct.toFixed(1)}%)</span>
                                                                 </p>
                                                                 <div className="grid grid-cols-2 gap-1.5">
                                                                     <div>
-                                                                        <label className="text-xs mb-0.5 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>Bonus-Ziel %</label>
+                                                                        <label className="text-xs mb-0.5 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('bonusTargetPercent')}</label>
                                                                         <div className="relative">
                                                                             <input
                                                                                 type="text" inputMode="decimal"
@@ -1113,7 +1140,7 @@ function PlanRow({
                                                                         </div>
                                                                     </div>
                                                                     <div>
-                                                                        <label className="text-xs mb-0.5 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>Bonusbetrag €/Jahr</label>
+                                                                        <label className="text-xs mb-0.5 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('bonusAmountEurYear')}</label>
                                                                         <input
                                                                             type="text"
                                                                             value={step.target_variable_pay != null ? step.target_variable_pay.toLocaleString('de-DE') : ''}
@@ -1140,7 +1167,7 @@ function PlanRow({
                                                                             {eur(step.target_variable_pay)}
                                                                         </span>
                                                                         <span style={{ color: 'var(--color-pl-text-tertiary)', marginLeft: 'auto' }}>
-                                                                            {newBonusPct != null ? `${newBonusPct.toFixed(1)}% v. Basis` : ''}
+                                                                            {newBonusPct != null ? `${newBonusPct.toFixed(1)}% ${t('ofBase')}` : ''}
                                                                         </span>
                                                                     </div>
                                                                 )}
@@ -1151,7 +1178,7 @@ function PlanRow({
                                                         {hasAnyTarget && (
                                                             <div className="flex items-center gap-2 text-xs px-3 py-2 rounded-lg"
                                                                 style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid var(--color-pl-border)' }}>
-                                                                <span style={{ color: 'var(--color-pl-text-tertiary)' }}>Gesamt:</span>
+                                                                <span style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('total')}</span>
                                                                 <span style={{ color: 'var(--color-pl-text-secondary)' }}>{eur(curTotal)}</span>
                                                                 <span style={{ color: 'var(--color-pl-text-tertiary)' }}>→</span>
                                                                 <span style={{ color: '#34d399', fontWeight: 700 }}>{eur(newTotal)}</span>
@@ -1164,8 +1191,8 @@ function PlanRow({
                                                     })()}
 
                                                     <div>
-                                                        <label className="text-xs mb-1 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>Verantwortliche Person</label>
-                                                        <input type="text" value={step.responsible} onChange={e => updateStep({ responsible: e.target.value })} placeholder="z. B. HR-Leitung" style={{ ...selectStyle() }} />
+                                                        <label className="text-xs mb-1 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('responsiblePerson')}</label>
+                                                        <input type="text" value={step.responsible} onChange={e => updateStep({ responsible: e.target.value })} placeholder={t('responsiblePlaceholder')} style={{ ...selectStyle() }} />
                                                     </div>
                                                     </>)
                                                 })()}
@@ -1183,20 +1210,20 @@ function PlanRow({
                                                     return (<>
                                                     {showPrevNote && (
                                                         <p className="text-xs px-3 py-1.5 rounded-lg" style={{ background: 'rgba(99,102,241,0.06)', color: 'var(--color-pl-text-tertiary)', border: '1px solid rgba(99,102,241,0.2)' }}>
-                                                            Bonus-Basis nach Vorschritten: <strong style={{ color: 'var(--color-pl-accent)' }}>{eur(baseSalary)}</strong>
+                                                            Bonus-{t('basisAfterPriorSteps')} <strong style={{ color: 'var(--color-pl-accent)' }}>{eur(baseSalary)}</strong>
                                                         </p>
                                                     )}
                                                     <div className="flex items-center gap-3 px-3 py-2 rounded-lg text-xs"
                                                         style={{ background: 'var(--color-pl-surface-raised)', border: '1px solid var(--color-pl-border)' }}>
-                                                        <span style={{ color: 'var(--color-pl-text-tertiary)' }}>Aktueller Bonus:</span>
+                                                        <span style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('currentBonus')}</span>
                                                         <span style={{ color: 'var(--color-pl-text-primary)', fontWeight: 700 }}>{eur(prevVariable)}</span>
                                                         {baseSalary > 0 && (
-                                                            <span style={{ color: 'var(--color-pl-text-tertiary)' }}>({currentBonusPct.toFixed(1)}% des Grundgehalts)</span>
+                                                            <span style={{ color: 'var(--color-pl-text-tertiary)' }}>({currentBonusPct.toFixed(1)}% {t('ofBaseSalary')})</span>
                                                         )}
                                                     </div>
                                                     <div className="grid grid-cols-2 gap-2">
                                                         <div>
-                                                            <label className="text-xs mb-1 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>Neues Bonus-Ziel %</label>
+                                                            <label className="text-xs mb-1 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('newBonusTargetPercent')}</label>
                                                             <div className="relative">
                                                                 <input
                                                                     type="text" inputMode="decimal"
@@ -1225,7 +1252,7 @@ function PlanRow({
                                                             </div>
                                                         </div>
                                                         <div>
-                                                            <label className="text-xs mb-1 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>Neuer Bonusbetrag (€/Jahr)</label>
+                                                            <label className="text-xs mb-1 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('newBonusAmountEurYear')}</label>
                                                             <input
                                                                 type="text"
                                                                 value={step.target_salary != null ? step.target_salary.toLocaleString('de-DE') : ''}
@@ -1246,7 +1273,7 @@ function PlanRow({
                                                                 background: step.target_salary >= prevVariable ? 'rgba(52,211,153,0.07)' : 'rgba(251,191,36,0.07)',
                                                                 border: `1px solid ${step.target_salary >= prevVariable ? 'rgba(52,211,153,0.2)' : 'rgba(251,191,36,0.2)'}`,
                                                             }}>
-                                                            <span style={{ color: 'var(--color-pl-text-tertiary)' }}>Bisher {eur(prevVariable)}</span>
+                                                            <span style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('previously', { amount: eur(prevVariable) })}</span>
                                                             <span style={{ color: step.target_salary >= prevVariable ? '#34d399' : '#fbbf24' }}>→</span>
                                                             <span style={{ fontWeight: 700, color: step.target_salary >= prevVariable ? '#34d399' : '#fbbf24' }}>
                                                                 {eur(step.target_salary)}
@@ -1255,24 +1282,24 @@ function PlanRow({
                                                                 {step.target_salary >= prevVariable ? '+' : ''}{(step.target_salary - prevVariable).toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} €
                                                             </span>
                                                             {baseSalary > 0 && newBonusPct != null && (
-                                                                <span style={{ color: 'var(--color-pl-text-tertiary)' }}>({newBonusPct.toFixed(1)}% v. Basis)</span>
+                                                                <span style={{ color: 'var(--color-pl-text-tertiary)' }}>({newBonusPct.toFixed(1)}% {t('ofBase')})</span>
                                                             )}
                                                         </div>
                                                     )}
                                                     <div>
-                                                        <label className="text-xs mb-1 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>Verantwortliche Person</label>
-                                                        <input type="text" value={step.responsible} onChange={e => updateStep({ responsible: e.target.value })} placeholder="z. B. HR-Leitung" style={{ ...selectStyle() }} />
+                                                        <label className="text-xs mb-1 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('responsiblePerson')}</label>
+                                                        <input type="text" value={step.responsible} onChange={e => updateStep({ responsible: e.target.value })} placeholder={t('responsiblePlaceholder')} style={{ ...selectStyle() }} />
                                                     </div>
                                                     </>)
                                                 })()}
                                             </>) : (
                                                 <div className="grid grid-cols-2 gap-2">
                                                     <div>
-                                                        <label className="text-xs mb-1 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>Verantwortliche Person</label>
-                                                        <input type="text" value={step.responsible} onChange={e => updateStep({ responsible: e.target.value })} placeholder="z. B. HR-Leitung" style={{ ...selectStyle() }} />
+                                                        <label className="text-xs mb-1 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('responsiblePerson')}</label>
+                                                        <input type="text" value={step.responsible} onChange={e => updateStep({ responsible: e.target.value })} placeholder={t('responsiblePlaceholder')} style={{ ...selectStyle() }} />
                                                     </div>
                                                     <div>
-                                                        <label className="text-xs mb-1 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>Zielgehalt (€/Jahr, optional)</label>
+                                                        <label className="text-xs mb-1 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('targetSalaryEurYearOptional')}</label>
                                                         <input
                                                             type="text"
                                                             value={step.target_salary != null ? String(Math.round(step.target_salary)) : ''}
@@ -1286,12 +1313,12 @@ function PlanRow({
 
                                             {/* Row 4: notes */}
                                             <div>
-                                                <label className="text-xs mb-1 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>Notiz</label>
+                                                <label className="text-xs mb-1 block" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('notesLabel')}</label>
                                                 <input
                                                     type="text"
                                                     value={step.notes}
                                                     onChange={e => updateStep({ notes: e.target.value })}
-                                                    placeholder="Interne Anmerkung…"
+                                                    placeholder={t('notesPlaceholder')}
                                                     style={{ ...selectStyle() }}
                                                 />
                                             </div>
@@ -1303,19 +1330,19 @@ function PlanRow({
 
                         {planSteps.length < 3 && (
                             <p className="text-xs mt-2" style={{ color: '#f59e0b' }}>
-                                ⚠ Empfehlung: Mindestens 3 Schritte für einen vollständigen Maßnahmenplan (EU Art. 9).
+                                {t('minStepsWarning')}
                             </p>
                         )}
                     </div>
 
                     {/* HR Notes (global) */}
                     <div>
-                        <label className="text-xs mb-1 block font-semibold uppercase tracking-wide" style={{ color: 'var(--color-pl-text-tertiary)' }}>HR-Gesamtnotiz</label>
+                        <label className="text-xs mb-1 block font-semibold uppercase tracking-wide" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('hrGlobalNote')}</label>
                         <input
                             type="text"
                             value={hrNotes}
                             onChange={e => setHrNotes(e.target.value)}
-                            placeholder="Übergreifende Anmerkung zum Maßnahmenplan…"
+                            placeholder={t('hrGlobalNotePlaceholder')}
                             style={{ ...selectStyle() }}
                         />
                     </div>
@@ -1329,7 +1356,7 @@ function PlanRow({
                                     className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-all"
                                     style={{ color: '#f87171', border: '1px solid rgba(248,113,113,0.3)', background: 'rgba(248,113,113,0.05)' }}
                                 >
-                                    <Trash2 size={11} /> Löschen
+                                    <Trash2 size={11} /> {t('delete')}
                                 </button>
                             )}
                         </div>
@@ -1354,7 +1381,7 @@ function PlanRow({
                                 }}
                             >
                                 {isSaving ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
-                                Speichern
+                                {t('save')}
                             </button>
                         </div>
                     </div>
@@ -1375,6 +1402,8 @@ export default function RemediationClient({
     analyses: AnalysisMeta[]
     initialPlans: RemediationPlan[]
 }) {
+    const t = useTranslations('remediationPage')
+    const labels = useRemediationLabels()
     const [selectedId, setSelectedId]     = useState(analyses[0]?.id ?? '')
     const [analysisData, setAnalysisData] = useState<AnalysisData | null>(null)
     const [plans, setPlans]               = useState<RemediationPlan[]>(initialPlans)
@@ -1469,10 +1498,10 @@ export default function RemediationClient({
                 <div className="flex items-start justify-between gap-4">
                     <div>
                         <h1 className="text-xl font-bold" style={{ color: 'var(--color-pl-text-primary)' }}>
-                            Maßnahmen
+                            {t('pageTitle')}
                         </h1>
                         <p className="text-sm mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                            Maßnahmenpläne für Entgeltlücken · EU-Richtlinie 2023/970 Art. 9
+                            {t('pageSubtitle')}
                         </p>
                     </div>
 
@@ -1489,7 +1518,7 @@ export default function RemediationClient({
                             minWidth: 220,
                         }}
                     >
-                        {analyses.length === 0 && <option value="">Keine Analysen vorhanden</option>}
+                        {analyses.length === 0 && <option value="">{t('noAnalysesAvailable')}</option>}
                         {analyses.map(a => (
                             <option key={a.id} value={a.id}>
                                 {a.datasets?.name ?? a.name} ({a.datasets?.reporting_year ?? '?'})
@@ -1507,18 +1536,18 @@ export default function RemediationClient({
                 ) : analyses.length === 0 ? (
                     <div className="glass-card p-10 text-center">
                         <p style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                            Keine abgeschlossenen Analysen gefunden. Bitte führen Sie zuerst eine Analyse durch.
+                            {t('noAnalysesFound')}
                         </p>
                     </div>
                 ) : (
                     <>
                         {/* Stats strip */}
                         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                            <StatCard label="Gesamt"                      value={actionableFlags.length} color="var(--color-pl-text-primary)" />
-                            <StatCard label="Kritisch (Unterverg. ≥25%)"  value={highCount}     color="#ef4444" />
-                            <StatCard label="Nicht konform (5–25%)"       value={medCount}      color="#f97316" />
-                            <StatCard label="Lohnvorteil (≥+5%)"           value={overpaidCount} color="#8b5cf6" />
-                            <StatCard label="Pläne erstellt"               value={plannedCount}  color="var(--color-pl-brand)" />
+                            <StatCard label={t('statTotal')}                      value={actionableFlags.length} color="var(--color-pl-text-primary)" />
+                            <StatCard label={t('statCritical')}  value={highCount}     color="#ef4444" />
+                            <StatCard label={t('statNonCompliant')}       value={medCount}      color="#f97316" />
+                            <StatCard label={t('statOverpaid')}           value={overpaidCount} color="#8b5cf6" />
+                            <StatCard label={t('statPlansCreated')}               value={plannedCount}  color="var(--color-pl-brand)" />
                         </div>
 
                         {/* Budget Simulation Panel */}
@@ -1526,21 +1555,22 @@ export default function RemediationClient({
                             allFlags={flags}
                             plans={plans}
                             planIndex={planIndex}
+                            t={t}
                         />
 
                         {/* Filter tabs */}
                         <div className="flex items-center gap-2 flex-wrap">
                             {([
-                                ['all',      'Alle',             actionableFlags.length],
-                                ['high',     'Kritisch',         highCount],
-                                ['medium',   'Nicht konform',    medCount],
-                                ['overpaid', 'Lohnvorteil',      overpaidCount],
-                                ['planned',  'Mit Plan',         plannedCount],
-                                ['open',     'Ohne Plan',        actionableFlags.length - plannedCount],
+                                ['all',      t('filterAll'),           actionableFlags.length],
+                                ['high',     t('filterCritical'),      highCount],
+                                ['medium',   t('filterNonCompliant'),  medCount],
+                                ['overpaid', t('filterOverpaid'),      overpaidCount],
+                                ['planned',  t('filterWithPlan'),      plannedCount],
+                                ['open',     t('filterWithoutPlan'),   actionableFlags.length - plannedCount],
                             ] as const).map(([k, l, c]) => (
                                 <button
                                     key={k}
-                                    onClick={() => setFilter(k)}
+                                    onClick={() => setFilter(k as typeof filter)}
                                     className="text-xs px-3 py-1.5 rounded-full transition-all"
                                     style={{
                                         background: filter === k ? 'var(--color-pl-brand)' : 'var(--color-pl-surface-raised)',
@@ -1557,7 +1587,7 @@ export default function RemediationClient({
                         {filteredFlags.length === 0 ? (
                             <div className="glass-card p-8 text-center">
                                 <p className="text-sm" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                                    Keine Mitarbeitenden in diesem Filter.
+                                    {t('noEmployeesInFilter')}
                                 </p>
                             </div>
                         ) : (
@@ -1566,25 +1596,25 @@ export default function RemediationClient({
                                 <div className="flex items-center gap-5 px-5 py-1 text-xs font-semibold"
                                     style={{ color: 'var(--color-pl-text-tertiary)' }}>
                                     <span className="w-4 flex-shrink-0" />
-                                    <span className="w-36 flex-shrink-0">Schwere</span>
-                                    <span className="w-56 flex-shrink-0">Name &amp; ID</span>
-                                    <span className="w-36 flex-shrink-0 hidden 2xl:block">Abteilung</span>
-                                    <span className="w-32 flex-shrink-0 hidden 2xl:block">Gruppe</span>
-                                    
-                                    <span className="w-28 text-right flex-shrink-0 hidden md:block">Gehalt</span>
-                                    <span className="w-28 text-right flex-shrink-0 hidden md:block">Kohorte (Median)</span>
-                                    <span className="w-24 text-right flex-shrink-0">Lücke</span>
-                                    <span className="w-24 text-right flex-shrink-0 hidden md:block">Restlücke</span>
-                                    
+                                    <span className="w-36 flex-shrink-0">{t('colSeverity')}</span>
+                                    <span className="w-56 flex-shrink-0">{t('colNameId')}</span>
+                                    <span className="w-36 flex-shrink-0 hidden 2xl:block">{t('colDepartment')}</span>
+                                    <span className="w-32 flex-shrink-0 hidden 2xl:block">{t('colGrade')}</span>
+
+                                    <span className="w-28 text-right flex-shrink-0 hidden md:block">{t('colSalary')}</span>
+                                    <span className="w-28 text-right flex-shrink-0 hidden md:block">{t('colCohortMedian')}</span>
+                                    <span className="w-24 text-right flex-shrink-0">{t('colGap')}</span>
+                                    <span className="w-24 text-right flex-shrink-0 hidden md:block">{t('colResidualGap')}</span>
+
                                     <span className="w-36 hidden min-[1800px]:flex items-center justify-around flex-shrink-0">
-                                        <span className="w-12 text-center" title="Kurzfristig: 0–6 Monate">Kurz</span>
-                                        <span className="w-12 text-center" title="Mittelfristig: 6–12 Monate">Mittel</span>
-                                        <span className="w-12 text-center" title="Langfristig: 12+ Monate">Lang</span>
+                                        <span className="w-12 text-center" title={t('horizonTooltipShort')}>{t('colShort')}</span>
+                                        <span className="w-12 text-center" title={t('horizonTooltipMedium')}>{t('colMedium')}</span>
+                                        <span className="w-12 text-center" title={t('horizonTooltipLong')}>{t('colLong')}</span>
                                     </span>
-                                    
+
                                     <span className="flex-1 min-w-0" />
-                                    
-                                    <span className="w-24 text-right flex-shrink-0">Status</span>
+
+                                    <span className="w-24 text-right flex-shrink-0">{t('colStatus')}</span>
                                 </div>
                                 {filteredFlags.map(flag => (
                                     <PlanRow
@@ -1597,6 +1627,8 @@ export default function RemediationClient({
                                         standardWeeklyHours={stdHours}
                                         onPlanChange={handlePlanChange}
                                         preloadedExplanation={explanations[flag.employee_id] ?? null}
+                                        labels={labels}
+                                        t={t}
                                     />
                                 ))}
                             </div>

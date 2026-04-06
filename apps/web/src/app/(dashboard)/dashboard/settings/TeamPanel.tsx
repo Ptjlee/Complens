@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useTransition } from 'react'
+import { useTranslations, useFormatter } from 'next-intl'
 import {
     UserPlus, Trash2, MailCheck, RefreshCw, Shield,
     Eye, Clock, CheckCircle2, AlertTriangle, Users,
@@ -49,23 +50,19 @@ type Props = {
 
 // ─── Role helpers ─────────────────────────────────────────────
 
-const ROLE_LABELS: Record<string, { label: string; shortLabel: string; icon: typeof Shield; color: string }> = {
-    admin:   { label: 'HR-Administrator',              shortLabel: 'HR-Admin', icon: Crown, color: '#5b61ff' },
-    analyst: { label: 'HR-Administrator',              shortLabel: 'HR-Admin', icon: Crown, color: '#5b61ff' },
-    viewer:  { label: 'Lesezugriff (Mitarbeitervertr.)', shortLabel: 'Lesen',   icon: Eye,   color: '#10b981' },
-}
-
-function roleInfo(role: string) {
-    return ROLE_LABELS[role] ?? ROLE_LABELS.viewer
-}
-
-function formatDate(iso: string) {
-    return new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+function useRoleLabels() {
+    const t = useTranslations('team')
+    return {
+        admin:   { label: t('roleAdmin'),  shortLabel: t('roleAdminShort'), icon: Crown, color: '#5b61ff' },
+        analyst: { label: t('roleAdmin'),  shortLabel: t('roleAdminShort'), icon: Crown, color: '#5b61ff' },
+        viewer:  { label: t('roleViewer'), shortLabel: t('roleViewerShort'), icon: Eye,   color: '#10b981' },
+    } as Record<string, { label: string; shortLabel: string; icon: typeof Shield; color: string }>
 }
 
 // ─── Invite dialog ────────────────────────────────────────────
 
 function InviteDialog({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
+    const t = useTranslations('team')
     const [email, setEmail]     = useState('')
     const [name,  setName]      = useState('')
     const [title, setTitle]     = useState('')
@@ -104,10 +101,10 @@ function InviteDialog({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
                 <div className="flex items-center justify-between mb-5">
                     <div>
                         <h3 className="text-base font-bold" style={{ color: 'var(--color-pl-text-primary)' }}>
-                            Teammitglied einladen
+                            {t('inviteTitle')}
                         </h3>
                         <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                            Einladungslink ist 7 Tage gültig
+                            {t('inviteLinkValid')}
                         </p>
                     </div>
                     <button onClick={onClose} className="p-1 rounded-lg hover:bg-white/10 transition-colors">
@@ -119,9 +116,9 @@ function InviteDialog({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
                     <div className="flex items-center gap-3 p-4 rounded-xl" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)' }}>
                         <CheckCircle2 size={20} style={{ color: '#10b981' }} />
                         <div>
-                            <p className="text-sm font-semibold" style={{ color: '#10b981' }}>Einladung gesendet!</p>
+                            <p className="text-sm font-semibold" style={{ color: '#10b981' }}>{t('inviteSent')}</p>
                             <p className="text-xs" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                                {email} erhält in Kürze eine E-Mail.
+                                {t('inviteSentDesc', { email })}
                             </p>
                         </div>
                     </div>
@@ -129,13 +126,13 @@ function InviteDialog({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
                     <div className="space-y-4">
                         <div>
                             <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                                E-Mail-Adresse *
+                                {t('emailLabel')}
                             </label>
                             <input
                                 type="email"
                                 value={email}
                                 onChange={e => setEmail(e.target.value)}
-                                placeholder="name@unternehmen.de"
+                                placeholder={t('emailPlaceholder')}
                                 className="input-base"
                                 onKeyDown={e => e.key === 'Enter' && handleInvite()}
                                 autoFocus
@@ -145,25 +142,25 @@ function InviteDialog({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
                         <div className="grid grid-cols-2 gap-2">
                             <div>
                                 <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                                    Name <span style={{ color: 'var(--color-pl-text-tertiary)', fontWeight: 400 }}>(optional)</span>
+                                    {t('nameLabel')} <span style={{ color: 'var(--color-pl-text-tertiary)', fontWeight: 400 }}>{t('nameOptional')}</span>
                                 </label>
                                 <input
                                     type="text"
                                     value={name}
                                     onChange={e => setName(e.target.value)}
-                                    placeholder="Max Mustermann"
+                                    placeholder={t('namePlaceholder')}
                                     className="input-base"
                                 />
                             </div>
                             <div>
                                 <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                                    Titel / Funktion <span style={{ color: 'var(--color-pl-text-tertiary)', fontWeight: 400 }}>(optional)</span>
+                                    {t('titleLabel')} <span style={{ color: 'var(--color-pl-text-tertiary)', fontWeight: 400 }}>{t('titleOptional')}</span>
                                 </label>
                                 <input
                                     type="text"
                                     value={title}
                                     onChange={e => setTitle(e.target.value)}
-                                    placeholder="HR Manager"
+                                    placeholder={t('titlePlaceholder')}
                                     className="input-base"
                                 />
                             </div>
@@ -171,21 +168,21 @@ function InviteDialog({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
 
                         <div>
                             <label className="block text-xs font-semibold mb-2" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                                Zugriffsrolle
+                                {t('accessRole')}
                             </label>
                             <div className="space-y-2">
                                 {[
                                     {
                                         value: 'admin' as MemberRole,
-                                        label: 'HR-Administrator',
-                                        desc: 'Vollzugriff: Daten hochladen, Analysen erstellen, Berichte exportieren, Team verwalten',
+                                        label: t('roleAdmin'),
+                                        desc: t('roleAdminDesc'),
                                         icon: Crown,
                                         color: '#5b61ff',
                                     },
                                     {
                                         value: 'viewer' as MemberRole,
-                                        label: 'Lesezugriff — Mitarbeitervertretung / Leitung',
-                                        desc: 'Nur Ergebnisse einsehen (aggregiert). Keine Upload- oder Export-Rechte.',
+                                        label: t('roleViewerLabel'),
+                                        desc: t('roleViewerDesc'),
                                         icon: Eye,
                                         color: '#10b981',
                                     },
@@ -226,14 +223,14 @@ function InviteDialog({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
 
                         <div className="flex gap-2 pt-1">
                             <button onClick={onClose} className="flex-1 text-sm font-medium py-2.5 rounded-lg transition-colors" style={{ border: '1px solid var(--color-pl-border)', color: 'var(--color-pl-text-secondary)' }}>
-                                Abbrechen
+                                {t('cancelBtn')}
                             </button>
                             <button
                                 onClick={handleInvite}
                                 disabled={pending || !email.trim()}
                                 className="flex-1 btn-primary text-sm"
                             >
-                                {pending ? 'Wird gesendet…' : <><MailCheck size={14} />Einladen</>}
+                                {pending ? t('sending') : <><MailCheck size={14} />{t('inviteBtn')}</>}
                             </button>
                         </div>
                     </div>
@@ -246,6 +243,18 @@ function InviteDialog({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
 // ─── Main TeamPanel component ─────────────────────────────────
 
 export default function TeamPanel({ teamData, openInviteOnMount, onInviteMounted }: Props) {
+    const t = useTranslations('team')
+    const format = useFormatter()
+    const roleLabels = useRoleLabels()
+
+    function roleInfo(role: string) {
+        return roleLabels[role] ?? roleLabels.viewer
+    }
+
+    function formatDate(iso: string) {
+        return format.dateTime(new Date(iso), { day: '2-digit', month: '2-digit', year: 'numeric' })
+    }
+
     const {
         members, pendingInvites, maxUsers, plan,
         callerRole, usedSeats,
@@ -299,7 +308,7 @@ export default function TeamPanel({ teamData, openInviteOnMount, onInviteMounted
         startTransition(async () => {
             const res = await resendInvitation(invId)
             setResendingId(null)
-            flash(invId, res.error ?? 'Einladung erneut gesendet.', !res.error)
+            flash(invId, res.error ?? t('inviteResent'), !res.error)
         })
     }
 
@@ -317,10 +326,10 @@ export default function TeamPanel({ teamData, openInviteOnMount, onInviteMounted
                 <div className="flex items-center justify-between">
                     <div>
                         <h2 className="text-sm font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>
-                            Team & Zugriffsrechte
+                            {t('title')}
                         </h2>
                         <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                            {usedSeats} von {maxUsers} Plätzen belegt
+                            {t('seatsUsed', { used: usedSeats, max: maxUsers })}
                         </p>
                     </div>
                     {isAdmin && !isTrial && (
@@ -328,10 +337,10 @@ export default function TeamPanel({ teamData, openInviteOnMount, onInviteMounted
                             onClick={() => setShowInvite(true)}
                             disabled={atCapacity}
                             className="btn-primary text-xs px-3 py-1.5 flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-                            title={atCapacity ? 'Alle Nutzerplätze sind belegt' : 'Mitglied einladen'}
+                            title={atCapacity ? t('allSeatsUsed') : t('invite')}
                         >
                             <UserPlus size={13} />
-                            Einladen
+                            {t('invite')}
                         </button>
                     )}
                 </div>
@@ -349,12 +358,12 @@ export default function TeamPanel({ teamData, openInviteOnMount, onInviteMounted
                     </div>
                     {atCapacity && isAdmin && !isTrial && (
                         <p className="text-xs mt-1.5" style={{ color: '#f59e0b' }}>
-                            Alle Plätze belegt. Zusätzlicher Platz: <a href="mailto:hallo@complens.de" className="underline">hallo@complens.de</a> (€ 990/Jahr)
+                            {t('seatsFullMsg', { email: 'hallo@complens.de' })}
                         </p>
                     )}
                     {isTrial && (
                         <p className="text-xs mt-1.5" style={{ color: '#f59e0b' }}>
-                            Team-Einladungen erfordern eine aktive CompLens-Lizenz.
+                            {t('trialInviteNote')}
                         </p>
                     )}
                 </div>
@@ -362,12 +371,11 @@ export default function TeamPanel({ teamData, openInviteOnMount, onInviteMounted
                 {/* Active members list */}
                 <div className="space-y-2">
                     <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                        Aktive Mitglieder ({members.length})
+                        {t('activeMembers', { count: members.length })}
                     </p>
                     {members.map(m => {
                         const ri = roleInfo(m.role)
                         const Icon = ri.icon
-                        // Initials: prefer name, fall back to email
                         const initials = m.fullName.trim()
                             ? m.fullName.trim().split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
                             : m.email.slice(0, 2).toUpperCase()
@@ -378,7 +386,6 @@ export default function TeamPanel({ teamData, openInviteOnMount, onInviteMounted
                                 style={{ background: 'var(--color-pl-surface)', border: '1px solid var(--color-pl-border)' }}
                             >
                                 <div className="flex items-center gap-3 min-w-0">
-                                    {/* Avatar */}
                                     <div
                                         className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold text-white"
                                         style={{ background: ri.color + '30', color: ri.color }}
@@ -386,12 +393,10 @@ export default function TeamPanel({ teamData, openInviteOnMount, onInviteMounted
                                         {initials}
                                     </div>
                                     <div className="min-w-0">
-                                        {/* Name (if set) or email */}
                                         <p className="text-sm font-medium truncate" style={{ color: 'var(--color-pl-text-primary)' }}>
                                             {m.fullName.trim() || m.email}
-                                            {m.isMe && <span className="ml-1.5 text-xs opacity-50">(Sie)</span>}
+                                            {m.isMe && <span className="ml-1.5 text-xs opacity-50">{t('you')}</span>}
                                         </p>
-                                        {/* Email (only shown when name is set) */}
                                         {m.fullName.trim() && (
                                             <p className="text-xs truncate" style={{ color: 'var(--color-pl-text-tertiary)' }}>
                                                 {m.email}
@@ -412,7 +417,7 @@ export default function TeamPanel({ teamData, openInviteOnMount, onInviteMounted
                                             )}
                                             <span className="text-xs opacity-30">·</span>
                                             <span className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                                                seit {formatDate(m.joined_at)}
+                                                {t('since', { date: formatDate(m.joined_at) })}
                                             </span>
                                         </div>
                                     </div>
@@ -428,7 +433,7 @@ export default function TeamPanel({ teamData, openInviteOnMount, onInviteMounted
                                             onClick={() => handleRemove(m.id)}
                                             disabled={removingId === m.id}
                                             className="w-7 h-7 flex items-center justify-center rounded-lg transition-colors hover:bg-red-500/15 disabled:opacity-40"
-                                            title="Mitglied entfernen"
+                                            title={t('removeMember')}
                                         >
                                             <Trash2 size={13} style={{ color: '#ef4444' }} />
                                         </button>
@@ -443,7 +448,7 @@ export default function TeamPanel({ teamData, openInviteOnMount, onInviteMounted
                 {isAdmin && pendingInvites.length > 0 && (
                     <div className="space-y-2">
                         <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                            Ausstehende Einladungen ({pendingInvites.length})
+                            {t('pendingInvites', { count: pendingInvites.length })}
                         </p>
                         {pendingInvites.map(inv => {
                             const ri = roleInfo(inv.role)
@@ -473,7 +478,7 @@ export default function TeamPanel({ teamData, openInviteOnMount, onInviteMounted
                                                 </span>
                                                 <span className="text-xs opacity-30">·</span>
                                                 <span className="text-xs" style={{ color: '#f59e0b' }}>
-                                                    Läuft ab in {expiresIn} {expiresIn === 1 ? 'Tag' : 'Tagen'}
+                                                    {t('expiresIn', { days: expiresIn })}
                                                 </span>
                                             </div>
                                         </div>
@@ -488,7 +493,7 @@ export default function TeamPanel({ teamData, openInviteOnMount, onInviteMounted
                                             onClick={() => handleResend(inv.id)}
                                             disabled={resendingId === inv.id}
                                             className="w-7 h-7 flex items-center justify-center rounded-lg transition-colors hover:bg-white/10 disabled:opacity-40"
-                                            title="Erneut senden"
+                                            title={t('resend')}
                                         >
                                             <RefreshCw size={12} style={{ color: 'var(--color-pl-text-tertiary)' }} className={resendingId === inv.id ? 'animate-spin' : ''} />
                                         </button>
@@ -496,7 +501,7 @@ export default function TeamPanel({ teamData, openInviteOnMount, onInviteMounted
                                             onClick={() => handleRevoke(inv.id)}
                                             disabled={revokingId === inv.id}
                                             className="w-7 h-7 flex items-center justify-center rounded-lg transition-colors hover:bg-red-500/15 disabled:opacity-40"
-                                            title="Einladung widerrufen"
+                                            title={t('revokeInvite')}
                                         >
                                             <X size={13} style={{ color: '#ef4444' }} />
                                         </button>
@@ -511,13 +516,13 @@ export default function TeamPanel({ teamData, openInviteOnMount, onInviteMounted
                 <details className="group">
                     <summary className="flex items-center gap-1.5 text-xs cursor-pointer select-none" style={{ color: 'var(--color-pl-text-tertiary)' }}>
                         <Users size={12} />
-                        Rollenübersicht
+                        {t('rolesOverview')}
                         <ChevronDown size={11} className="group-open:rotate-180 transition-transform ml-auto" />
                     </summary>
                     <div className="mt-3 space-y-2">
                         {[
-                            { role: 'admin', perms: ['Daten hochladen & verwalten', 'Analysen erstellen & ausführen', 'Berichte (PDF / PowerPoint) exportieren', 'Team einladen & entfernen', 'Abonnement & Einstellungen'] },
-                            { role: 'viewer', perms: ['Aggregierte Ergebnisse einsehen', 'Maßnahmenplan-Status einsehen', 'Fertige Berichte einsehen', 'Keine Upload-, Export- oder Admin-Rechte'] },
+                            { role: 'admin', perms: [t('adminPerm1'), t('adminPerm2'), t('adminPerm3'), t('adminPerm4'), t('adminPerm5')] },
+                            { role: 'viewer', perms: [t('viewerPerm1'), t('viewerPerm2'), t('viewerPerm3'), t('viewerPerm4')] },
                         ].map(({ role, perms }) => {
                             const ri = roleInfo(role)
                             const Icon = ri.icon

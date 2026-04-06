@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { useTranslations } from 'next-intl'
 import {
     MessageCircle, X, Send, Loader2, Bot, User,
     Sparkles, Maximize2, Minimize2, ChevronRight,
@@ -16,48 +17,13 @@ interface Message {
 
 // ─── Quick prompt categories ──────────────────────────────────
 
-const QUICK_CATEGORIES = [
-    {
-        label: 'Ergebnisse verstehen',
-        icon: BarChart3,
-        prompts: [
-            'Was bedeutet der bereinigte vs. unbereinigte Entgeltunterschied?',
-            'Welche Abteilung hat den größten Handlungsbedarf?',
-            'Wie ist unsere Quartilsverteilung zu interpretieren?',
-            'Was sind die WIF-Faktoren und wie beeinflussen sie das Ergebnis?',
-        ],
-    },
-    {
-        label: 'Rechtliche Pflichten',
-        icon: AlertTriangle,
-        prompts: [
-            'Welche Meldepflichten gelten für unser Unternehmen nach Art. 9?',
-            'Was passiert, wenn der Gap über 5% liegt — was müssen wir tun?',
-            'Bis wann muss der Bericht eingereicht werden?',
-            'Was ist eine gemeinsame Entgeltbewertung nach Art. 9 Abs. 1c?',
-        ],
-    },
-    {
-        label: 'Begründungen & Maßnahmen',
-        icon: CheckCircle2,
-        prompts: [
-            'Wie formuliere ich eine richtlinienkonforme Begründung nach Art. 10?',
-            'Welche Begründungskategorien sind nach der Richtlinie zulässig?',
-            'Wie priorisiere ich die offenen Begründungsfälle?',
-            'Was sind sinnvolle Maßnahmen nach Art. 11 für einen Gap > 5%?',
-        ],
-    },
-    {
-        label: 'Bericht & Export',
-        icon: FileText,
-        prompts: [
-            'Was muss im EU-Bericht nach Art. 9 enthalten sein?',
-            'Wie exportiere ich den fertigen Bericht als PDF?',
-            'Kann ich den Bericht direkt bei der Behörde einreichen?',
-            'Brauche ich eine Unterschrift / Bestätigung der Mitarbeitervertretung?',
-        ],
-    },
-]
+const QUICK_CATEGORY_ICONS = [BarChart3, AlertTriangle, CheckCircle2, FileText] as const
+const QUICK_CATEGORY_KEYS = [
+    { labelKey: 'categoryResults', promptKeys: ['resultsQ1', 'resultsQ2', 'resultsQ3', 'resultsQ4'] },
+    { labelKey: 'categoryLegal', promptKeys: ['legalQ1', 'legalQ2', 'legalQ3', 'legalQ4'] },
+    { labelKey: 'categoryExplanations', promptKeys: ['explanationsQ1', 'explanationsQ2', 'explanationsQ3', 'explanationsQ4'] },
+    { labelKey: 'categoryReports', promptKeys: ['reportsQ1', 'reportsQ2', 'reportsQ3', 'reportsQ4'] },
+] as const
 
 // ─── Markdown renderer (supports lists, bold, headers) ────────
 
@@ -116,6 +82,7 @@ function renderInline(text: string): React.ReactNode {
 // ─── Main chatbot component ───────────────────────────────────
 
 export default function AnalysisChatbot({ analysisId }: { analysisId?: string }) {
+    const t = useTranslations('chatbot')
     const [open,       setOpen]       = useState(false)
     const [isWide,     setIsWide]     = useState(false)
     const [activeTab,  setActiveTab]  = useState<'chat' | 'prompts'>('chat')
@@ -124,20 +91,20 @@ export default function AnalysisChatbot({ analysisId }: { analysisId?: string })
             id:      'welcome',
             role:    'assistant',
             content: [
-                'Guten Tag! Ich bin Ihr CompLens Assistent — ich helfe Ihnen mit Compliance-Fragen und der Bedienung von CompLens.',
+                t('welcomeMessage'),
                 '',
-                'Ich helfe Ihnen bei:',
+                t('welcomeCapabilities'),
                 '',
-                '- **CompLens bedienen** — Import, Analyse, Berichte, Auskunftsrecht',
-                '- **Ergebnisse verstehen** — Bereinigt vs. unbereinigt, Quartile, WIF',
-                '- **Rechtliche Pflichten** — Art. 9, 10, 11 der Richtlinie 2023/970',
-                '- **Begründungen formulieren** — Richtlinienkonforme Texte vorschlagen',
+                `- **${t('welcomeUsage')}**`,
+                `- **${t('welcomeResults')}**`,
+                `- **${t('welcomeLegal')}**`,
+                `- **${t('welcomeExplanations')}**`,
                 '',
                 analysisId
-                    ? 'Ich kenne Ihre aktuellen Analyseergebnisse, Begründungen und Maßnahmenpläne.'
-                    : 'Öffnen Sie eine Analyse für kontextbezogene Antworten zu Ihren konkreten Daten.',
+                    ? t('welcomeContextAvailable')
+                    : t('welcomeNoContext'),
                 '',
-                'Wie kann ich Ihnen helfen?',
+                t('welcomeHowCanIHelp'),
             ].join('\n'),
         },
     ])
@@ -236,9 +203,9 @@ export default function AnalysisChatbot({ analysisId }: { analysisId?: string })
                 }
             }
         } catch (err) {
-            const msg = err instanceof Error ? err.message : 'Unbekannter Fehler'
+            const msg = err instanceof Error ? err.message : t('unknownError')
             setMessages(prev => prev.map(m =>
-                m.id === asstId ? { ...m, content: `Fehler: ${msg}`, loading: false } : m,
+                m.id === asstId ? { ...m, content: t('errorPrefix', { msg }), loading: false } : m,
             ))
         } finally {
             setLoading(false)
@@ -268,7 +235,7 @@ export default function AnalysisChatbot({ analysisId }: { analysisId?: string })
                     }}
                 >
                     <Sparkles size={16} />
-                    CompLens Assistent
+                    {t('assistantName')}
                 </button>
             )}
 
@@ -297,15 +264,15 @@ export default function AnalysisChatbot({ analysisId }: { analysisId?: string })
                                 <Bot size={16} className="text-white" />
                             </div>
                             <div>
-                                <p className="text-sm font-semibold text-white">CompLens Assistent</p>
-                                <p className="text-xs text-white/70">Compliance, Produkthilfe & Ihr Analyse-Kontext</p>
+                                <p className="text-sm font-semibold text-white">{t('assistantName')}</p>
+                                <p className="text-xs text-white/70">{t('assistantSubtitle')}</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-1.5">
                             <button
                                 onClick={() => setIsWide(!isWide)}
                                 className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors"
-                                title={isWide ? 'Verkleinern' : 'Verbreitern'}
+                                title={isWide ? t('shrink') : t('expand')}
                             >
                                 {isWide ? <Minimize2 size={15} className="text-white" /> : <Maximize2 size={15} className="text-white" />}
                             </button>
@@ -313,7 +280,7 @@ export default function AnalysisChatbot({ analysisId }: { analysisId?: string })
                                 id="chatbot-close"
                                 onClick={() => setOpen(false)}
                                 className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors bg-white/10"
-                                title="Schließen"
+                                title={t('close')}
                             >
                                 <X size={16} className="text-white" />
                             </button>
@@ -336,7 +303,7 @@ export default function AnalysisChatbot({ analysisId }: { analysisId?: string })
                                     background: 'transparent',
                                 }}
                             >
-                                {tab === 'chat' ? '💬 Chat' : '⚡ Schnellfragen'}
+                                {tab === 'chat' ? `💬 ${t('tabChat')}` : `⚡ ${t('tabPrompts')}`}
                             </button>
                         ))}
                     </div>
@@ -378,7 +345,7 @@ export default function AnalysisChatbot({ analysisId }: { analysisId?: string })
                                             {msg.loading ? (
                                                 <span className="flex items-center gap-2" style={{ color: 'var(--color-pl-text-tertiary)' }}>
                                                     <Loader2 size={13} className="animate-spin" />
-                                                    Analysiere…
+                                                    {t('analysing')}
                                                 </span>
                                             ) : (
                                                 <MarkdownText text={msg.content} />
@@ -405,7 +372,7 @@ export default function AnalysisChatbot({ analysisId }: { analysisId?: string })
                                         value={input}
                                         onChange={e => setInput(e.target.value)}
                                         onKeyDown={handleKeyDown}
-                                        placeholder="Frage stellen… (Enter zum Senden, Shift+Enter = Zeilenumbruch)"
+                                        placeholder={t('inputPlaceholder')}
                                         className="flex-1 bg-transparent text-sm resize-none outline-none"
                                         style={{
                                             color:      'var(--color-pl-text-primary)',
@@ -427,7 +394,7 @@ export default function AnalysisChatbot({ analysisId }: { analysisId?: string })
                                     </button>
                                 </div>
                                 <p className="text-center text-xs mt-1.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                                    Betrieben mit Gemini · Nur aggregierte Daten · DSGVO-konform
+                                    {t('poweredBy')}
                                 </p>
                             </div>
                         </>
@@ -436,18 +403,22 @@ export default function AnalysisChatbot({ analysisId }: { analysisId?: string })
                     {/* ── TAB: Quick Prompts ── */}
                     {activeTab === 'prompts' && (
                         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
-                            {QUICK_CATEGORIES.map(cat => (
-                                <div key={cat.label}>
+                            {QUICK_CATEGORY_KEYS.map((cat, catIdx) => {
+                                const Icon = QUICK_CATEGORY_ICONS[catIdx]
+                                return (
+                                <div key={cat.labelKey}>
                                     <div className="flex items-center gap-2 mb-2">
-                                        <cat.icon size={14} style={{ color: 'var(--color-pl-brand-light)' }} />
+                                        <Icon size={14} style={{ color: 'var(--color-pl-brand-light)' }} />
                                         <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                                            {cat.label}
+                                            {t(cat.labelKey)}
                                         </p>
                                     </div>
                                     <div className="space-y-1.5">
-                                        {cat.prompts.map(q => (
+                                        {cat.promptKeys.map(qKey => {
+                                            const q = t(qKey)
+                                            return (
                                             <button
-                                                key={q}
+                                                key={qKey}
                                                 onClick={() => sendMessage(q)}
                                                 className="w-full text-left text-sm px-3 py-2.5 rounded-lg flex items-center justify-between gap-2 transition-all hover:scale-[1.01] group"
                                                 style={{
@@ -459,10 +430,12 @@ export default function AnalysisChatbot({ analysisId }: { analysisId?: string })
                                                 <span>{q}</span>
                                                 <ChevronRight size={14} className="flex-shrink-0 opacity-40 group-hover:opacity-100 transition-opacity" style={{ color: 'var(--color-pl-brand-light)' }} />
                                             </button>
-                                        ))}
+                                            )
+                                        })}
                                     </div>
                                 </div>
-                            ))}
+                                )
+                            })}
                         </div>
                     )}
                 </div>

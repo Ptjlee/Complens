@@ -1,3 +1,4 @@
+import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
@@ -9,8 +10,7 @@ import TrialExpiredOverlay from '@/components/dashboard/TrialExpiredOverlay'
 import DeviceFingerprintRegistrar from '@/components/dashboard/DeviceFingerprintRegistrar'
 import AnalysisChatbot from './dashboard/analysis/AnalysisChatbot'
 import { getOrCreateOnboardingProgress } from './dashboard/onboarding/actions'
-import { LanguageProvider } from '@/lib/i18n/LanguageContext'
-import type { Lang } from '@/lib/i18n/translations'
+import LocaleSync from '@/components/dashboard/LocaleSync'
 
 export default async function DashboardLayout({
     children,
@@ -43,7 +43,12 @@ export default async function DashboardLayout({
             : Promise.resolve({ data: null }),
     ])
 
-    const initialLang = ((member?.preferred_language as Lang | undefined) ?? 'de') as Lang
+    const initialLang = (member?.preferred_language as string | undefined) ?? 'de'
+
+    // Check if NEXT_LOCALE cookie matches DB preference
+    const cookieStore = await cookies()
+    const cookieLocale = cookieStore.get('NEXT_LOCALE')?.value
+    const localeMismatch = cookieLocale !== initialLang
 
     const showOnboarding = !!onboarding && !onboarding.completed_at
 
@@ -52,29 +57,29 @@ export default async function DashboardLayout({
     const trialEnd     = org?.trial_ends_at ? new Date(org.trial_ends_at) : null
     const trialExpired = !isLicensed && trialEnd !== null && trialEnd < new Date()
 
+    // If DB language doesn't match cookie, sync it client-side and reload
+    if (localeMismatch) {
+        return <LocaleSync locale={initialLang} />
+    }
+
     return (
-        <LanguageProvider initialLang={initialLang}>
-            <div className="flex h-screen overflow-hidden" style={{ background: 'var(--color-pl-bg)' }}>
-                <Sidebar role={member?.role as 'admin' | 'viewer'} />
-                <div className="flex flex-col flex-1 overflow-hidden">
-                    <Header user={user} fullName={member?.full_name} />
-                    {org && <TrialBanner org={org as any} />}
-                    <main className="flex-1 overflow-y-auto p-6">
-                        {children}
-                    </main>
-                </div>
-                {showOnboarding && (
-                    <OnboardingModal initialStep={onboarding.current_step} />
-                )}
-                {/* Silent: register device fingerprint once per session */}
-                <DeviceFingerprintRegistrar />
-                {/* Global CompLens Assistent — available on all pages, all plans */}
-                <AnalysisChatbot />
-                {/* Trial expired — full-screen overlay blocking all access */}
-                {trialExpired && org?.trial_ends_at && (
-                    <TrialExpiredOverlay trialEndedAt={org.trial_ends_at} />
-                )}
+        <div className="flex h-screen overflow-hidden" style={{ background: 'var(--color-pl-bg)' }}>
+            <Sidebar role={member?.role as 'admin' | 'viewer'} />
+            <div className="flex flex-col flex-1 overflow-hidden">
+                <Header user={user} fullName={member?.full_name} />
+                {org && <TrialBanner org={org as any} />}
+                <main className="flex-1 overflow-y-auto p-6">
+                    {children}
+                </main>
             </div>
-        </LanguageProvider>
+            {showOnboarding && (
+                <OnboardingModal initialStep={onboarding.current_step} />
+            )}
+            <DeviceFingerprintRegistrar />
+            <AnalysisChatbot />
+            {trialExpired && org?.trial_ends_at && (
+                <TrialExpiredOverlay trialEndedAt={org.trial_ends_at} />
+            )}
+        </div>
     )
 }

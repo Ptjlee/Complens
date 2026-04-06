@@ -4,6 +4,7 @@ import { Lock, Zap } from 'lucide-react'
 import { PLAN_META, FEATURE_LABELS } from '@/lib/plans'
 import type { Feature } from '@/lib/plans'
 import { useRouter } from 'next/navigation'
+import { useTranslations, useFormatter } from 'next-intl'
 
 interface UpgradeGateProps {
     /** The feature this gate is protecting. */
@@ -22,6 +23,8 @@ export default function UpgradeGate({
     children,
 }: UpgradeGateProps) {
     const router  = useRouter()
+    const t       = useTranslations('upgradeGate')
+    const format  = useFormatter()
     const meta    = PLAN_META[requiredPlan]
     const label   = FEATURE_LABELS[feature]
 
@@ -46,12 +49,13 @@ export default function UpgradeGate({
             {/* Message */}
             <div>
                 <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-pl-text)', marginBottom: 6 }}>
-                    {label} ist nicht verfügbar
+                    {t('notAvailable', { label })}
                 </div>
                 <div style={{ fontSize: 13, color: 'var(--color-pl-text-sub)', lineHeight: 1.5 }}>
-                    Diese Funktion ist im Plan{' '}
-                    <strong style={{ color: meta.color }}>{meta.label}</strong>{' '}
-                    enthalten ({meta.priceYearly.toLocaleString('de-DE')} €/Jahr).
+                    {t('includedInPlan', {
+                        plan: meta.label,
+                        price: format.number(meta.priceYearly, { style: 'decimal' }),
+                    })}
                 </div>
             </div>
 
@@ -70,7 +74,7 @@ export default function UpgradeGate({
                 onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
             >
                 <Zap size={15} />
-                Auf {meta.label} upgraden
+                {t('upgradeBtn', { plan: meta.label })}
             </button>
         </div>
     )

@@ -1,9 +1,13 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
+import { getTranslations } from 'next-intl/server'
 import PortalClient from './PortalClient'
 
-export const metadata = { title: 'Auskunftsrecht (Art. 7) — CompLens' }
+export async function generateMetadata() {
+    const t = await getTranslations('portal')
+    return { title: t('pageTitle') }
+}
 
 export default async function PortalPage() {
     const supabase = await createClient()

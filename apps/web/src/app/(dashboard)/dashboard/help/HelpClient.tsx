@@ -7,6 +7,7 @@ import {
     AlertTriangle, CheckCircle2, Info, Mail, Download, Search,
     BookOpen, Lightbulb, Zap, Globe, Layers, ExternalLink,
 } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
 
 const SupportTicketModal = dynamic(() => import('@/components/support/SupportTicketModal'), { ssr: false })
@@ -79,7 +80,7 @@ function StepCard({ step, color }: { step: GuideStep; color: string }) {
 }
 
 // ─── Module Panel ─────────────────────────────────────────────────────────────
-function ModulePanel({ module }: { module: Module }) {
+function ModulePanel({ module, guideLabel, faqLabel }: { module: Module; guideLabel: string; faqLabel: string }) {
     const [tab, setTab] = useState<'guide' | 'faq'>('guide')
     return (
         <div className="glass-card overflow-hidden">
@@ -94,14 +95,14 @@ function ModulePanel({ module }: { module: Module }) {
                     <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>{module.subtitle}</p>
                 </div>
                 <div className="ml-auto flex gap-1 p-0.5 rounded-lg" style={{ background: 'var(--color-pl-surface)', border: '1px solid var(--color-pl-border)' }}>
-                    {(['guide', 'faq'] as const).map(t => (
-                        <button key={t} onClick={() => setTab(t)}
+                    {(['guide', 'faq'] as const).map(tabKey => (
+                        <button key={tabKey} onClick={() => setTab(tabKey)}
                             className="px-3 py-1 rounded-md text-xs font-medium transition-all"
                             style={{
-                                background: tab === t ? 'var(--color-pl-brand)' : 'transparent',
-                                color: tab === t ? '#fff' : 'var(--color-pl-text-tertiary)',
+                                background: tab === tabKey ? 'var(--color-pl-brand)' : 'transparent',
+                                color: tab === tabKey ? '#fff' : 'var(--color-pl-text-tertiary)',
                             }}>
-                            {t === 'guide' ? 'Anleitung' : 'FAQ'}
+                            {tabKey === 'guide' ? guideLabel : faqLabel}
                         </button>
                     ))}
                 </div>
@@ -120,419 +121,231 @@ function ModulePanel({ module }: { module: Module }) {
     )
 }
 
-// ─── Data ────────────────────────────────────────────────────────────────────
-const MODULES: Module[] = [
-    {
-        id: 'start',
-        icon: <PlayCircle size={20} />,
-        color: 'linear-gradient(135deg,#1A3E66,#3b82f6)',
-        title: '1 · Erste Schritte',
-        subtitle: 'Organisation einrichten und CompLens kennenlernen',
-        steps: [
-            {
-                step: 1,
-                title: 'Registrierung & Organisation anlegen',
-                body: 'Nach der Registrierung legt CompLens automatisch Ihre Organisation an. Im Bereich Einstellungen → Organisation können Sie den Namen, das Land und weitere Metadaten anpassen. Diese Daten erscheinen auf allen generierten Berichten und PDF-Exporten.',
-                tip: 'Füllen Sie den Organisationsnamen vollständig und korrekt aus — er wird automatisch auf Ihren PDF-Berichten und dem Lizenzvertrag verwendet.',
-            },
-            {
-                step: 2,
-                title: 'Teammitglieder einladen',
-                body: 'Unter Einstellungen → Team können Administratoren weitere Personen (z. B. HR-Leiterin, Datenschutzbeauftragte, Arbeitnehmervertretung) per E-Mail einladen. Wählen Sie die Rolle: Admin (voller Zugriff) oder Viewer (Lesezugriff). Die Einladung ist 7 Tage gültig.',
-                tip: 'Die Gesamtanzahl Nutzerplätze ist an Ihre Lizenz gebunden. Zusätzliche Plätze können als Add-on gebucht werden.',
-            },
-            {
-                step: 3,
-                title: 'Profil vervollständigen',
-                body: 'Unter Einstellungen → Profil können Sie Ihren vollständigen Namen, Ihre Jobbezeichnung und Ihre bevorzugte Sprache (Deutsch / Englisch) hinterlegen. Name und Jobbezeichnung erscheinen auf internen Exporten.',
-            },
-            {
-                step: 4,
-                title: 'CSV-Vorlage herunterladen',
-                body: 'Bevor Sie Daten importieren, laden Sie die offizielle CSV-Vorlage unter Import → Vorlage herunterladen. Die Vorlage enthält alle Pflichtfelder gemäß EU-Richtlinie 2023/970 und der deutschen Entgelttransparenzgesetz-Anforderungen.',
-                tip: 'Verwenden Sie immer die aktuellste Vorlage. Ältere Versionen können fehlende Pflichtfelder enthalten.',
-            },
-        ],
-        faqs: [
-            { q: 'Wie lange dauert die Testphase?', a: 'Die Testphase beträgt 7 Tage ab Registrierung. In dieser Zeit haben Sie vollen Zugriff auf alle Funktionen. Nach Ablauf wird der Zugang automatisch gesperrt, bis eine Lizenz aktiviert wird. Berichte aus der Testphase sind mit einem MUSTER-Wasserzeichen versehen.' },
-            { q: 'Kann ich die Organisation nachträglich umbenennen?', a: 'Ja. Unter Einstellungen → Organisation können Administratoren den Organisationsnamen jederzeit ändern. Bereits erstellte PDF/PPT-Berichte werden nicht rückwirkend aktualisiert.' },
-            { q: 'Was passiert nach dem Testzeitraum?', a: 'Nach Ablauf des Testzeitraums wird ein Overlay angezeigt, das alle Dashboard-Interaktionen blockiert. Daten und Analysen bleiben erhalten. Mit einem Klick auf „Jetzt upgraden" gelangen Sie zur sicheren Stripe-Zahlungsseite.' },
-            { q: 'Welche Regionen werden unterstützt?', a: 'CompLens ist auf EU-Unternehmen ausgelegt, insbesondere auf den deutschen und europäischen Markt. Die Berechnungen orientieren sich an der EU-Richtlinie 2023/970 und dem deutschen EntgTranspG.' },
-        ],
-    },
-    {
-        id: 'import',
-        icon: <Upload size={20} />,
-        color: 'linear-gradient(135deg,#0ea5e9,#6366f1)',
-        title: '2 · Datensätze importieren',
-        subtitle: 'CSV-Daten korrekt vorbereiten und hochladen',
-        steps: [
-            {
-                step: 1,
-                title: 'CSV-Datei vorbereiten',
-                body: 'Öffnen Sie die CSV-Vorlage in Excel oder Google Sheets. Pflichtfelder: employee_id (eindeutig), gender (m/f/d), job_grade (Entgeltgruppe), hourly_rate oder annual_salary, department, employment_type (full_time/part_time/minijob), weekly_hours.',
-                tip: 'Verwenden Sie ausschließlich Semikolon (;) als Trennzeichen. Dezimalzahlen mit Komma (z. B. 25,50) oder Punkt (25.50) werden beide akzeptiert.',
-            },
-            {
-                step: 2,
-                title: 'Optionale Felder ergänzen',
-                body: 'Optionale Felder: first_name, last_name (für Auskunftsrecht Art. 7), variable_pay (Boni, Prämien), overtime_hours (Überstunden), benefits_value (Sachleistungen in €/Jahr). Diese Felder verbessern die Genauigkeit der Gesamtvergütungsberechnung.',
-            },
-            {
-                step: 3,
-                title: 'Datei hochladen',
-                body: 'Öffnen Sie Import → Neuer Datensatz. Geben Sie einen sprechenden Datensatznamen und das Berichtsjahr ein. Laden Sie Ihre CSV-Datei hoch. CompLens validiert die Daten automatisch und zeigt erkannte Fehler mit Zeilenverweisen an.',
-                tip: 'Der Datensatzname erscheint auf dem Deckblatt Ihres PDF-Berichts. Verwenden Sie z. B. „Entgeltdaten 2024 – Hauptgesellschaft".',
-            },
-            {
-                step: 4,
-                title: 'Fehler beheben',
-                body: 'Falls Validierungsfehler auftreten, sehen Sie eine Liste mit Fehlermeldungen und den betroffenen Zeilen. Häufige Fehler: fehlende gender-Werte, ungültige employment_type-Codes, negative Stundenlöhne. Korrigieren Sie die CSV und laden Sie erneut hoch.',
-            },
-            {
-                step: 5,
-                title: 'Datensatz archivieren oder löschen',
-                body: 'Nicht mehr benötigte Datensätze können archiviert (ausgeblendet, Daten erhalten) oder dauerhaft gelöscht werden. Bei einem Hard Delete werden alle verknüpften Analysen und Begründungen ebenfalls entfernt (DSGVO-konform).',
-                tip: 'Archivieren statt löschen: Archivierte Datensätze bleiben für Trendanalysen nutzbar, erscheinen aber nicht in der Hauptauswahl.',
-            },
-        ],
-        faqs: [
-            { q: 'Welches Encoding muss die CSV haben?', a: 'CompLens erwartet UTF-8 (mit oder ohne BOM). Wenn Umlaute (ä, ö, ü) falsch angezeigt werden, öffnen Sie die Datei in einem Texteditor und speichern Sie sie explizit als UTF-8.' },
-            { q: 'Wie gebe ich Teilzeitbeschäftigte korrekt ein?', a: 'Setzen Sie employment_type auf "part_time" und füllen Sie weekly_hours mit der vertraglich vereinbarten Stundenzahl. CompLens normiert alle Gehälter auf Bruttostundenverdienst gemäß Art. 3 EU-RL 2023/970.' },
-            { q: 'Was passiert mit Minijobs?', a: 'Minijobs (Typ "minijob") werden in die Berechnungen einbezogen, aber separat aus der Gesamt-Gap-Berechnung ausgewiesen, da sie statistisch wenig aussagekräftig sind. Eine separate Kohorte wird angezeigt, falls ≥ 5 Minijobber vorhanden.' },
-            { q: 'Sind Dienstleister / externe Mitarbeiter einzubeziehen?', a: 'Nein. Gemäß EU-RL 2023/970 sind nur Arbeitnehmer im arbeitsrechtlichen Sinne (Festangestellte, Teilzeitkräfte) zu erfassen, keine Selbstständigen, Leiharbeiter oder Werkvertragsnehmer.' },
-            { q: 'Was bedeutet "job_grade" genau?', a: 'job_grade entspricht Ihrer internen Entgeltgruppe oder Vergütungsstufe (z. B. „L1", „Senior", „Tarifgruppe 5"). CompLens analysiert die Entgeltlücke innerhalb jeder Kohorte. Je granularer die Einteilung, desto aussagekräftiger das Ergebnis.' },
-        ],
-    },
-    {
-        id: 'analysis',
-        icon: <BarChart3 size={20} />,
-        color: 'linear-gradient(135deg,#f59e0b,#ef4444)',
-        title: '3 · Analyse & Ergebnisse',
-        subtitle: 'Pay-Gap-Berechnungen verstehen und interpretieren',
-        steps: [
-            {
-                step: 1,
-                title: 'Neue Analyse starten',
-                body: 'Wählen Sie unter Analyse → Neue Analyse einen Datensatz. Geben Sie einen Analysenamen ein. Klicken Sie auf „Analyse starten". CompLens berechnet automatisch unbereinigten und bereinigten Median- und Mittelwert der Entgeltlücke nach EU-Standard.',
-                tip: 'Sie können beliebig viele Analysen aus demselben Datensatz erstellen, z. B. mit unterschiedlichen WIF-Gewichtungen.',
-            },
-            {
-                step: 2,
-                title: 'Unbereinigter vs. bereinigter Gender Pay Gap',
-                body: 'Der unbereinigte Gap vergleicht alle Frauen und Männer direkt (ohne Berücksichtigung von Berufsgruppen). Der bereinigte Gap vergleicht jeweils innerhalb derselben Kohorte (job_grade) und unter Berücksichtigung der WIF-Faktoren. Beide Werte sind gesetzlich meldepflichtig gemäß Art. 9 EU-RL 2023/970.',
-            },
-            {
-                step: 3,
-                title: '5%-Schwelle beachten',
-                body: 'Übersteigt der unbereinigte Median-Gap 5%, besteht gemäß Art. 9 Abs. 1c der EU-Richtlinie Handlungsbedarf. CompLens kennzeichnet dies automatisch mit einem roten Status-Badge und generiert einen Maßnahmenplan-Vorschlag.',
-                tip: 'Die 5%-Schwelle gilt für den unbereinigten Median-Gap. Der bereinigte Gap zeigt, wie viel nach Berücksichtigung von Berufsgruppen und Faktoren bestehen bleibt.',
-            },
-            {
-                step: 4,
-                title: 'Ergebnisse nach Abteilung & Entgeltgruppe',
-                body: 'Im Analyse-Detailbereich sehen Sie Aufschlüsselungen nach Abteilung (department) und Entgeltgruppe (job_grade). Kohorten mit weniger als 5 Personen werden aus Datenschutzgründen anonymisiert und als „< 5 MA" angezeigt.',
-            },
-            {
-                step: 5,
-                title: 'Quartilsverteilung',
-                body: 'Die Quartilsansicht zeigt, in welchem Entgeltquartil Frauen und Männer wie stark vertreten sind. Gemäß Art. 9 Abs. 1b EU-RL müssen Unternehmen diese Verteilung im Bericht ausweisen.',
-            },
-        ],
-        faqs: [
-            { q: 'Was sind WIF-Faktoren?', a: 'WIF steht für „Wertigkeit, Inhalt, Funktion" — die objektiven Faktoren, die laut EU-Richtlinie zur Beurteilung der Gleichwertigkeit von Arbeit herangezogen werden. CompLens berücksichtigt standardmäßig: Qualifikationsanforderungen, Verantwortung, Belastung und Arbeitsbedingungen.' },
-            { q: 'Warum unterscheidet sich der Median vom Mittelwert?', a: 'Der Median ist der mittlere Wert einer sortierten Liste. Er ist robuster gegenüber Ausreißern (z. B. Toppverdiener). Der Mittelwert (Durchschnitt) wird durch Ausreißer beeinflusst. Die EU-Richtlinie schreibt primär den Median vor; CompLens zeigt beide Werte.' },
-            { q: 'Warum werden Kohorten mit < 5 Personen ausgeblendet?', a: 'Kohorten mit weniger als 5 Personen einer Geschlechtergruppe werden aus datenschutzrechtlichen Gründen gem. DSGVO Art. 5 Abs. 1c (Datenminimierung) nicht aufgeschlüsselt ausgewiesen. Sie fließen aber in den Gesamt-Gap ein.' },
-            { q: 'Muss ich alle Analysen aufbewahren?', a: 'Die EU-Richtlinie fordert eine Aufbewahrung der Berichtsdaten für mindestens 4 Jahre. CompLens speichert Analysen dauerhaft, bis Sie sie explizit löschen. Für die langfristige Archivierung empfehlen wir zusätzlich den PDF-Export.' },
-        ],
-    },
-    {
-        id: 'explanations',
-        icon: <MessageSquare size={20} />,
-        color: 'linear-gradient(135deg,#8b5cf6,#ec4899)',
-        title: '4 · Begründungen erfassen',
-        subtitle: 'Entgeltunterschiede dokumentieren und begründen',
-        steps: [
-            {
-                step: 1,
-                title: 'Was sind Begründungen?',
-                body: 'Begründungen (Explanations) ermöglichen es Ihnen, statistisch auffällige Entgeltlücken innerhalb einer Kohorte mit objektiven, geschlechtsneutralen Faktoren zu erklären. Beispiele: Leistungsbeurteilungen, Betriebszugehörigkeit, Marktvergütung für Spezialisten.',
-                tip: 'Begründungen reduzieren den bereinigten Gap, aber niemals den unbereinigten. Beide sind meldepflichtig.',
-            },
-            {
-                step: 2,
-                title: 'Begründung hinzufügen',
-                body: 'Klicken Sie in der Analyse-Detailansicht bei einer Kohorte auf „Begründung hinzufügen". Wählen Sie eine Kategorie (Leistung, Markt, Dienstalter, ...), geben Sie den Erklärungsanteil in % oder als absoluter Stundenlohnwert ein und formulieren Sie eine Beschreibung.',
-            },
-            {
-                step: 3,
-                title: 'Begründungen im Bericht',
-                body: 'Alle erfassten Begründungen erscheinen automatisch im PDF-Bericht (Seite 3: Bereinigungsübersicht) und in der PPT-Präsentation. Der Bericht weist aus, welcher Anteil der Gesamtlücke begründet ist.',
-                tip: 'Formulieren Sie Begründungen klar und sachlich. Sie können bei einer Betriebsprüfung oder Behördenanfrage als Dokumentation vorgelegt werden.',
-            },
-            {
-                step: 4,
-                title: 'Begründungen bearbeiten und löschen',
-                body: 'Bestehende Begründungen können über das Bearbeitungssymbol (✎) angepasst oder gelöscht werden. Änderungen wirken sich sofort auf den bereinigten Gap in der Analyseansicht aus.',
-            },
-        ],
-        faqs: [
-            { q: 'Wie viele Begründungen kann ich pro Kohorte erfassen?', a: 'Es gibt keine Begrenzung. Sie können mehrere Faktoren kombinieren (z. B. 2% Dienstalter + 1,5% Leistung). CompLens addiert alle Begründungsanteile und zeigt den verbleibenden unerklärten Rest.' },
-            { q: 'Sind Begründungen rechtlich bindend?', a: 'Begründungen sind Ihre interne Dokumentation. Sie ersetzen keine arbeitsrechtliche Prüfung. Bei Anfragen von Behörden oder Gerichten können die Begründungen jedoch als Nachweisdokument dienen. Lassen Sie kritische Begründungen von einem Fachanwalt für Arbeitsrecht prüfen.' },
-            { q: 'Was ist der Unterschied zwischen „erklärt" und „unerläutert"?', a: '„Erklärt" heißt: Der Gap-Anteil ist durch eine dokumentierte, objektive Begründung belegt. „Unerläutert" heißt: Der verbleibende Gap-Anteil hat keine hinterlegte Begründung und gilt rechtlich als potenzielle Diskriminierung.' },
-        ],
-    },
-    {
-        id: 'remediation',
-        icon: <Zap size={20} />,
-        color: 'linear-gradient(135deg,#10b981,#3b82f6)',
-        title: '5 · Maßnahmenpläne',
-        subtitle: 'Entgeltlücken mit strukturierten Plänen schließen',
-        steps: [
-            {
-                step: 1,
-                title: 'Maßnahmenplan erstellen',
-                body: 'Unter Maßnahmen → Neuer Plan wählen Sie die betroffene Analyse und geben einen Titel und ein Zieldatum ein. Ein Plan kann mehrere Maßnahmen-Schritte (Steps) enthalten, die einzelnen Kohorten oder Abteilungen zugewiesen werden.',
-            },
-            {
-                step: 2,
-                title: 'Maßnahmen-Schritte definieren',
-                body: 'Jeder Schritt enthält: Bezeichnung, Beschreibung, Zuordnung (Abteilung/Kohorte), Verantwortliche Person und Zieldatum. Schritte können als „offen", „in Bearbeitung" oder „abgeschlossen" markiert werden.',
-                tip: 'Konkreter planen: Definieren Sie messbare Ziele pro Schritt, z. B. „Lohnerhöhung 3% für Frauen in L3 bis 31.12.2025".',
-            },
-            {
-                step: 3,
-                title: 'Fortschritt verfolgen',
-                body: 'Im Maßnahmen-Dashboard sehen Sie alle aktiven Pläne mit Fortschrittsbalken, offenen Schritten und überfälligen Maßnahmen. Die Gesamtfortschrittsanzeige aggregiert alle Schritte aller Pläne.',
-            },
-        ],
-        faqs: [
-            { q: 'Kann ich Maßnahmenpläne exportieren?', a: 'Ja. Der Maßnahmenplan wird in den PDF-Bericht integriert (ab Seite 4). Eine separate Export-Funktion für Maßnahmenpläne wird in einem zukünftigen Update bereitgestellt.' },
-            { q: 'Verändert ein Maßnahmenplan meine Analyse?', a: 'Nein. Maßnahmenpläne sind rein dokumentarisch und beeinflussen keine Berechnungsergebnisse. Für eine aktualisierte Analyse laden Sie einen neuen Datensatz hoch und starten eine neue Analyse.' },
-        ],
-    },
-    {
-        id: 'reports',
-        icon: <FileText size={20} />,
-        color: 'linear-gradient(135deg,#14b8a6,#3b82f6)',
-        title: '6 · Berichte & Exporte',
-        subtitle: 'PDF-Berichte und PPT-Präsentationen erstellen',
-        steps: [
-            {
-                step: 1,
-                title: 'PDF-Bericht generieren',
-                body: 'Klicken Sie in der Analysedetailseite auf „PDF exportieren". Der Bericht enthält: Deckblatt mit Organisationsname, Executive Summary, Entgeltlücken-Übersicht, Kohortendetails, Quartilsverteilung, Begründungsübersicht und Maßnahmenplan (sofern vorhanden).',
-                tip: 'Berichte im Testzeitraum oder bei abgelaufener Lizenz enthalten ein rotes MUSTER-Wasserzeichen und sind auf 4 Seiten beschränkt.',
-            },
-            {
-                step: 2,
-                title: 'PPT-Präsentation generieren',
-                body: 'Klicken Sie auf „PPT exportieren". Die Präsentation enthält 7 Folien: Deckblatt, Executive Summary, Entgeltlücken-Übersicht, Bereiche, Quartile, Gehaltsvergleich und Methodik. Ideal für Präsentationen vor Geschäftsführung oder Betriebsrat.',
-            },
-            {
-                step: 3,
-                title: 'Branding im Export',
-                body: 'Alle Exporte zeigen prominent den Namen Ihrer Organisation. CompLens erscheint nur als kleiner Hinweis „Erstellt mit CompLens". Das ermöglicht professionelle Berichte in Ihrem Corporate Design.',
-            },
-            {
-                step: 4,
-                title: 'Lizenzvertrag herunterladen',
-                body: 'Unter Einstellungen → Abo können lizenzierte Nutzer den personalisierten Softwarenutzungsvertrag (bereits von DexterBee GmbH digital unterzeichnet) als PDF herunterladen.',
-            },
-        ],
-        faqs: [
-            { q: 'Wie viele Seiten hat der PDF-Bericht?', a: 'Ein vollständiger Bericht bei aktiver Lizenz umfasst je nach Datenmenge 6–10 Seiten. Im Testzeitraum sind die Seiten 5+ durch eine Upgrade-Seite ersetzt.' },
-            { q: 'Kann ich den Bericht direkt an Behörden senden?', a: 'CompLens-Berichte sind als internes Dokumentations- und Analysewerkzeug konzipiert. Die genauen Meldeanforderungen an Behörden (Antidiskriminierungsstelle, Arbeitgeber­verbände) variieren je nach Unternehmensgröße und Land. Konsultieren Sie für die offizielle Meldung einen Fachanwalt für Arbeitsrecht.' },
-            { q: 'In welchen Sprachen werden Berichte erstellt?', a: 'Aktuell werden alle Berichte auf Deutsch erstellt (Pflichtsprache gem. EntgTranspG für deutsche Unternehmen). Mehrsprachige Exporte sind für zukünftige Versionen geplant.' },
-        ],
-    },
-    {
-        id: 'portal',
-        icon: <Users size={20} />,
-        color: 'linear-gradient(135deg,#f59e0b,#10b981)',
-        title: '7 · Auskunftsrecht (Art. 7)',
-        subtitle: 'Individuelle Mitarbeiterinformationen bereitstellen',
-        steps: [
-            {
-                step: 1,
-                title: 'Was ist das Auskunftsrecht?',
-                body: 'Artikel 7 der EU-Richtlinie 2023/970 verpflichtet Arbeitgeber, Mitarbeitenden auf Anfrage Auskunft über ihr eigenes Gehalt im Vergleich zur Durchschnittsvergütung ihrer Vergleichsgruppe zu geben. Die Auskunft muss binnen 2 Monaten erteilt werden.',
-            },
-            {
-                step: 2,
-                title: 'Mitarbeiter suchen',
-                body: 'Im Bereich Auskunftsrecht → Mitarbeiter suchen geben Sie den Namen oder die Personal-ID der anfragenden Person ein (mindestens 3 Zeichen). CompLens zeigt die Entgeltinformationen der Vergleichsgruppe an.',
-                tip: 'Suche funktioniert nur für Mitarbeitende, die im importierten Datensatz mit first_name/last_name erfasst sind.',
-            },
-            {
-                step: 3,
-                title: 'PDF-Brief generieren',
-                body: 'Klicken Sie auf „PDF generieren / Drucken". CompLens erstellt ein professionelles Auskunftsschreiben mit dem Organisationsnamen, den gesetzlich vorgeschriebenen Vergleichsdaten und dem Rechtsgrundverweis (Art. 7 EU-RL 2023/970). Das Schreiben kann direkt gedruckt oder per E-Mail versendet werden.',
-            },
-        ],
-        faqs: [
-            { q: 'Wer darf die Auskunft anfordern?', a: 'Jeder Beschäftigte darf einmal pro Jahr eine Auskunft anfordern. Die Auskunft beinhaltet den Median der Vergleichsgruppe, aufgeschlüsselt nach Geschlecht — nicht das Gehalt einzelner Kolleginnen und Kollegen.' },
-            { q: 'Wie schütze ich die Anonymität anderer Mitarbeiter?', a: 'CompLens zeigt nur Mediane und Mittelwerte je Kohorte, keine Einzelgehälter. Kohorten mit < 5 Personen werden nicht angezeigt. Das Schreiben enthält keine personenbezogenen Daten Dritter.' },
-            { q: 'Was, wenn die Vergleichsgruppe zu klein ist?', a: 'Wenn die Kohorte des Mitarbeiters weniger als 5 Personen umfasst, kann CompLens keine Auskunft erteilen. In diesem Fall sind alternative Vergleichsgruppen zu definieren. Wenden Sie sich für diesen Sonderfall an den Support.' },
-        ],
-    },
-    {
-        id: 'bands',
-        icon: <Layers size={20} />,
-        color: 'linear-gradient(135deg,#0ea5e9,#10b981)',
-        title: '8 · Entgeltbänder (Art. 9)',
-        subtitle: 'Interne Gehaltsbänder erstellen und EU-Intra-Gruppen-Compliance prüfen',
-        steps: [
-            {
-                step: 1,
-                title: 'Was sind Entgeltbänder?',
-                body: 'Entgeltbänder legen Min-/Maximalvergütung pro Entgeltgruppe fest. EU Art. 9 verpflichtet Unternehmen zur Veröffentlichung von Entgeltinformationen nach Kategorie und Geschlecht. Eine Intra-Gruppen-Lücke ≥ 5% innerhalb derselben Entgeltgruppe löst Begründungspflicht nach Art. 10 aus.',
-                tip: 'Die Compa-Ratio = (Median-Gehalt ÷ Bandmitte) × 100. Werte < 87% sind ein typisches Warnsignal für Unterbezahlung in der C&B-Praxis.',
-            },
-            {
-                step: 2,
-                title: 'Entgeltbänder automatisch anlegen',
-                body: 'CompLens erkennt die job_grade-Werte aus Ihren importierten Daten und schlägt automatisch das passende Benennungsschema vor (G-Skala, L-Skala, TVöD, TV-L, ERA, E-Skala usw.). Per 1-Klick werden alle Entgeltgruppen angelegt und die Statistiken berechnet.',
-                tip: 'Sie können das Benennungsschema im Bereich Einstellungen → Entgeltbänder jederzeit anpassen.',
-            },
-            {
-                step: 3,
-                title: 'Interne Statistiken & EU-Heatmap',
-                body: 'Für jede Entgeltgruppe berechnet CompLens intern: Min, P25, Median, P75, Max (Grundgehalt), getrennte ♀/♂ Mediane, Anzahl Beschäftigte (n), Intra-Lücke und Gesamtvergütungs-Median. Die EU Art. 9 Heatmap bewertet jede Gruppe binär: Grün = konform (< 5%), Rot = Handlungsbedarf (≥ 5%).',
-            },
-            {
-                step: 4,
-                title: 'Markt-Benchmark ergänzen',
-                body: 'Optional: Externe Marktdaten (z. B. Kienbaum, Radford, StepStone) per Gruppe eintragen (Quelle, Jahr, P25/P50/P75 extern). Diese erscheinen dann im Box-Plot-Diagramm als Vergleichsband.',
-            },
-            {
-                step: 5,
-                title: 'Entgeltbänder in Berichten',
-                body: 'Die Bandvisualisierung erscheint im Analyse-Tab „Entgeltbänder (Art. 9)", auf dem Dashboard (7. KPI-Karte), im PDF-Export als optionale Seite (aktivierbar in PDF-Optionen) und in der PPT-Präsentation als eigene Folie mit IQR-Diagramm.',
-            },
-        ],
-        faqs: [
-            { q: 'Intra-Gruppen-Lücke vs. Gesamt-Gender-Pay-Gap — was ist der Unterschied?', a: 'Der Gesamt-Gap vergleicht alle Frauen und Männer im Unternehmen. Die Intra-Gruppen-Lücke (Art. 9) vergleicht Frauen und Männer innerhalb derselben Entgeltgruppe. Beides ist meldepflichtig; die Intra-Lücke ist schwerer zu begründen, da die Kohorte bereits vergleichbar ist.' },
-            { q: 'Was passiert bei Gruppen < 5 Personen?', a: 'Entgeltgruppen mit weniger als 5 Personen einer Geschlechtergruppe werden aus Datenschutzgründen anonymisiert. Sie erscheinen in der Heatmap grau.' },
-            { q: 'Muss ich Entgeltbänder manuell definieren?', a: 'Nein. CompLens erstellt Bänder automatisch aus Ihren importierten job_grade-Werten. Sie können Min/Max-Grenzen nachträglich anpassen. Manual overrides sind jederzeit möglich.' },
-        ],
-    },
-    {
-        id: 'trends',
-        icon: <TrendingUp size={20} />,
-        color: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
-        title: '9 · Trendanalyse',
-        subtitle: 'Entwicklung der Entgeltlücke über mehrere Jahre vergleichen',
-        steps: [
-            {
-                step: 1,
-                title: 'Datensätze für die Analyse auswählen',
-                body: 'Öffnen Sie Trendanalyse. Im Bereich „Datensatz-Auswahl" sehen Sie alle vorhandenen Analysen. Wählen Sie per Checkbox mindestens 2 Datensätze aus, die Sie vergleichen möchten. CompLens ermittelt automatisch sinnvolle Vorauswahl basierend auf Berichtsjahr.',
-                tip: 'Sie müssen mindestens 2 Datensätze auswählen, damit Trendlinien und Delta-Karten berechnet werden.',
-            },
-            {
-                step: 2,
-                title: 'Jahresvergleich vs. Vergleichsmodus',
-                body: 'Standard-Modus: Pro Berichtsjahr wird eine Linie dargestellt (ein Datensatz pro Jahr). Vergleichsmodus (Umschalter oben rechts): Jeder ausgewählte Datensatz wird als eigene Linie angezeigt — auch wenn mehrere Datensätze dasselbe Jahr abdecken. Ideal für A/B-Szenarien (z. B. mit und ohne bestimmte Abteilung).',
-                tip: 'Im Vergleichsmodus können Sie gezielt 2 Szenarien gegenüberstellen, z. B. „Datensatz 2024 Gesamt" vs. „Datensatz 2024 ohne Management".',
-            },
-            {
-                step: 3,
-                title: 'Delta-Karten interpretieren',
-                body: 'Jede Delta-Karte zeigt den aktuellen Wert und die Veränderung zum Vorjahreswert. Grün = Verbesserung (Gap gesunken), Rot = Verschlechterung (Gap gestiegen). Der Vergleich bezieht sich immer auf das unmittelbar vorherige Jahr in der Auswahl.',
-            },
-            {
-                step: 4,
-                title: 'Bereichs- und Entgeltgruppen-Heatmap',
-                body: 'Die Tabs „Bereiche" und „Gruppen" zeigen farbcodiert die bereinigte Entgeltlücke je Abteilung/Gruppe und Jahr. Dunkelrot = Gap > 10%, Orange = 5–10%, Gelb = 2–5%, Grün = < 2%. Ideal für Fortschrittsberichte an Geschäftsführung oder Betriebsrat.',
-            },
-        ],
-        faqs: [
-            { q: 'Warum sehe ich keine Trendansicht?', a: 'Sie müssen erst mindestens 2 Datensätze/Analysen in der Datensatz-Auswahl anklicken. Ohne Auswahl erscheint der Hinweis „Wählen Sie mindestens einen Datensatz aus".' },
-            { q: 'Kann ich denselben Datensatz zweimal hinzufügen?', a: 'Nein. Jeder Datensatz kann nur einmal ausgewählt werden. Wenn Sie Szenarien vergleichen möchten, importieren Sie denselben Datensatz mit unterschiedlichen Parametern (z. B. gefilterte Mitarbeitergruppen).' },
-            { q: 'Werden Trends auch im Bericht angezeigt?', a: 'Trendverläufe sind aktuell nur in der interaktiven Trendansicht verfügbar. Eine Integration in den PDF-Bericht ist für eine zukünftige Version geplant.' },
-        ],
-    },
-    {
-        id: 'compliance',
-        icon: <ShieldCheck size={20} />,
-        color: 'linear-gradient(135deg,#10b981,#14b8a6)',
-        title: '10 · DSGVO & Compliance',
-        subtitle: 'Datenschutz, AVV und Rechtsnachweise',
-        steps: [
-            {
-                step: 1,
-                title: 'Auftragsverarbeitungsvertrag (AVV)',
-                body: 'Wenn Sie personenbezogene Daten (Gehalte, Namen) in CompLens verarbeiten, sind Sie gemäß Art. 28 DSGVO verpflichtet, einen Auftragsverarbeitungsvertrag mit DexterBee GmbH abzuschließen. Fordern Sie diesen über den Button auf der Compliance-Seite an.',
-                tip: 'Der AVV ist kostenlos und wird innerhalb von 2 Werktagen per E-Mail zugesandt.',
-            },
-            {
-                step: 2,
-                title: 'Datenschutzarchitektur',
-                body: 'Alle Daten werden in der EU verarbeitet (Frankfurt am Main). Übertragungen sind TLS 1.3-verschlüsselt, Daten at rest AES-256. CompLens nutzt Google Gemini über EU-API-Endpunkte; Ihre Daten werden nicht zum Training von Modellen verwendet.',
-            },
-            {
-                step: 3,
-                title: 'Löschkonzept',
-                body: 'Sie können einzelne Datensätze, Analysen oder Ihren gesamten Account jederzeit löschen. Ein Hard Delete entfernt alle verknüpften Daten unwiderruflich. Auf Anfrage erstellt CompLens vor dem Löschen einen vollständigen Datenexport.',
-            },
-        ],
-        faqs: [
-            { q: 'Wer ist Verantwortlicher im Sinne der DSGVO?', a: 'Ihr Unternehmen ist der Verantwortliche gemäß Art. 4 Nr. 7 DSGVO. DexterBee GmbH ist Auftragsverarbeiter gemäß Art. 4 Nr. 8 DSGVO. Dies wird im AVV geregelt.' },
-            { q: 'Werden die Daten für andere Zwecke genutzt?', a: 'Nein. Ihre Entgeltdaten werden ausschließlich zur Erbringung der CompLens-Dienstleistung genutzt. Keine Weitergabe an Dritte, kein Training von Modellen. Rechtsgrundlage: Art. 6 Abs. 1b DSGVO (Vertragserfüllung).' },
-        ],
-    },
-    {
-        id: 'settings',
-        icon: <Settings size={20} />,
-        color: 'linear-gradient(135deg,#64748b,#334155)',
-        title: '11 · Einstellungen & Team',
-        subtitle: 'Profil, Organisation und Abonnement verwalten',
-        steps: [
-            {
-                step: 1,
-                title: 'Profil bearbeiten',
-                body: 'Unter Einstellungen → Profil können Sie Ihren Namen, Ihre Berufsbezeichnung und Ihre bevorzugte Sprache (Deutsch/Englisch) festlegen. Diese Einstellungen sind nutzerspezifisch und gelten nicht für andere Teammitglieder.',
-            },
-            {
-                step: 2,
-                title: 'Sprache wechseln',
-                body: 'CompLens unterstützt Deutsch und Englisch. Wählen Sie Ihre bevorzugte Sprache im Profil-Tab. Die Sprache wird sofort für die gesamte Oberfläche übernommen. Berichte werden weiterhin auf Deutsch erstellt (gesetzliche Anforderung für deutsche Unternehmen).',
-                tip: 'Als Admin können Sie für jedes Teammitglied individuell eine Sprache festlegen.',
-            },
-            {
-                step: 3,
-                title: 'Abonnement & Lizenz',
-                body: 'Im Tab Abonnement sehen Sie Ihren aktuellen Plan, das Ablaufdatum und die Anzahl genutzter Nutzerplätze. Lizenzierte Nutzer können den vorausgefüllten Softwarenutzungsvertrag als PDF herunterladen. Für Upgrades und Add-ons stehen direkte Stripe-Checkout-Links bereit.',
-            },
-            {
-                step: 4,
-                title: 'Rollen und Berechtigungen',
-                body: 'Admin: Vollzugriff inkl. Import, Analyse, Einstellungen, Teamverwaltung. Viewer: Lesezugriff auf Analysen, Berichte und Portal — keine Import- oder Einstellungsrechte. Rollen können nur von Admins geändert werden.',
-            },
-        ],
-        faqs: [
-            { q: 'Kann ich mein Passwort zurücksetzen?', a: 'Ja. Klicken Sie auf der Login-Seite auf „Passwort vergessen". Sie erhalten eine E-Mail mit einem Reset-Link (gültig für 60 Minuten).' },
-            { q: 'Wie kündige ich mein Abonnement?', a: 'Kündigung per Support-Ticket oder schriftlich mit 3-monatiger Frist zum Jahresende. Bei Fragen zur Kündigung steht unser Support-Team zur Verfügung.' },
-            { q: 'Was passiert mit meinen Daten nach der Kündigung?', a: 'Nach Vertragsende haben Sie 30 Tage Zeit, Ihre Daten (Analysen, Berichte) zu exportieren. Danach werden alle Daten unwiderruflich gelöscht. Auf Anfrage erstellen wir vorab einen Vollexport.' },
-        ],
-    },
-]
+// ─── Data builder (from translations) ───────────────────────────────────────
+function buildModules(t: (key: string) => string): Module[] {
+    return [
+        {
+            id: 'start',
+            icon: <PlayCircle size={20} />,
+            color: 'linear-gradient(135deg,#1A3E66,#3b82f6)',
+            title: t('start.title'),
+            subtitle: t('start.subtitle'),
+            steps: [
+                { step: 1, title: t('start.step1Title'), body: t('start.step1Body'), tip: t('start.step1Tip') },
+                { step: 2, title: t('start.step2Title'), body: t('start.step2Body'), tip: t('start.step2Tip') },
+                { step: 3, title: t('start.step3Title'), body: t('start.step3Body') },
+                { step: 4, title: t('start.step4Title'), body: t('start.step4Body'), tip: t('start.step4Tip') },
+            ],
+            faqs: [
+                { q: t('start.faq1Q'), a: t('start.faq1A') },
+                { q: t('start.faq2Q'), a: t('start.faq2A') },
+                { q: t('start.faq3Q'), a: t('start.faq3A') },
+                { q: t('start.faq4Q'), a: t('start.faq4A') },
+            ],
+        },
+        {
+            id: 'import',
+            icon: <Upload size={20} />,
+            color: 'linear-gradient(135deg,#0ea5e9,#6366f1)',
+            title: t('import.title'),
+            subtitle: t('import.subtitle'),
+            steps: [
+                { step: 1, title: t('import.step1Title'), body: t('import.step1Body'), tip: t('import.step1Tip') },
+                { step: 2, title: t('import.step2Title'), body: t('import.step2Body') },
+                { step: 3, title: t('import.step3Title'), body: t('import.step3Body'), tip: t('import.step3Tip') },
+                { step: 4, title: t('import.step4Title'), body: t('import.step4Body') },
+                { step: 5, title: t('import.step5Title'), body: t('import.step5Body'), tip: t('import.step5Tip') },
+            ],
+            faqs: [
+                { q: t('import.faq1Q'), a: t('import.faq1A') },
+                { q: t('import.faq2Q'), a: t('import.faq2A') },
+                { q: t('import.faq3Q'), a: t('import.faq3A') },
+                { q: t('import.faq4Q'), a: t('import.faq4A') },
+                { q: t('import.faq5Q'), a: t('import.faq5A') },
+            ],
+        },
+        {
+            id: 'analysis',
+            icon: <BarChart3 size={20} />,
+            color: 'linear-gradient(135deg,#f59e0b,#ef4444)',
+            title: t('analysis.title'),
+            subtitle: t('analysis.subtitle'),
+            steps: [
+                { step: 1, title: t('analysis.step1Title'), body: t('analysis.step1Body'), tip: t('analysis.step1Tip') },
+                { step: 2, title: t('analysis.step2Title'), body: t('analysis.step2Body') },
+                { step: 3, title: t('analysis.step3Title'), body: t('analysis.step3Body'), tip: t('analysis.step3Tip') },
+                { step: 4, title: t('analysis.step4Title'), body: t('analysis.step4Body') },
+                { step: 5, title: t('analysis.step5Title'), body: t('analysis.step5Body') },
+            ],
+            faqs: [
+                { q: t('analysis.faq1Q'), a: t('analysis.faq1A') },
+                { q: t('analysis.faq2Q'), a: t('analysis.faq2A') },
+                { q: t('analysis.faq3Q'), a: t('analysis.faq3A') },
+                { q: t('analysis.faq4Q'), a: t('analysis.faq4A') },
+            ],
+        },
+        {
+            id: 'explanations',
+            icon: <MessageSquare size={20} />,
+            color: 'linear-gradient(135deg,#8b5cf6,#ec4899)',
+            title: t('explanations.title'),
+            subtitle: t('explanations.subtitle'),
+            steps: [
+                { step: 1, title: t('explanations.step1Title'), body: t('explanations.step1Body'), tip: t('explanations.step1Tip') },
+                { step: 2, title: t('explanations.step2Title'), body: t('explanations.step2Body') },
+                { step: 3, title: t('explanations.step3Title'), body: t('explanations.step3Body'), tip: t('explanations.step3Tip') },
+                { step: 4, title: t('explanations.step4Title'), body: t('explanations.step4Body') },
+            ],
+            faqs: [
+                { q: t('explanations.faq1Q'), a: t('explanations.faq1A') },
+                { q: t('explanations.faq2Q'), a: t('explanations.faq2A') },
+                { q: t('explanations.faq3Q'), a: t('explanations.faq3A') },
+            ],
+        },
+        {
+            id: 'remediation',
+            icon: <Zap size={20} />,
+            color: 'linear-gradient(135deg,#10b981,#3b82f6)',
+            title: t('remediationModule.title'),
+            subtitle: t('remediationModule.subtitle'),
+            steps: [
+                { step: 1, title: t('remediationModule.step1Title'), body: t('remediationModule.step1Body') },
+                { step: 2, title: t('remediationModule.step2Title'), body: t('remediationModule.step2Body'), tip: t('remediationModule.step2Tip') },
+                { step: 3, title: t('remediationModule.step3Title'), body: t('remediationModule.step3Body') },
+            ],
+            faqs: [
+                { q: t('remediationModule.faq1Q'), a: t('remediationModule.faq1A') },
+                { q: t('remediationModule.faq2Q'), a: t('remediationModule.faq2A') },
+            ],
+        },
+        {
+            id: 'reports',
+            icon: <FileText size={20} />,
+            color: 'linear-gradient(135deg,#14b8a6,#3b82f6)',
+            title: t('reports.title'),
+            subtitle: t('reports.subtitle'),
+            steps: [
+                { step: 1, title: t('reports.step1Title'), body: t('reports.step1Body'), tip: t('reports.step1Tip') },
+                { step: 2, title: t('reports.step2Title'), body: t('reports.step2Body') },
+                { step: 3, title: t('reports.step3Title'), body: t('reports.step3Body') },
+                { step: 4, title: t('reports.step4Title'), body: t('reports.step4Body') },
+            ],
+            faqs: [
+                { q: t('reports.faq1Q'), a: t('reports.faq1A') },
+                { q: t('reports.faq2Q'), a: t('reports.faq2A') },
+                { q: t('reports.faq3Q'), a: t('reports.faq3A') },
+            ],
+        },
+        {
+            id: 'portal',
+            icon: <Users size={20} />,
+            color: 'linear-gradient(135deg,#f59e0b,#10b981)',
+            title: t('portal.title'),
+            subtitle: t('portal.subtitle'),
+            steps: [
+                { step: 1, title: t('portal.step1Title'), body: t('portal.step1Body') },
+                { step: 2, title: t('portal.step2Title'), body: t('portal.step2Body'), tip: t('portal.step2Tip') },
+                { step: 3, title: t('portal.step3Title'), body: t('portal.step3Body') },
+            ],
+            faqs: [
+                { q: t('portal.faq1Q'), a: t('portal.faq1A') },
+                { q: t('portal.faq2Q'), a: t('portal.faq2A') },
+                { q: t('portal.faq3Q'), a: t('portal.faq3A') },
+            ],
+        },
+        {
+            id: 'bands',
+            icon: <Layers size={20} />,
+            color: 'linear-gradient(135deg,#0ea5e9,#10b981)',
+            title: t('bands.title'),
+            subtitle: t('bands.subtitle'),
+            steps: [
+                { step: 1, title: t('bands.step1Title'), body: t('bands.step1Body'), tip: t('bands.step1Tip') },
+                { step: 2, title: t('bands.step2Title'), body: t('bands.step2Body'), tip: t('bands.step2Tip') },
+                { step: 3, title: t('bands.step3Title'), body: t('bands.step3Body') },
+                { step: 4, title: t('bands.step4Title'), body: t('bands.step4Body') },
+                { step: 5, title: t('bands.step5Title'), body: t('bands.step5Body') },
+            ],
+            faqs: [
+                { q: t('bands.faq1Q'), a: t('bands.faq1A') },
+                { q: t('bands.faq2Q'), a: t('bands.faq2A') },
+                { q: t('bands.faq3Q'), a: t('bands.faq3A') },
+            ],
+        },
+        {
+            id: 'trends',
+            icon: <TrendingUp size={20} />,
+            color: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
+            title: t('trendsModule.title'),
+            subtitle: t('trendsModule.subtitle'),
+            steps: [
+                { step: 1, title: t('trendsModule.step1Title'), body: t('trendsModule.step1Body'), tip: t('trendsModule.step1Tip') },
+                { step: 2, title: t('trendsModule.step2Title'), body: t('trendsModule.step2Body'), tip: t('trendsModule.step2Tip') },
+                { step: 3, title: t('trendsModule.step3Title'), body: t('trendsModule.step3Body') },
+                { step: 4, title: t('trendsModule.step4Title'), body: t('trendsModule.step4Body') },
+            ],
+            faqs: [
+                { q: t('trendsModule.faq1Q'), a: t('trendsModule.faq1A') },
+                { q: t('trendsModule.faq2Q'), a: t('trendsModule.faq2A') },
+                { q: t('trendsModule.faq3Q'), a: t('trendsModule.faq3A') },
+            ],
+        },
+        {
+            id: 'compliance',
+            icon: <ShieldCheck size={20} />,
+            color: 'linear-gradient(135deg,#10b981,#14b8a6)',
+            title: t('compliance.title'),
+            subtitle: t('compliance.subtitle'),
+            steps: [
+                { step: 1, title: t('compliance.step1Title'), body: t('compliance.step1Body'), tip: t('compliance.step1Tip') },
+                { step: 2, title: t('compliance.step2Title'), body: t('compliance.step2Body') },
+                { step: 3, title: t('compliance.step3Title'), body: t('compliance.step3Body') },
+            ],
+            faqs: [
+                { q: t('compliance.faq1Q'), a: t('compliance.faq1A') },
+                { q: t('compliance.faq2Q'), a: t('compliance.faq2A') },
+            ],
+        },
+        {
+            id: 'settings',
+            icon: <Settings size={20} />,
+            color: 'linear-gradient(135deg,#64748b,#334155)',
+            title: t('settings.title'),
+            subtitle: t('settings.subtitle'),
+            steps: [
+                { step: 1, title: t('settings.step1Title'), body: t('settings.step1Body') },
+                { step: 2, title: t('settings.step2Title'), body: t('settings.step2Body'), tip: t('settings.step2Tip') },
+                { step: 3, title: t('settings.step3Title'), body: t('settings.step3Body') },
+                { step: 4, title: t('settings.step4Title'), body: t('settings.step4Body') },
+            ],
+            faqs: [
+                { q: t('settings.faq1Q'), a: t('settings.faq1A') },
+                { q: t('settings.faq2Q'), a: t('settings.faq2A') },
+                { q: t('settings.faq3Q'), a: t('settings.faq3A') },
+            ],
+        },
+    ]
+}
 
-// ─── Legal Quick Reference ───────────────────────────────────────────────────
-const LEGAL_REF = [
-    { art: 'Art. 3', title: 'Begriffsbestimmungen', desc: 'Definition von „Entgelt", „Arbeitnehmer" und „Gleichwertigkeit der Arbeit"' },
-    { art: 'Art. 7', title: 'Auskunftsrecht', desc: 'Anspruch auf Auskunft über eigenes Gehalt im Vergleich zur Kohorte — binnen 2 Monaten zu erteilen' },
-    { art: 'Art. 9', title: 'Berichts­pflicht', desc: 'Meldepflicht des Gender Pay Gaps ab 100 MA (ab 2027); ab 250 MA ab 2026. 5%-Schwelle = Handlungsbedarf + gemeinsame Entgeltbewertung' },
-    { art: 'Art. 10', title: 'Gemeinsame Entgelt­bewertung', desc: 'Bei unbegründetem Gap > 5%: gemeinsame Prüfung mit Arbeitnehmervertretung' },
-    { art: 'EntgTranspG', title: 'Deutsches Umsetzungsgesetz', desc: 'Gilt für Unternehmen ab 200 MA. Enthält Auskunfts- und Berichtspflichten analog zur EU-RL' },
-]
+function buildLegalRef(t: (key: string) => string) {
+    return [
+        { art: 'Art. 3', title: t('legal.art3Title'), desc: t('legal.art3Desc') },
+        { art: 'Art. 7', title: t('legal.art7Title'), desc: t('legal.art7Desc') },
+        { art: 'Art. 9', title: t('legal.art9Title'), desc: t('legal.art9Desc') },
+        { art: 'Art. 10', title: t('legal.art10Title'), desc: t('legal.art10Desc') },
+        { art: 'EntgTranspG', title: t('legal.entgTranspGTitle'), desc: t('legal.entgTranspGDesc') },
+    ]
+}
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function HelpClient() {
+    const t = useTranslations('help')
     const [activeModule,  setActiveModule]  = useState<string | null>(null)
     const [search,        setSearch]        = useState('')
     const [showSupport,   setShowSupport]   = useState(false)
+
+    const MODULES = buildModules(t)
+    const LEGAL_REF = buildLegalRef(t)
 
     const filtered = search.trim().length > 1
         ? MODULES.filter(m =>
@@ -552,10 +365,10 @@ export default function HelpClient() {
                 <div>
                     <h1 className="text-xl font-bold flex items-center gap-2" style={{ color: 'var(--color-pl-text-primary)' }}>
                         <BookOpen size={22} style={{ color: 'var(--color-pl-brand)' }} />
-                        Hilfe & Bedienungsanleitung
+                        {t('title')}
                     </h1>
                     <p className="text-sm mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                        Vollständige Anleitung für CompLens · EU-Richtlinie 2023/970 · EntgTranspG
+                        {t('subtitle')}
                     </p>
                 </div>
             </div>
@@ -582,10 +395,10 @@ export default function HelpClient() {
                 {/* Text */}
                 <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium" style={{ color: 'var(--color-pl-text-primary)' }}>
-                        CompLens Demo ansehen
+                        {t('demoVideoTitle')}
                     </p>
                     <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                        8 Min. · Vollständige Plattform-Demo von Import bis Export
+                        {t('demoVideoSubtitle')}
                     </p>
                 </div>
                 {/* YouTube badge only is red */}
@@ -604,7 +417,7 @@ export default function HelpClient() {
                     type="text"
                     value={search}
                     onChange={e => setSearch(e.target.value)}
-                    placeholder="Modul oder Thema suchen…"
+                    placeholder={t('searchPlaceholder')}
                     className="w-full pl-9 pr-4 py-2 rounded-lg text-sm bg-black/20 border focus:outline-none focus:border-blue-500 transition-colors"
                     style={{ borderColor: 'var(--color-pl-border)', color: 'var(--color-pl-text-primary)' }}
                 />
@@ -637,13 +450,13 @@ export default function HelpClient() {
             <div className="space-y-4">
                 {filtered.map(m => (
                     <div key={m.id} id={`module-${m.id}`}>
-                        <ModulePanel module={m} />
+                        <ModulePanel module={m} guideLabel={t('guideTab')} faqLabel={t('faqTab')} />
                     </div>
                 ))}
                 {filtered.length === 0 && (
                     <div className="glass-card p-12 text-center">
                         <p className="text-sm" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                            Keine Ergebnisse für „{search}"
+                            {t('noResults', { query: search })}
                         </p>
                     </div>
                 )}
@@ -653,13 +466,13 @@ export default function HelpClient() {
             <div className="glass-card p-5">
                 <h2 className="text-sm font-bold mb-4 flex items-center gap-2" style={{ color: 'var(--color-pl-text-primary)' }}>
                     <Globe size={16} style={{ color: 'var(--color-pl-brand)' }} />
-                    Rechtsgrundlagen — Schnellübersicht
+                    {t('legalTitle')}
                 </h2>
                 <div className="overflow-x-auto">
                     <table className="w-full text-xs border-collapse">
                         <thead>
                             <tr className="border-b" style={{ borderColor: 'var(--color-pl-border)' }}>
-                                {['Artikel/Norm', 'Bezeichnung', 'Inhalt'].map(h => (
+                                {[t('legalColArticle'), t('legalColName'), t('legalColContent')].map(h => (
                                     <th key={h} className="text-left py-2 px-3 font-semibold" style={{ color: 'var(--color-pl-text-tertiary)' }}>{h}</th>
                                 ))}
                             </tr>
@@ -684,10 +497,9 @@ export default function HelpClient() {
                     <MessageSquare size={22} className="text-white" />
                 </div>
                 <div className="flex-1 text-center sm:text-left">
-                    <h3 className="text-base font-bold mb-1" style={{ color: 'var(--color-pl-text-primary)' }}>Persönlichen Support anfordern</h3>
+                    <h3 className="text-base font-bold mb-1" style={{ color: 'var(--color-pl-text-primary)' }}>{t('supportTitle')}</h3>
                     <p className="text-sm" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                        Unser Team steht Mo–Fr 09–17 Uhr zur Verfügung. Bei rechtlichen Fragen zur EU-Richtlinie 2023/970,
-                        technischen Problemen oder individuellen Anforderungen helfen wir gerne.
+                        {t('supportDesc')}
                     </p>
                 </div>
                 <button
@@ -695,7 +507,7 @@ export default function HelpClient() {
                     className="flex-shrink-0 flex items-center gap-2 font-bold text-white px-5 py-2.5 rounded-lg transition-transform hover:-translate-y-0.5 text-sm"
                     style={{ background: 'linear-gradient(135deg,var(--color-pl-brand),#6366f1)', boxShadow: '0 8px 20px rgba(99,102,241,0.25)' }}
                 >
-                    <MessageSquare size={15} /> Support-Ticket öffnen
+                    <MessageSquare size={15} /> {t('supportButton')}
                 </button>
             </div>
         </div>

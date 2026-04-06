@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { X, Download, FileText, Settings } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 // ── Types ───────────────────────────────────────────────────
 
@@ -23,10 +24,10 @@ export type PdfOptions = {
     signatories: [string, string, string]
 }
 
-function defaultOptions(orgName: string, year: number, reportName?: string): PdfOptions {
+function defaultOptions(orgName: string, year: number, t: (key: string, values?: Record<string, any>) => string, reportName?: string): PdfOptions {
     return {
         companyName:    orgName,
-        reportTitle:    reportName ?? `Entgeltgleichheitsbericht ${year}`,
+        reportTitle:    reportName ?? t('defaultReportTitle', { year }),
         includeSections: {
             executiveSummary: true,
             departments:      false,   // Not mandated by EU Art. 9 — off by default
@@ -37,7 +38,7 @@ function defaultOptions(orgName: string, year: number, reportName?: string): Pdf
             salaryBands:      true,
             declaration:      true,
         },
-        signatories: ['HR-Leitung', 'Geschäftsführung', 'Arbeitnehmervertretung'],
+        signatories: [t('sigHrLead'), t('sigManagement'), t('sigWorksCouncil')],
     }
 }
 
@@ -60,15 +61,15 @@ export function buildPdfUrl(analysisId: string, opts: PdfOptions): string {
 
 // ── Modal ───────────────────────────────────────────────────
 
-const SECTIONS = [
-    { key: 'executiveSummary', label: 'Executive Summary' },
-    { key: 'departments',      label: 'Bereiche (nicht EU-Pflicht)' },
-    { key: 'salaryBands',      label: 'Entgeltbänder & Compa-Ratio (Art. 9)' },
-    { key: 'grades',           label: 'Entgeltgruppen (WIF-Analyse)' },
-    { key: 'quartiles',        label: 'Quartilsanalyse' },
-    { key: 'explanations',     label: 'Begründungen (Art. 10)' },
-    { key: 'remediation',      label: 'Maßnahmenplan (Art. 11)' },
-    { key: 'declaration',      label: 'Rechtliche Erklärung + Unterschriften' },
+const SECTION_KEYS = [
+    { key: 'executiveSummary', labelKey: 'sectionExecSummary' },
+    { key: 'departments',      labelKey: 'sectionDepartments' },
+    { key: 'salaryBands',      labelKey: 'sectionSalaryBands' },
+    { key: 'grades',           labelKey: 'sectionGrades' },
+    { key: 'quartiles',        labelKey: 'sectionQuartiles' },
+    { key: 'explanations',     labelKey: 'sectionExplanations' },
+    { key: 'remediation',      labelKey: 'sectionRemediation' },
+    { key: 'declaration',      labelKey: 'sectionDeclaration' },
 ] as const
 
 export default function PdfOptionsModal({
@@ -84,7 +85,8 @@ export default function PdfOptionsModal({
     reportName?: string
     onClose:    () => void
 }) {
-    const [opts, setOpts] = useState<PdfOptions>(() => defaultOptions(orgName, reportYear, reportName))
+    const t = useTranslations('report')
+    const [opts, setOpts] = useState<PdfOptions>(() => defaultOptions(orgName, reportYear, t, reportName))
 
     function toggleSection(key: keyof PdfOptions['includeSections']) {
         setOpts(prev => ({
@@ -120,8 +122,8 @@ export default function PdfOptionsModal({
                             <Settings size={15} style={{ color: '#60a5fa' }} />
                         </div>
                         <div>
-                            <p className="text-sm font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>PDF-Optionen</p>
-                            <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>Inhalt und Layout anpassen</p>
+                            <p className="text-sm font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>{ t('pdfOptions') }</p>
+                            <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>{ t('pdfOptionsSubtitle') }</p>
                         </div>
                     </div>
                     <button onClick={onClose} className="p-1.5 rounded-lg"
@@ -137,30 +139,30 @@ export default function PdfOptionsModal({
                     {/* ── Branding ── */}
                     <div>
                         <p className="text-xs font-semibold uppercase tracking-wide mb-3"
-                            style={{ color: 'var(--color-pl-text-tertiary)' }}>Titelseite</p>
+                            style={{ color: 'var(--color-pl-text-tertiary)' }}>{ t('coverPage') }</p>
                         <div className="space-y-3">
                             <div>
                                 <label className="text-xs mb-1 block" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                                    Unternehmensname
+                                    {t('companyName')}
                                 </label>
                                 <input
                                     type="text"
                                     value={opts.companyName}
                                     onChange={e => setOpts(o => ({ ...o, companyName: e.target.value }))}
                                     className="input-base text-sm w-full"
-                                    placeholder="z.B. Mustermann GmbH"
+                                    placeholder={t('companyNamePlaceholder')}
                                 />
                             </div>
                             <div>
                                 <label className="text-xs mb-1 block" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                                    Berichtstitel
+                                    {t('reportTitleLabel')}
                                 </label>
                                 <input
                                     type="text"
                                     value={opts.reportTitle}
                                     onChange={e => setOpts(o => ({ ...o, reportTitle: e.target.value }))}
                                     className="input-base text-sm w-full"
-                                    placeholder="z.B. Entgeltgleichheitsbericht 2024"
+                                    placeholder={t('reportTitlePlaceholder')}
                                 />
                             </div>
                         </div>
@@ -169,9 +171,9 @@ export default function PdfOptionsModal({
                     {/* ── Sections ── */}
                     <div>
                         <p className="text-xs font-semibold uppercase tracking-wide mb-3"
-                            style={{ color: 'var(--color-pl-text-tertiary)' }}>Enthaltene Abschnitte</p>
+                            style={{ color: 'var(--color-pl-text-tertiary)' }}>{ t('includedSections') }</p>
                         <div className="space-y-2">
-                            {SECTIONS.map(({ key, label }) => {
+                            {SECTION_KEYS.map(({ key, labelKey }) => {
                                 const active = opts.includeSections[key]
                                 return (
                                     <button key={key}
@@ -182,7 +184,7 @@ export default function PdfOptionsModal({
                                             border: `1px solid ${active ? 'rgba(59,130,246,0.3)' : 'var(--color-pl-border)'}`,
                                         }}>
                                         <span style={{ color: active ? 'var(--color-pl-text-primary)' : 'var(--color-pl-text-tertiary)' }}>
-                                            {label}
+                                            {t(labelKey)}
                                         </span>
                                         <div className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0"
                                             style={{
@@ -205,20 +207,20 @@ export default function PdfOptionsModal({
                     {opts.includeSections.declaration && (
                         <div>
                             <p className="text-xs font-semibold uppercase tracking-wide mb-3"
-                                style={{ color: 'var(--color-pl-text-tertiary)' }}>Unterschriftenzeilen</p>
+                                style={{ color: 'var(--color-pl-text-tertiary)' }}>{ t('signatureLines') }</p>
                             <div className="space-y-2">
                                 {([0, 1, 2] as const).map(i => (
                                     <div key={i}>
                                         <label className="text-xs mb-1 block"
                                             style={{ color: 'var(--color-pl-text-secondary)' }}>
-                                            Zeile {i + 1}
+                                            {t('signatureLine', { num: i + 1 })}
                                         </label>
                                         <input
                                             type="text"
                                             value={opts.signatories[i]}
                                             onChange={e => setSig(i, e.target.value)}
                                             className="input-base text-sm w-full"
-                                            placeholder={`Unterzeichner ${i + 1}`}
+                                            placeholder={t('signatoryPlaceholder', { num: i + 1 })}
                                         />
                                     </div>
                                 ))}
@@ -230,13 +232,13 @@ export default function PdfOptionsModal({
                 {/* Footer */}
                 <div className="px-6 py-4 border-t flex gap-3"
                     style={{ borderColor: 'var(--color-pl-border)', background: 'var(--theme-pl-action-ghost)' }}>
-                    <button onClick={onClose} className="btn-ghost flex-1 text-sm">Abbrechen</button>
+                    <button onClick={onClose} className="btn-ghost flex-1 text-sm">{ t('cancelBtn') }</button>
                     <a
                         href={anySection ? url : '#'}
                         download
                         onClick={!anySection ? e => e.preventDefault() : onClose}
                         className={`btn-primary flex-1 text-sm flex items-center justify-center gap-2 ${!anySection ? 'opacity-40 pointer-events-none' : ''}`}>
-                        <Download size={14} /> PDF herunterladen
+                        <Download size={14} /> { t('downloadPdf') }
                     </a>
                 </div>
             </div>

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Mail, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react'
 import { useState, useEffect, useTransition, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { resendVerification } from '@/app/(auth)/actions'
 
 const COOLDOWN_SECONDS = 60
@@ -11,6 +12,7 @@ const COOLDOWN_SECONDS = 60
 function CheckEmailContent() {
     const searchParams = useSearchParams()
     const emailParam = searchParams.get('email') ?? ''
+    const t = useTranslations('auth')
 
     const [email, setEmail] = useState(emailParam)
     const [cooldown, setCooldown] = useState(0)
@@ -56,11 +58,10 @@ function CheckEmailContent() {
             </div>
 
             <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--color-pl-text-primary)' }}>
-                Bitte bestätigen Sie Ihre E-Mail
+                {t('checkEmailTitle')}
             </h1>
             <p className="text-sm leading-relaxed mb-6" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                Wir haben Ihnen einen Bestätigungslink gesendet.<br />
-                Bitte prüfen Sie Ihren Posteingang und klicken Sie auf den Link, um Ihr Konto zu aktivieren.
+                {t('checkEmailBody')}
             </p>
 
             {/* Info box */}
@@ -72,9 +73,10 @@ function CheckEmailContent() {
                     color: 'var(--color-pl-text-secondary)',
                 }}
             >
-                <strong style={{ color: 'var(--color-pl-text-primary)' }}>Keine E-Mail erhalten?</strong><br />
-                Prüfen Sie Ihren Spam-Ordner. Wenn Sie ein Problem haben,{' '}
-                <a href="mailto:hallo@complens.de" style={{ color: 'var(--color-pl-brand-light)' }}>kontaktieren Sie uns</a>.
+                <strong style={{ color: 'var(--color-pl-text-primary)' }}>{t('noEmailReceived')}</strong><br />
+                {t.rich('checkSpam', {
+                    contactLink: (chunks) => <a href="mailto:hallo@complens.de" style={{ color: 'var(--color-pl-brand-light)' }}>{chunks}</a>,
+                })}
             </div>
 
             {/* Resend section */}
@@ -84,7 +86,7 @@ function CheckEmailContent() {
                     type="email"
                     value={email}
                     onChange={e => { setEmail(e.target.value); setStatus('idle') }}
-                    placeholder="Ihre E-Mail-Adresse"
+                    placeholder={t('yourEmail')}
                     className="input-field w-full mb-3"
                     style={{ textAlign: 'center' }}
                 />
@@ -98,10 +100,10 @@ function CheckEmailContent() {
                 >
                     <RefreshCw size={16} className={isPending ? 'animate-spin' : ''} />
                     {isPending
-                        ? 'Wird gesendet…'
+                        ? t('resendingEmail')
                         : cooldown > 0
-                            ? `Erneut senden in ${cooldown}s`
-                            : 'Bestätigungs-E-Mail erneut senden'}
+                            ? t('resendCooldown', { seconds: cooldown })
+                            : t('resendEmail')}
                 </button>
 
                 {/* Success message */}
@@ -115,7 +117,7 @@ function CheckEmailContent() {
                         }}
                     >
                         <CheckCircle size={16} />
-                        E-Mail wurde erneut gesendet. Bitte prüfen Sie Ihren Posteingang.
+                        {t('emailResent')}
                     </div>
                 )}
 
@@ -136,7 +138,7 @@ function CheckEmailContent() {
             </div>
 
             <Link href="/login" className="btn-outline inline-flex">
-                Zurück zur Anmeldung
+                {t('backToLogin')}
             </Link>
         </div>
     )
@@ -144,7 +146,7 @@ function CheckEmailContent() {
 
 export default function CheckEmailPage() {
     return (
-        <Suspense fallback={<div className="text-center" style={{ color: 'var(--color-pl-text-secondary)' }}>Laden…</div>}>
+        <Suspense fallback={<div className="text-center" style={{ color: 'var(--color-pl-text-secondary)' }}>…</div>}>
             <CheckEmailContent />
         </Suspense>
     )

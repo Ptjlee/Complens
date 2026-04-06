@@ -1,6 +1,17 @@
 import { Logo } from '@/components/ui/Logo'
+import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher'
+import { getTranslations } from 'next-intl/server'
 
-export default function AuthLayout({ children }: { children: React.ReactNode }) {
+export default async function AuthLayout({ children }: { children: React.ReactNode }) {
+    const t = await getTranslations('auth')
+
+    const bullets = [
+        { icon: '🇩🇪', text: t('layoutBullet1') },
+        { icon: '📊', text: t('layoutBullet2') },
+        { icon: '⚡', text: t('layoutBullet3') },
+        { icon: '🤖', text: t('layoutBullet4') },
+    ]
+
     return (
         <div className="min-h-screen flex gradient-bg">
             {/* Left — brand panel */}
@@ -16,7 +27,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                             CompLens
                         </div>
                         <div className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                            EU Entgelttransparenz
+                            {t('layoutTagline')}
                         </div>
                     </div>
                 </a>
@@ -25,23 +36,17 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                 <div className="space-y-8">
                     <div>
                         <h2 className="text-3xl font-bold leading-tight mb-4" style={{ color: 'var(--color-pl-text-primary)' }}>
-                            Entgelttransparenz.<br />
-                            <span className="gradient-text">Einfach. Sicher.<br />Made in Germany.</span>
+                            {t('layoutHeadline')}<br />
+                            <span className="gradient-text" style={{ whiteSpace: 'pre-line' }}>{t('layoutHeadlineHighlight')}</span>
                         </h2>
                         <p className="text-sm leading-relaxed" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                            Analysieren Sie Ihren Gender Pay Gap, erstellen Sie EU-konforme Berichte und
-                            schließen Sie Lohnlücken — DSGVO-konform auf deutschen Servern.
+                            {t('layoutBody')}
                         </p>
                     </div>
 
                     {/* Value props */}
                     <ul className="space-y-4">
-                        {[
-                            { icon: '🇩🇪', text: 'Daten ausschließlich auf EU-Servern in Frankfurt' },
-                            { icon: '📊', text: 'EU-Richtlinie 2023/970/EU — vollständig konform' },
-                            { icon: '⚡', text: 'Erste Analyse in unter 5 Minuten' },
-                            { icon: '🤖', text: 'Automatische Spaltenzuordnung (DSGVO-sicher)' },
-                        ].map(({ icon, text }) => (
+                        {bullets.map(({ icon, text }) => (
                             <li key={text} className="flex items-start gap-3">
                                 <span className="text-base mt-0.5">{icon}</span>
                                 <span className="text-sm" style={{ color: 'var(--color-pl-text-secondary)' }}>{text}</span>
@@ -51,13 +56,15 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                 </div>
 
                 <div className="mt-8 text-xs text-center border-t pt-4 flex flex-col gap-2" style={{ color: 'var(--color-pl-text-tertiary)', borderColor: 'var(--color-pl-border)' }}>
-                    <div>© 2026 DexterBee GmbH</div>
+                    <div>© {new Date().getFullYear()} DexterBee GmbH</div>
                     <div className="flex justify-center flex-wrap gap-x-3 gap-y-1">
-                        <a href="/impressum" className="hover:underline">Impressum</a>
+                        <a href="/impressum" className="hover:underline">{t('layoutImprint')}</a>
                         <span>·</span>
-                        <a href="/datenschutz" className="hover:underline">Datenschutz</a>
+                        <a href="/datenschutz" className="hover:underline">{t('layoutPrivacy')}</a>
                         <span>·</span>
-                        <a href="/agb" className="hover:underline">AGB</a>
+                        <a href="/agb" className="hover:underline">{t('layoutTerms')}</a>
+                        <span>·</span>
+                        <a href="/toms" className="hover:underline">TOMs</a>
                         <span>·</span>
                         <a href="/compliance" className="hover:underline">AI & Compliance</a>
                     </div>
@@ -65,7 +72,11 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             </div>
 
             {/* Right — auth form */}
-            <div className="flex flex-1 items-center justify-center px-6 py-12">
+            <div className="relative flex flex-1 items-center justify-center px-6 py-12">
+                {/* Language switcher — top-right corner */}
+                <div className="absolute top-4 right-6">
+                    <LanguageSwitcher />
+                </div>
                 <div className="w-full max-w-md">
                     {children}
                 </div>

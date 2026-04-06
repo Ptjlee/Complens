@@ -6,11 +6,7 @@ import Link from 'next/link'
 import { signup } from '../actions'
 import { ArrowRight, Building2, CheckCircle2, ChevronLeft, Loader2, Users, Eye, EyeOff, Check } from 'lucide-react'
 import { Logo } from '@/components/ui/Logo'
-
-const passwordRules = [
-    { label: 'Mindestens 8 Zeichen', test: (p: string) => p.length >= 8 },
-    { label: 'Zahl enthalten', test: (p: string) => /\d/.test(p) },
-]
+import { useTranslations } from 'next-intl'
 
 type Step = 1 | 2 | 3 | 4
 type FormData = {
@@ -27,6 +23,8 @@ type FormData = {
 
 export default function ApplyPage() {
     const router = useRouter()
+    const t = useTranslations('auth')
+    const tApply = useTranslations('apply')
     const [step, setStep] = useState<Step>(1)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -42,6 +40,11 @@ export default function ApplyPage() {
         password: '',
         confirmPassword: '',
     })
+
+    const passwordRules = [
+        { label: t('passwordRule8Chars'), test: (p: string) => p.length >= 8 },
+        { label: t('passwordRuleNumber'), test: (p: string) => /\d/.test(p) },
+    ]
 
     const updateForm = (data: Partial<FormData>) => {
         setFormData((prev) => ({ ...prev, ...data }))
@@ -59,7 +62,7 @@ export default function ApplyPage() {
 
         setLoading(true)
         setError(null)
-        
+
         try {
             await fetch('/api/leads', {
                 method: 'POST',
@@ -69,7 +72,7 @@ export default function ApplyPage() {
         } catch (e) {
             console.error('Failed to submit lead', e)
         }
-        
+
         const fd = new window.FormData()
         fd.append('email', formData.email)
         fd.append('password', formData.password || '')
@@ -88,6 +91,27 @@ export default function ApplyPage() {
         // If it succeeds, signup() redirects automatically to /signup/check-email.
     }
 
+    const companySizeOptions = [
+        { value: '<100', label: tApply('sizeUnder100'), desc: tApply('sizeUnder100Desc') },
+        { value: '100-149', label: tApply('size100to149'), desc: tApply('size100to149Desc') },
+        { value: '150-249', label: tApply('size150to249'), desc: tApply('size150to249Desc') },
+        { value: '250+', label: tApply('size250plus'), desc: tApply('size250plusDesc') },
+    ]
+
+    const hrisOptions = [
+        { value: 'sap', label: tApply('hrisSap'), desc: tApply('hrisSapDesc') },
+        { value: 'workday', label: tApply('hrisWorkday'), desc: tApply('hrisWorkdayDesc') },
+        { value: 'personio', label: tApply('hrisPersonio'), desc: tApply('hrisPersonioDesc') },
+        { value: 'excel', label: tApply('hrisExcel'), desc: tApply('hrisExcelDesc') },
+        { value: 'other', label: tApply('hrisOther'), desc: tApply('hrisOtherDesc') },
+    ]
+
+    const urgencyOptions = [
+        { value: 'critical', label: tApply('urgencyCritical'), desc: tApply('urgencyCriticalDesc') },
+        { value: 'soon', label: tApply('urgencySoon'), desc: tApply('urgencySoonDesc') },
+        { value: 'exploring', label: tApply('urgencyExploring'), desc: tApply('urgencyExploringDesc') },
+    ]
+
     return (
         <div>
             {/* Mobile logo */}
@@ -97,18 +121,18 @@ export default function ApplyPage() {
             </div>
 
             <div className="mb-8">
-                <div className="ai-badge inline-flex mb-3">7 Tage kostenlos</div>
+                <div className="ai-badge inline-flex mb-3">{t('freeTrialBadge')}</div>
                 <h1 className="text-2xl font-bold mb-1.5" style={{ color: 'var(--color-pl-text-primary)' }}>
-                    {step === 1 && 'Prüfen Sie Ihre EU-Readiness'}
-                    {step === 2 && 'Wie groß ist Ihr Team?'}
-                    {step === 3 && 'Ihre aktuelle HR-Infrastruktur'}
-                    {step === 4 && 'Wann müssen Sie reporten?'}
+                    {step === 1 && tApply('step1Title')}
+                    {step === 2 && tApply('step2Title')}
+                    {step === 3 && tApply('step3Title')}
+                    {step === 4 && tApply('step4Title')}
                 </h1>
                 <p className="text-sm" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                    {step === 1 && 'Geben Sie Ihre Kontaktdaten ein, um den Audit zu starten.'}
-                    {step === 2 && 'Die Richtlinie betrifft Unternehmen je nach Größe zu anderen Stichtagen.'}
-                    {step === 3 && 'CompLens verbindet sich direkt mit Ihren bestehenden Systemen.'}
-                    {step === 4 && 'Helfen Sie uns, die Dringlichkeit für Ihr Unternehmen einzuschätzen.'}
+                    {step === 1 && tApply('step1Subtitle')}
+                    {step === 2 && tApply('step2Subtitle')}
+                    {step === 3 && tApply('step3Subtitle')}
+                    {step === 4 && tApply('step4Subtitle')}
                 </p>
             </div>
 
@@ -141,48 +165,48 @@ export default function ApplyPage() {
                     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--color-pl-text-secondary)' }}>Vorname</label>
+                                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--color-pl-text-secondary)' }}>{tApply('firstName')}</label>
                                 <input
                                     required
                                     type="text"
                                     value={formData.firstName}
                                     onChange={(e) => updateForm({ firstName: e.target.value })}
                                     className="input-base"
-                                    placeholder="Max"
+                                    placeholder={tApply('firstNamePlaceholder')}
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--color-pl-text-secondary)' }}>Nachname</label>
+                                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--color-pl-text-secondary)' }}>{tApply('lastName')}</label>
                                 <input
                                     required
                                     type="text"
                                     value={formData.lastName}
                                     onChange={(e) => updateForm({ lastName: e.target.value })}
                                     className="input-base"
-                                    placeholder="Mustermann"
+                                    placeholder={tApply('lastNamePlaceholder')}
                                 />
                             </div>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--color-pl-text-secondary)' }}>Arbeits-E-Mail</label>
+                            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--color-pl-text-secondary)' }}>{tApply('workEmail')}</label>
                             <input
                                 required
                                 type="email"
                                 value={formData.email}
                                 onChange={(e) => updateForm({ email: e.target.value })}
                                 className="input-base"
-                                placeholder="max@unternehmen.de"
+                                placeholder={tApply('workEmailPlaceholder')}
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--color-pl-text-secondary)' }}>Unternehmen</label>
+                            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--color-pl-text-secondary)' }}>{tApply('company')}</label>
                             <input
                                 required
                                 type="text"
                                 value={formData.companyName}
                                 onChange={(e) => updateForm({ companyName: e.target.value })}
                                 className="input-base"
-                                placeholder="Muster GmbH"
+                                placeholder={tApply('companyPlaceholder')}
                             />
                         </div>
                     </div>
@@ -191,12 +215,7 @@ export default function ApplyPage() {
                 {/* Step 2: Company Size */}
                 {step === 2 && (
                     <div className="space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        {[
-                            { value: '<100', label: 'Unter 100 Mitarbeiter', desc: 'Meldepflicht je nach EU-Land ggf. später' },
-                            { value: '100-149', label: '100 - 149 Mitarbeiter', desc: 'Meldepflicht ab 2031 (Daten von 2030)' },
-                            { value: '150-249', label: '150 - 249 Mitarbeiter', desc: 'Meldepflicht ab 2027 (Daten von 2026)' },
-                            { value: '250+', label: '250+ Mitarbeiter', desc: 'Meldepflicht ab 2027, jährliche Berichte' }
-                        ].map((option) => (
+                        {companySizeOptions.map((option) => (
                             <button
                                 key={option.value}
                                 type="button"
@@ -209,9 +228,9 @@ export default function ApplyPage() {
                                         ? 'border-transparent bg-[rgba(91,97,255,0.1)]'
                                         : 'hover:border-[#383d54] hover:bg-[#111523]'
                                 }`}
-                                style={{ 
+                                style={{
                                     borderColor: formData.companySize === option.value ? 'var(--color-pl-brand)' : 'var(--color-pl-border)',
-                                    background: formData.companySize === option.value ? 'rgba(99,102,241,0.1)' : 'var(--color-pl-surface)' 
+                                    background: formData.companySize === option.value ? 'rgba(99,102,241,0.1)' : 'var(--color-pl-surface)'
                                 }}
                             >
                                 <div className="flex items-center gap-4">
@@ -234,13 +253,7 @@ export default function ApplyPage() {
                 {/* Step 3: HRIS */}
                 {step === 3 && (
                     <div className="space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        {[
-                            { value: 'sap', label: 'SAP SuccessFactors', desc: 'Nativer Excel-Import verfügbar' },
-                            { value: 'workday', label: 'Workday', desc: 'Nativer Excel-Import verfügbar' },
-                            { value: 'personio', label: 'Personio', desc: 'Standard CSV-Import' },
-                            { value: 'excel', label: 'Excel / Manuell', desc: 'Wir bereinigen unstrukturierte Daten' },
-                            { value: 'other', label: 'Andere Software', desc: 'Universeller Import möglich' }
-                        ].map((option) => (
+                        {hrisOptions.map((option) => (
                             <button
                                 key={option.value}
                                 type="button"
@@ -253,9 +266,9 @@ export default function ApplyPage() {
                                         ? 'border-transparent bg-[rgba(91,97,255,0.1)]'
                                         : 'hover:border-[#383d54] hover:bg-[#111523]'
                                 }`}
-                                style={{ 
+                                style={{
                                     borderColor: formData.hris === option.value ? 'var(--color-pl-brand)' : 'var(--color-pl-border)',
-                                    background: formData.hris === option.value ? 'rgba(99,102,241,0.1)' : 'var(--color-pl-surface)' 
+                                    background: formData.hris === option.value ? 'rgba(99,102,241,0.1)' : 'var(--color-pl-surface)'
                                 }}
                             >
                                 <div>
@@ -273,11 +286,7 @@ export default function ApplyPage() {
                 {/* Step 4: Urgency & Opt-In */}
                 {step === 4 && (
                     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        {[
-                            { value: 'critical', label: 'Sofort / Kritisch', desc: 'Wir vermuten einen Gap > 5% und brauchen eine Lösung.' },
-                            { value: 'soon', label: 'In den nächsten 3-6 Monaten', desc: 'Wir wollen perfekt vorbereitet sein.' },
-                            { value: 'exploring', label: 'Information gathering', desc: 'Wir beginnen gerade erst mit der Recherche.' }
-                        ].map((option) => (
+                        {urgencyOptions.map((option) => (
                             <button
                                 key={option.value}
                                 type="button"
@@ -287,9 +296,9 @@ export default function ApplyPage() {
                                         ? 'border-transparent bg-[rgba(91,97,255,0.1)]'
                                         : 'hover:border-[#383d54] hover:bg-[#111523]'
                                 }`}
-                                style={{ 
+                                style={{
                                     borderColor: formData.urgency === option.value ? 'var(--color-pl-brand)' : 'var(--color-pl-border)',
-                                    background: formData.urgency === option.value ? 'rgba(99,102,241,0.1)' : 'var(--color-pl-surface)' 
+                                    background: formData.urgency === option.value ? 'rgba(99,102,241,0.1)' : 'var(--color-pl-surface)'
                                 }}
                             >
                                 <div>
@@ -301,13 +310,13 @@ export default function ApplyPage() {
                                 )}
                             </button>
                         ))}
-                        
+
                         {/* Password Creation */}
                         <div className="pt-4 space-y-4">
                             <div className="h-px w-full" style={{ background: 'var(--color-pl-border)' }} />
                             <div>
-                                <h3 className="text-base font-bold mb-3 mt-1" style={{ color: 'var(--color-pl-text-primary)' }}>Konto erstellen</h3>
-                                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--color-pl-text-secondary)' }}>Passwort (Ihr Login-Schlüssel für das Dashboard)</label>
+                                <h3 className="text-base font-bold mb-3 mt-1" style={{ color: 'var(--color-pl-text-primary)' }}>{t('createAccount')}</h3>
+                                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--color-pl-text-secondary)' }}>{t('passwordLoginKey')}</label>
                                 <div className="relative">
                                     <input
                                         required
@@ -315,7 +324,7 @@ export default function ApplyPage() {
                                         value={formData.password}
                                         onChange={(e) => updateForm({ password: e.target.value })}
                                         className="input-base pr-10"
-                                        placeholder="••••••••"
+                                        placeholder={t('passwordPlaceholder')}
                                     />
                                     <button
                                         type="button"
@@ -345,14 +354,14 @@ export default function ApplyPage() {
                                 )}
                             </div>
                             <div>
-                                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--color-pl-text-secondary)' }}>Passwort bestätigen</label>
+                                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--color-pl-text-secondary)' }}>{t('confirmPassword')}</label>
                                 <input
                                     required
                                     type={showPassword ? 'text' : 'password'}
                                     value={formData.confirmPassword}
                                     onChange={(e) => updateForm({ confirmPassword: e.target.value })}
                                     className="input-base"
-                                    placeholder="••••••••"
+                                    placeholder={t('passwordPlaceholder')}
                                 />
                             </div>
                         </div>
@@ -367,11 +376,10 @@ export default function ApplyPage() {
                                     className="mt-0.5 w-4 h-4 rounded accent-blue-500 flex-shrink-0"
                                 />
                                 <span className="text-xs" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                                    Ich akzeptiere die{' '}
-                                    <Link href="/agb" className="underline" style={{ color: 'var(--color-pl-brand-light)' }}>AGB</Link>
-                                    {' '}und die{' '}
-                                    <Link href="/datenschutz" className="underline" style={{ color: 'var(--color-pl-brand-light)' }}>Datenschutzerklärung</Link>.
-                                    Die Daten werden DSGVO-konform in der EU verarbeitet.
+                                    {t.rich('terms', {
+                                        agbLink: (chunks) => <a href="/agb" target="_blank" rel="noopener noreferrer" className="underline" style={{ color: 'var(--color-pl-brand-light)' }}>{chunks}</a>,
+                                        datenschutzLink: (chunks) => <a href="/datenschutz" target="_blank" rel="noopener noreferrer" className="underline" style={{ color: 'var(--color-pl-brand-light)' }}>{chunks}</a>,
+                                    })}
                                 </span>
                             </label>
                         </div>
@@ -387,7 +395,7 @@ export default function ApplyPage() {
                             className="flex items-center gap-2 text-sm font-medium transition-colors"
                             style={{ color: 'var(--color-pl-text-secondary)' }}
                         >
-                            <ChevronLeft size={16} /> Zurück
+                            <ChevronLeft size={16} /> {tApply('back')}
                         </button>
                     ) : (
                         <div className="hidden sm:block"></div>
@@ -406,11 +414,11 @@ export default function ApplyPage() {
                         style={{ opacity: loading ? 0.7 : 1 }}
                     >
                         {loading ? (
-                            <><Loader2 size={15} className="animate-spin" /> Verarbeiten...</>
+                            <><Loader2 size={15} className="animate-spin" /> {tApply('processing')}</>
                         ) : step === 4 ? (
-                            'Kostenlos starten'
+                            tApply('startFree')
                         ) : (
-                            <>Weiter <ArrowRight size={16} /></>
+                            <>{tApply('next')} <ArrowRight size={16} /></>
                         )}
                     </button>
                 </div>
@@ -426,11 +434,7 @@ export default function ApplyPage() {
                     }}
                 >
                     <ul className="space-y-1">
-                        {[
-                            'Keine Kreditkarte beim Start',
-                            'Voller Funktionsumfang inkl. automatisierte Datenzuordnung und Analyse',
-                            'Nach 7 Tagen: Upgrade oder automatische Beendigung',
-                        ].map((item) => (
+                        {([t('trialBullet1'), t('trialBullet2'), t('trialBullet3')] as string[]).map((item) => (
                             <li key={item} className="flex items-center gap-2 text-xs" style={{ color: 'var(--color-pl-text-secondary)' }}>
                                 <CheckCircle2 size={11} strokeWidth={3} style={{ color: 'var(--color-pl-brand-light)', flexShrink: 0 }} />
                                 {item}
@@ -442,4 +446,3 @@ export default function ApplyPage() {
         </div>
     )
 }
-

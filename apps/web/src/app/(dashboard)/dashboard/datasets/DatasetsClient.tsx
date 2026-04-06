@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useRef, useEffect } from 'react'
 import Link from 'next/link'
+import { useTranslations, useFormatter } from 'next-intl'
 import {
     Database, Trash2, Loader2, Calendar, Users,
     CheckCircle2, X, Search, Upload, BarChart3, Pencil, Check,
@@ -31,13 +32,15 @@ function DatasetRow({
     onRenamed: (id: string, newName: string) => void
     isAdmin:   boolean
 }) {
+    const t = useTranslations('datasets')
+    const format = useFormatter()
     const [mode, setMode]             = useState<'idle' | 'renaming' | 'confirming'>('idle')
     const [pending, startT]           = useTransition()
     const [editName, setEditName]     = useState(d.name)
     const [renameError, setRenameError] = useState('')
     const inputRef                    = useRef<HTMLInputElement>(null)
 
-    const date = new Date(d.created_at).toLocaleDateString('de-DE', {
+    const date = format.dateTime(new Date(d.created_at), {
         day: '2-digit', month: 'short', year: 'numeric',
     })
 
@@ -62,7 +65,7 @@ function DatasetRow({
 
     function confirmRename() {
         const trimmed = editName.trim()
-        if (!trimmed) { setRenameError('Name darf nicht leer sein.'); return }
+        if (!trimmed) { setRenameError(t('nameEmpty')); return }
         if (trimmed === d.name) { setMode('idle'); return }
         setRenameError('')
         startT(async () => {
@@ -94,11 +97,11 @@ function DatasetRow({
             ? 'var(--color-pl-red)'
             : 'var(--color-pl-amber)'
 
-    const statusLabel: Record<string, string> = {
-        ready: 'Bereit',
-        uploading: 'Upload läuft',
-        mapping: 'Mapping',
-        error: 'Fehler',
+    const statusLabelMap: Record<string, string> = {
+        ready: t('statusReady'),
+        uploading: t('statusUploading'),
+        mapping: t('statusMapping'),
+        error: t('statusError'),
     }
 
     return (
@@ -133,7 +136,7 @@ function DatasetRow({
                                 disabled={pending}
                                 className="p-1.5 rounded-lg flex-shrink-0"
                                 style={{ background: 'rgba(59,130,246,0.12)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.25)' }}
-                                title="Speichern (Enter)">
+                                title={t('saveEnter')}>
                                 {pending ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
                             </button>
                             <button
@@ -141,7 +144,7 @@ function DatasetRow({
                                 disabled={pending}
                                 className="p-1.5 rounded-lg flex-shrink-0"
                                 style={{ color: 'var(--color-pl-text-tertiary)' }}
-                                title="Abbrechen (Esc)">
+                                title={t('cancelEsc')}>
                                 <X size={13} />
                             </button>
                         </div>
@@ -157,7 +160,7 @@ function DatasetRow({
                                     color: statusColor,
                                     border: `1px solid color-mix(in srgb, ${statusColor} 25%, transparent)`,
                                 }}>
-                                {statusLabel[d.status] ?? d.status}
+                                {statusLabelMap[d.status] ?? d.status}
                             </span>
                         </div>
                     )}
@@ -173,8 +176,8 @@ function DatasetRow({
                     <div className="flex flex-wrap items-center gap-4 text-xs"
                         style={{ color: 'var(--color-pl-text-tertiary)' }}>
                         <span className="flex items-center gap-1"><Calendar size={11} /> {date}</span>
-                        <span className="flex items-center gap-1"><BarChart3 size={11} /> Berichtsjahr {d.reporting_year}</span>
-                        <span className="flex items-center gap-1"><Users size={11} /> {d.employee_count ?? '—'} Mitarbeitende</span>
+                        <span className="flex items-center gap-1"><BarChart3 size={11} /> {t('reportingYear', { year: d.reporting_year })}</span>
+                        <span className="flex items-center gap-1"><Users size={11} /> {t('employees', { count: d.employee_count ?? '—' })}</span>
                     </div>
                 </div>
 
@@ -184,7 +187,7 @@ function DatasetRow({
                         {d.status === 'ready' && (
                             <Link href="/dashboard/analysis"
                                 className="btn-ghost text-xs flex items-center gap-1.5">
-                                <BarChart3 size={13} /> Analysieren
+                                <BarChart3 size={13} /> {t('analyse')}
                             </Link>
                         )}
 
@@ -192,7 +195,7 @@ function DatasetRow({
                         <button
                             onClick={startRename}
                             className="btn-icon"
-                            title="Umbenennen">
+                            title={t('rename')}>
                             <Pencil size={14} />
                         </button>
 
@@ -201,7 +204,7 @@ function DatasetRow({
                             <button onClick={() => setMode(mode === 'confirming' ? 'idle' : 'confirming')}
                                 className="btn-icon"
                                 style={mode === 'confirming' ? { color: '#ef4444', background: 'rgba(239,68,68,0.12)', borderColor: 'rgba(239,68,68,0.3)' } : {}}
-                                title="Datensatz löschen"
+                                title={t('deleteDataset')}
                                 onMouseEnter={e => {
                                     if (mode !== 'confirming') {
                                         e.currentTarget.style.background = 'rgba(239,68,68,0.1)'
@@ -221,14 +224,14 @@ function DatasetRow({
                             {mode === 'confirming' && (
                                 <div className="absolute right-0 top-full mt-1.5 z-40 flex items-center gap-2 px-3 py-2 rounded-xl whitespace-nowrap"
                                     style={{ background: 'var(--color-pl-surface)', border: '1px solid rgba(239,68,68,0.35)', boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}>
-                                    <span className="text-xs" style={{ color: 'var(--color-pl-text-secondary)' }}>Datensatz löschen?</span>
+                                    <span className="text-xs" style={{ color: 'var(--color-pl-text-secondary)' }}>{t('confirmDelete')}</span>
                                     <button onClick={doDelete} disabled={pending}
                                         className="text-xs px-2.5 py-1 rounded-lg font-semibold flex items-center gap-1"
                                         style={{ color: '#ef4444', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)' }}
                                         onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.2)')}
                                         onMouseLeave={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.1)')}>
                                         {pending ? <Loader2 size={11} className="animate-spin" /> : null}
-                                        Ja, löschen
+                                        {t('confirmYes')}
                                     </button>
                                     <button onClick={() => setMode('idle')} className="p-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>
                                         <X size={13} />
@@ -246,6 +249,7 @@ function DatasetRow({
 // ── Main ─────────────────────────────────────────────────────
 
 export default function DatasetsClient({ datasets: initial, isAdmin }: { datasets: Dataset[]; isAdmin: boolean }) {
+    const t = useTranslations('datasets')
     const [datasets, setDatasets] = useState(initial)
     const [search, setSearch]     = useState('')
 
@@ -268,21 +272,21 @@ export default function DatasetsClient({ datasets: initial, isAdmin }: { dataset
             <div className="flex items-center justify-between gap-4">
                 <div>
                     <h1 className="text-xl font-bold" style={{ color: 'var(--color-pl-text-primary)' }}>
-                        Datensätze verwalten
+                        {t('title')}
                     </h1>
                     <p className="text-sm mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                        {datasets.length} importierte Datensätze
+                        {t('imported', { count: datasets.length })}
                         {!isAdmin && (
                             <span className="ml-2 text-xs px-2 py-0.5 rounded-full font-semibold"
                                 style={{ background: 'rgba(245,158,11,0.12)', color: 'var(--color-pl-amber)', border: '1px solid rgba(245,158,11,0.25)' }}>
-                                Lesezugriff
+                                {t('readOnly')}
                             </span>
                         )}
                     </p>
                 </div>
                 {isAdmin && (
                     <Link href="/dashboard/import" className="btn-primary text-sm flex items-center gap-2">
-                        <Upload size={14} /> Neuer Import
+                        <Upload size={14} /> {t('newImport')}
                     </Link>
                 )}
             </div>
@@ -294,7 +298,7 @@ export default function DatasetsClient({ datasets: initial, isAdmin }: { dataset
                         style={{ color: 'var(--color-pl-text-tertiary)' }} />
                     <input
                         type="text" value={search} onChange={e => setSearch(e.target.value)}
-                        placeholder="Datensätze durchsuchen…"
+                        placeholder={t('searchPlaceholder')}
                         className="input-base text-sm pl-9 w-full"
                     />
                 </div>
@@ -305,10 +309,10 @@ export default function DatasetsClient({ datasets: initial, isAdmin }: { dataset
                 <div className="glass-card p-12 flex flex-col items-center text-center" style={{ borderStyle: 'dashed' }}>
                     <Database size={36} className="mb-4" style={{ color: 'var(--color-pl-border)' }} />
                     <p className="text-sm mb-4" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                        {search ? 'Keine Datensätze gefunden.' : 'Noch keine Datensätze importiert.'}
+                        {search ? t('noResults') : t('noDatasets')}
                     </p>
                     {!search && (
-                        <Link href="/dashboard/import" className="btn-primary">Daten importieren</Link>
+                        <Link href="/dashboard/import" className="btn-primary">{t('importData')}</Link>
                     )}
                 </div>
             ) : (
@@ -331,9 +335,7 @@ export default function DatasetsClient({ datasets: initial, isAdmin }: { dataset
                     style={{ background: 'var(--theme-pl-action-ghost)', border: '1px solid var(--color-pl-border)', color: 'var(--color-pl-text-tertiary)' }}>
                     <CheckCircle2 size={13} className="flex-shrink-0 mt-0.5" style={{ color: 'var(--color-pl-green)' }} />
                     <span>
-                        Gelöschte Datensätze werden unwiderruflich entfernt, einschließlich aller zugehörigen Mitarbeiterdaten.
-                        Analysen und Berichte, die auf diesem Datensatz basieren, bleiben erhalten.
-                        Gemäß DSGVO Art. 17 werden alle personenbezogenen Daten dauerhaft gelöscht.
+                        {t('gdprNote')}
                     </span>
                 </div>
             )}

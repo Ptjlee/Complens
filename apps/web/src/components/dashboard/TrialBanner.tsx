@@ -3,6 +3,7 @@
 import { trialDaysLeft, effectivePlan } from '@/lib/plans'
 import type { OrgPlanFields } from '@/lib/plans'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { Clock, Zap } from 'lucide-react'
 
 interface TrialBannerProps {
@@ -11,6 +12,7 @@ interface TrialBannerProps {
 
 export default function TrialBanner({ org }: TrialBannerProps) {
     const router = useRouter()
+    const t = useTranslations('dashboard.trial')
     const effective = effectivePlan(org)
 
     // Only show for trial plan users
@@ -26,9 +28,9 @@ export default function TrialBanner({ org }: TrialBannerProps) {
     const icon   = expired ? <Zap size={14} />        : <Clock size={14} />
 
     const message = expired
-        ? 'Ihr Testzeitraum ist abgelaufen. Upgraden Sie jetzt, um den Zugriff zu behalten.'
+        ? t('bannerExpired')
         : daysLeft <= 7
-        ? `Noch ${daysLeft} Tag${daysLeft === 1 ? '' : 'e'} im Testzeitraum.`
+        ? t('bannerDaysLeft', { days: daysLeft })
         : null
 
     // Don't show banner if plenty of time left (> 7 days)
@@ -60,7 +62,7 @@ export default function TrialBanner({ org }: TrialBannerProps) {
                     whiteSpace: 'nowrap',
                 }}
             >
-                Jetzt upgraden →
+                {t('upgradeNow')}
             </button>
         </div>
     )
