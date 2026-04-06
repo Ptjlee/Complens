@@ -1,8 +1,10 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { cookies } from 'next/headers'
 
 import BackButton from '@/components/BackButton'
 import { Logo } from '@/components/ui/Logo'
+import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher'
 import { getTranslations } from 'next-intl/server'
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -13,17 +15,30 @@ export async function generateMetadata(): Promise<Metadata> {
     }
 }
 
-export default function CompliancePage() {
+export default async function CompliancePage() {
+    const store = await cookies()
+    const locale = store.get('NEXT_LOCALE')?.value === 'en' ? 'en' : 'de'
+
+    if (locale === 'en') return <EnglishVersion />
+    return <GermanVersion />
+}
+
+/* ─── German Version (original) ──────────────────────────────────────── */
+
+function GermanVersion() {
     return (
         <div className="min-h-screen" style={{ background: 'var(--color-pl-bg)' }}>
             <div className="max-w-3xl mx-auto px-6 py-16">
                 {/* Header */}
                 <div className="mb-10">
-                    <BackButton />
-                    <div className="flex items-center gap-3 mb-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <BackButton />
+                        <LanguageSwitcher />
+                    </div>
+                    <a href="https://complens.de" className="flex items-center gap-3 mb-6 hover:opacity-80 transition-opacity" style={{ textDecoration: 'none' }}>
                         <Logo size={32} />
                         <span className="font-bold text-xl" style={{ color: 'var(--color-pl-text-primary)' }}>CompLens</span>
-                    </div>
+                    </a>
                     <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--color-pl-text-primary)' }}>
                         EU AI Act & DSGVO Compliance
                     </h1>
@@ -55,13 +70,16 @@ export default function CompliancePage() {
                     </Section>
 
                     <Section title="3. Technische und organisatorische Maßnahmen (TOMs)">
-                        <p>Zum Schutz der verarbeiteten Entgeltdaten setzen wir modernste Sicherheitsstandards ein:</p>
-                        <ul className="list-disc pl-5 mt-3 space-y-2">
-                            <li><strong>Verschlüsselung:</strong> Alle Daten sind sowohl im Ruhezustand (Data-at-Rest via AES-256 Verschlüsselung auf Laufwerksebene) als auch bei der Übertragung (Data-in-Transit via TLS 1.2+ oder höher) kryptografisch abgesichert.</li>
-                            <li><strong>Mandantentrennung (Tenant Isolation):</strong> Der Zugriff auf die Datenbank wird durch PostgreSQL Row Level Security (RLS) strikt gesichert. Jede Zeile in der Datenbank ist mit einer <code>org_id</code> verknüpft; Datenbankabfragen können technisch nur Daten der aktuell authentifizierten Organisation zurückgeben.</li>
-                            <li><strong>Zugriffskontrolle:</strong> Der Systemzugriff erfordert sichere Authentifizierung (Magic Links oder starke Passwörter). Passwörter werden niemals im Klartext, sondern durch starke Hashing-Algorithmen (bcrypt) gesichert.</li>
-                            <li><strong>Löschkonzept:</strong> Nutzer können ihre Accounts und alle verknüpften Organisationsdaten jederzeit selbstständig unwiderruflich löschen. Entgeltanalysedaten, die nicht mehr benötigt werden, können systemseitig archiviert und entfernt werden.</li>
-                        </ul>
+                        <p>Zum Schutz der verarbeiteten Entgeltdaten setzen wir modernste Sicherheitsstandards ein, darunter AES-256-Verschlüsselung, strikte Mandantentrennung via Row Level Security, sichere Authentifizierung und vollständige Löschkonzepte.</p>
+                        <div className="mt-4">
+                            <Link
+                                href="/toms"
+                                className="inline-flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg transition-all"
+                                style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.25)', color: 'var(--color-pl-brand-light)' }}
+                            >
+                                Vollständige TOMs ansehen →
+                            </Link>
+                        </div>
                     </Section>
 
                     <Section title="4. Verträge zur Auftragsverarbeitung (AVV)">
@@ -79,6 +97,83 @@ export default function CompliancePage() {
         </div>
     )
 }
+
+/* ─── English Version ────────────────────────────────────────────────── */
+
+function EnglishVersion() {
+    return (
+        <div className="min-h-screen" style={{ background: 'var(--color-pl-bg)' }}>
+            <div className="max-w-3xl mx-auto px-6 py-16">
+                {/* Header */}
+                <div className="mb-10">
+                    <div className="flex items-center justify-between mb-4">
+                        <BackButton />
+                        <LanguageSwitcher />
+                    </div>
+                    <a href="https://complens.de" className="flex items-center gap-3 mb-6 hover:opacity-80 transition-opacity" style={{ textDecoration: 'none' }}>
+                        <Logo size={32} />
+                        <span className="font-bold text-xl" style={{ color: 'var(--color-pl-text-primary)' }}>CompLens</span>
+                    </a>
+                    <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--color-pl-text-primary)' }}>
+                        EU AI Act & GDPR Compliance
+                    </h1>
+                    <p className="text-sm" style={{ color: 'var(--color-pl-text-tertiary)' }}>
+                        Transparent information for Data Protection Officers (DPO) · As of: March 2026
+                    </p>
+                </div>
+
+                {/* Content */}
+                <div className="prose-legal space-y-8" style={{ color: 'var(--color-pl-text-secondary)', lineHeight: 1.8 }}>
+
+                    <Section title="1. Architecture, Hosting & Data Processing">
+                        <p>CompLens acts as a <strong>Data processor</strong> pursuant to Art. 28 GDPR. All data processing takes place exclusively on highly secure servers within the European Union. The architecture is designed so that data never leaves the EU at any point.</p>
+                        <ul className="list-disc pl-5 mt-3 space-y-2">
+                            <li><strong>Hosting & Frontend (Vercel):</strong> The frontend and API routes are served via Vercel. Serverless Functions are strictly executed in the <code>fra1</code> region (Frankfurt am Main). Vercel is SOC2 Type II certified.</li>
+                            <li><strong>Database & Authentication (Supabase):</strong> All database records, user profiles, and stored files (e.g. Excel uploads) are physically located in the AWS data centre <code>eu-central-1</code> (Frankfurt). Supabase provides industry-standard protection (SOC2 Type II, HIPAA-compliant).</li>
+                            <li><strong>Transactional emails (Resend):</strong> System emails (e.g. password resets) are processed via the service provider Resend. GDPR compliance is fully ensured through a Data Processing Agreement (DPA) as well as the EU-US Data Privacy Framework (DPF) adequacy decision.</li>
+                        </ul>
+                    </Section>
+
+                    <Section title="2. EU AI Act Compliance (Generative AI)">
+                        <p>The CompLens software uses Generative AI (Google Gemini) to create draft explanations and action plans. With regard to the <strong>EU Artificial Intelligence Act (AI Act)</strong>, the following principles apply:</p>
+                        <ul className="list-disc pl-5 mt-3 space-y-2">
+                            <li><strong>Role allocation:</strong> Under the AI Act, we are the <em>Deployer</em> of the AI system, while Google is the <em>Provider</em> of the foundation model.</li>
+                            <li><strong>No automated decision-making (Human-in-the-Loop):</strong> CompLens makes <strong>no</strong> autonomous decisions about employees (Art. 22 GDPR). The AI merely creates text drafts for justifications, which must be <strong>mandatorily reviewed, adjusted, and approved manually</strong> by HR managers before they are included in reports.</li>
+                            <li><strong>Transparency:</strong> It is clearly visible at every point in the system when text has been generated by AI.</li>
+                            <li><strong>Zero-PII Prompting (Data minimisation):</strong> When sending requests to the AI models, <strong>no personally identifiable information</strong> (such as full names, private email addresses, or exact dates of birth) is ever transmitted. The AI exclusively processes pseudonymised identifiers (e.g. employee IDs) and purely factual job-level information for linguistic formulation.</li>
+                        </ul>
+                    </Section>
+
+                    <Section title="3. Technical and Organisational Measures (TOMs)">
+                        <p>To protect the processed compensation data, we employ state-of-the-art security standards, including AES-256 encryption, strict tenant isolation via Row Level Security, secure authentication, and comprehensive data deletion policies.</p>
+                        <div className="mt-4">
+                            <Link
+                                href="/toms"
+                                className="inline-flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg transition-all"
+                                style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.25)', color: 'var(--color-pl-brand-light)' }}
+                            >
+                                View full TOMs →
+                            </Link>
+                        </div>
+                    </Section>
+
+                    <Section title="4. Data Processing Agreement (DPA)">
+                        <p>We provide enterprise customers with a GDPR-compliant Data Processing Agreement (DPA) pursuant to Art. 28 GDPR as standard. The sub-processors we employ (Vercel, Supabase, Google Cloud Europe) have likewise committed to the strictest European data protection standards via Standard Contractual Clauses (SCCs) and the EU-US Data Privacy Framework (DPF).</p>
+                        <p className="mt-4">
+                            For further detailed enquiries regarding information security or to request the DPA, please contact our Data Protection Officer at any time by email at:{' '}
+                            <a href="mailto:hallo@complens.de" className="text-blue-500 hover:underline">
+                                hallo@complens.de
+                            </a>
+                        </p>
+                    </Section>
+
+                </div>
+            </div>
+        </div>
+    )
+}
+
+/* ─── Shared ─────────────────────────────────────────────────────────── */
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
     return (
