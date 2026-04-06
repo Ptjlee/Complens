@@ -2258,6 +2258,7 @@
     },
     "toms": {
       "title": "Technical & Organisational Measures (TOMs)",
+      "summary": "CompLens implements comprehensive security measures per GDPR Art. 32 — including TLS 1.3, AES-256 encryption, Row Level Security, pseudonymisation, and a documented deletion policy.",
       "transitLabel": "Encryption in Transit",
       "transitDetail": "TLS 1.3 for all connections between client, CDN and API routes. Older protocols (TLS 1.0/1.1) are disabled.",
       "restLabel": "Encryption at Rest",

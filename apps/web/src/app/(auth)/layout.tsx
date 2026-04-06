@@ -64,8 +64,6 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
                         <span>·</span>
                         <a href="/agb" className="hover:underline">{t('layoutTerms')}</a>
                         <span>·</span>
-                        <a href="/toms" className="hover:underline">TOMs</a>
-                        <span>·</span>
                         <a href="/compliance" className="hover:underline">AI & Compliance</a>
                     </div>
                 </div>

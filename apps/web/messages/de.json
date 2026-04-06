@@ -2258,6 +2258,7 @@
     },
     "toms": {
       "title": "Technische & Organisatorische Maßnahmen (TOMs)",
+      "summary": "CompLens setzt umfassende Sicherheitsmaßnahmen gemäß Art. 32 DSGVO um — einschließlich TLS 1.3, AES-256-Verschlüsselung, Row Level Security, Pseudonymisierung und einem dokumentierten Löschkonzept.",
       "transitLabel": "Verschlüsselung in Transit",
       "transitDetail": "TLS 1.3 für alle Verbindungen zwischen Client, CDN und API-Routen. Ältere Protokolle (TLS 1.0/1.1) sind deaktiviert.",
       "restLabel": "Verschlüsselung at Rest",

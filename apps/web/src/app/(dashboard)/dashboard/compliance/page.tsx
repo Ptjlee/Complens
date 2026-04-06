@@ -198,41 +198,16 @@ export default async function CompliancePage() {
 
                     {/* 2. TOMs */}
                     <SectionCard icon={<Lock size={20} />} title={t('toms.title')} iconColor="#3b82f6">
-                        <ul className="space-y-3">
-                            <CheckItem
-                                label={t('toms.transitLabel')}
-                                detail={t('toms.transitDetail')}
-                            />
-                            <CheckItem
-                                label={t('toms.restLabel')}
-                                detail={t('toms.restDetail')}
-                            />
-                            <CheckItem
-                                label={t('toms.rlsLabel')}
-                                detail={t('toms.rlsDetail')}
-                            />
-                            <CheckItem
-                                label={t('toms.accessLabel')}
-                                detail={t('toms.accessDetail')}
-                            />
-                            <CheckItem
-                                label={t('toms.zeroPiiLabel')}
-                                detail={t('toms.zeroPiiDetail')}
-                            />
-                            <CheckItem
-                                label={t('toms.deletionLabel')}
-                                detail={t('toms.deletionDetail')}
-                            />
-                            <CheckItem
-                                label={t('toms.auditsLabel')}
-                                detail={t('toms.auditsDetail')}
-                            />
-                        </ul>
-                        <p className="text-sm mt-4" style={{ color: 'var(--color-pl-text-secondary)' }}>
-                            <Link href="/toms" className="underline" style={{ color: 'var(--color-pl-brand-light)' }}>
-                                {t('toms.fullTomsLink')}
-                            </Link>
+                        <p className="text-sm mb-4" style={{ color: 'var(--color-pl-text-secondary)' }}>
+                            {t('toms.summary')}
                         </p>
+                        <Link
+                            href="/toms"
+                            className="inline-flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg transition-all"
+                            style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.25)', color: 'var(--color-pl-brand-light)' }}
+                        >
+                            {t('toms.fullTomsLink')} →
+                        </Link>
                     </SectionCard>
 
                     {/* 3. EU AI Act */}
