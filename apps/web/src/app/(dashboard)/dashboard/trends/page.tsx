@@ -1,8 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
 import type { AnalysisResult } from '@/lib/calculations/types'
 import TrendPageClient from './TrendPageClient'
+import { getTranslations } from 'next-intl/server'
 
-export const metadata = { title: 'Trendanalyse — CompLens' }
+export async function generateMetadata() {
+    const t = await getTranslations('metadata')
+    return { title: t('trendsTitle') }
+}
 
 export interface TrendPoint {
     year:              number

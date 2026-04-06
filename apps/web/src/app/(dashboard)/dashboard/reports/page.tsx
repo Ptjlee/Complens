@@ -2,10 +2,14 @@ import { getAllAnalyses } from './actions'
 import ReportsListClient from './ReportsList'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getTranslations } from 'next-intl/server'
 
-export const metadata = {
-    title: 'Berichte — CompLens',
-    description: 'EU-konforme Entgeltberichte nach Art. 9 EU-Richtlinie 2023/970.',
+export async function generateMetadata() {
+    const t = await getTranslations('metadata')
+    return {
+        title: t('reportsTitle'),
+        description: t('reportsDescription'),
+    }
 }
 
 export default async function ReportsPage() {

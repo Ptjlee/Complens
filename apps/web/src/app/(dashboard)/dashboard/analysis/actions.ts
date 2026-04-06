@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { runAnalysis } from '@/lib/calculations/payGap'
@@ -19,6 +20,7 @@ export async function runDatasetAnalysis(
     wifFactors?: string[],
 ): Promise<{ analysisId?: string; error?: string }> {
     // ── Role guard: viewers cannot run analyses ──────────────────
+    const t = await getTranslations('errors')
     const authCheck = await requireAdminRoleAction()
     if ('error' in authCheck) return { error: authCheck.error }
 
@@ -46,7 +48,7 @@ export async function runDatasetAnalysis(
             .from('analyses')
             .update({ status: 'running', error_message: null, updated_at: new Date().toISOString() })
             .eq('id', existingAnalysisId)
-        if (resetErr) return { error: 'Analyse konnte nicht zurückgesetzt werden.' }
+        if (resetErr) return { error: t('analysisResetFailed') }
         analysisId = existingAnalysisId
     } else {
         // Create a new pending analysis record (archive mode)
@@ -91,7 +93,7 @@ export async function runDatasetAnalysis(
                 status: 'error',
                 error_message: 'Keine Mitarbeiterdaten gefunden.',
             }).eq('id', analysisId)
-            return { error: 'Keine Mitarbeiterdaten für diesen Datensatz gefunden.' }
+            return { error: t('noEmployeeDataFound') }
         }
 
         // C3 — Fetch any manual pay overrides for this analysis run and merge

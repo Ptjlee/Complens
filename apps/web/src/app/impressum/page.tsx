@@ -3,10 +3,14 @@ import Link from 'next/link'
 
 import BackButton from '@/components/BackButton'
 import { Logo } from '@/components/ui/Logo'
+import { getTranslations } from 'next-intl/server'
 
-export const metadata: Metadata = {
-    title: 'Impressum — CompLens',
-    description: 'Impressum der DexterBee GmbH gemäß § 5 TMG.',
+export async function generateMetadata(): Promise<Metadata> {
+    const t = await getTranslations('metadata')
+    return {
+        title: t('impressumTitle'),
+        description: t('impressumDescription'),
+    }
 }
 
 export default function ImpressumPage() {

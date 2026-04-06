@@ -3,10 +3,14 @@ import DashboardOverview from './DashboardOverview'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getBandContext } from '@/lib/band/getBandContext'
+import { getTranslations } from 'next-intl/server'
 
-export const metadata = {
-    title: 'Übersicht — CompLens',
-    description: 'EU-konforme Entgeltlückenübersicht nach EU-Richtlinie 2023/970.',
+export async function generateMetadata() {
+    const t = await getTranslations('metadata')
+    return {
+        title: t('dashboardTitle'),
+        description: t('dashboardDescription'),
+    }
 }
 
 export default async function DashboardPage() {

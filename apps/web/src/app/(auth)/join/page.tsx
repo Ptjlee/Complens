@@ -3,10 +3,14 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import JoinClient from './JoinClient'
+import { getTranslations } from 'next-intl/server'
 
-export const metadata: Metadata = {
-    title: 'Einladung annehmen — CompLens',
-    description: 'Nehmen Sie Ihre Einladung zu CompLens an und erstellen Sie Ihren Zugang.',
+export async function generateMetadata(): Promise<Metadata> {
+    const t = await getTranslations('metadata')
+    return {
+        title: t('joinTitle'),
+        description: t('joinDescription'),
+    }
 }
 
 export default async function JoinPage({

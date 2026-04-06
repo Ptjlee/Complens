@@ -3,10 +3,14 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import SettingsClient from './SettingsClient'
+import { getTranslations } from 'next-intl/server'
 
-export const metadata: Metadata = {
-    title: 'Einstellungen — CompLens',
-    description: 'Organisation, Benutzerprofil und Abonnement verwalten.',
+export async function generateMetadata(): Promise<Metadata> {
+    const t = await getTranslations('metadata')
+    return {
+        title: t('settingsTitle'),
+        description: t('settingsDescription'),
+    }
 }
 
 // Never cache this page — plan/subscription changes must be reflected immediately

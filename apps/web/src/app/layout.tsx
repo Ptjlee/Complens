@@ -13,7 +13,12 @@ const inter = Inter({
 })
 
 export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale()
   const t = await getTranslations('metadata')
+
+  const ogLocale = locale === 'en' ? 'en_GB' : 'de_DE'
+  const ogAlternateLocale = locale === 'en' ? 'de_DE' : 'en_GB'
+  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://complens.de'
 
   return {
     title: {
@@ -33,13 +38,18 @@ export async function generateMetadata(): Promise<Metadata> {
     ],
     authors: [{ name: 'DexterBee GmbH' }],
     creator: 'DexterBee GmbH',
-    metadataBase: new URL(
-      process.env.NEXT_PUBLIC_APP_URL || 'https://complens.de'
-    ),
+    metadataBase: new URL(siteUrl),
+    alternates: {
+      languages: {
+        'de': siteUrl,
+        'en': siteUrl,
+        'x-default': siteUrl,
+      },
+    },
     openGraph: {
       type: 'website',
-      locale: 'de_DE',
-      alternateLocale: 'en_GB',
+      locale: ogLocale,
+      alternateLocale: ogAlternateLocale,
       siteName: 'CompLens',
       title: t('ogTitle'),
       description: t('ogDescription'),
@@ -70,6 +80,7 @@ export default async function RootLayout({
 }) {
   const locale = await getLocale()
   const messages = await getMessages()
+  const t = await getTranslations('metadata')
 
   return (
     <html lang={locale} className={inter.variable} suppressHydrationWarning>
@@ -119,8 +130,8 @@ export default async function RootLayout({
               legalName: 'DexterBee GmbH',
               url: 'https://complens.de',
               logo: 'https://complens.de/icon.png',
-              description:
-                'Erfüllen Sie die EU-Meldepflicht in unter 5 Minuten. Automatisierte Analysen, bereinigter Gender Pay Gap und fertige Berichte – 100% DSGVO-konform.',
+              description: t('jsonLdOrgDescription'),
+              inLanguage: locale,
               address: {
                 '@type': 'PostalAddress',
                 streetAddress: 'Industriestr. 13',
@@ -147,8 +158,8 @@ export default async function RootLayout({
               name: 'CompLens',
               applicationCategory: 'BusinessApplication',
               operatingSystem: 'Web',
-              description:
-                'EU Pay Transparency compliance software. Automated gender pay gap analysis and reporting.',
+              inLanguage: locale,
+              description: t('jsonLdAppDescription'),
               offers: {
                 '@type': 'Offer',
                 price: '5990',

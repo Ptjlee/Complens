@@ -3,10 +3,14 @@ import Link from 'next/link'
 
 import BackButton from '@/components/BackButton'
 import { Logo } from '@/components/ui/Logo'
+import { getTranslations } from 'next-intl/server'
 
-export const metadata: Metadata = {
-    title: 'EU AI Act & DSGVO Compliance — CompLens',
-    description: 'Informationen zur Datenverarbeitung, Hosting, Sicherheit (TOMs) und EU AI Act Compliance der CompLens Software.',
+export async function generateMetadata(): Promise<Metadata> {
+    const t = await getTranslations('metadata')
+    return {
+        title: t('publicComplianceTitle'),
+        description: t('publicComplianceDescription'),
+    }
 }
 
 export default function CompliancePage() {

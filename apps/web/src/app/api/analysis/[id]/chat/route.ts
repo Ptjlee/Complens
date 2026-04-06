@@ -20,8 +20,9 @@ interface ChatMessage {
 function pct(v: number | null | undefined): string {
     return v != null ? `${(v * 100).toFixed(1)}%` : '—'
 }
-function eur(v: number | null | undefined): string {
-    return v != null ? `${v.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €/h` : '—'
+function eur(v: number | null | undefined, locale: string = 'de'): string {
+    const fmt = locale === 'en' ? 'en-IE' : 'de-DE'
+    return v != null ? `${v.toLocaleString(fmt, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €/h` : '—'
 }
 
 // ─── System prompt builder ────────────────────────────────────
@@ -255,13 +256,13 @@ type RemediationRow = {
 
 function classifyTopic(messages: ChatMessage[]): string {
     const text = messages.map(m => m.content).join(' ').toLowerCase()
-    if (text.includes('begründung') || text.includes('erklär') || text.includes('art. 10') || text.includes('art. 18')) return 'gap_explanation'
-    if (text.includes('maßnahm') || text.includes('remediat') || text.includes('art. 11')) return 'remediation'
-    if (text.includes('bericht') || text.includes('meldung') || text.includes('report') || text.includes('art. 9')) return 'report_submission'
-    if (text.includes('pdf') || text.includes('export') || text.includes('herunterlad')) return 'export'
-    if (text.includes('abonnement') || text.includes('preis') || text.includes('lizenz') || text.includes('upgrade')) return 'billing'
-    if (text.includes('fehler') || text.includes('funktioniert nicht') || text.includes('problem')) return 'technical_issue'
-    if (text.includes('quartil') || text.includes('bereinigt') || text.includes('unbereinigt') || text.includes('wif')) return 'analysis_understanding'
+    if (text.includes('begründung') || text.includes('erklär') || text.includes('explanation') || text.includes('explain') || text.includes('art. 10') || text.includes('art. 18')) return 'gap_explanation'
+    if (text.includes('maßnahm') || text.includes('remediat') || text.includes('action plan') || text.includes('art. 11')) return 'remediation'
+    if (text.includes('bericht') || text.includes('meldung') || text.includes('report') || text.includes('submission') || text.includes('art. 9')) return 'report_submission'
+    if (text.includes('pdf') || text.includes('export') || text.includes('herunterlad') || text.includes('download')) return 'export'
+    if (text.includes('abonnement') || text.includes('preis') || text.includes('lizenz') || text.includes('subscription') || text.includes('pricing') || text.includes('license') || text.includes('upgrade')) return 'billing'
+    if (text.includes('fehler') || text.includes('funktioniert nicht') || text.includes('problem') || text.includes('error') || text.includes('not working') || text.includes('bug')) return 'technical_issue'
+    if (text.includes('quartil') || text.includes('quartile') || text.includes('bereinigt') || text.includes('adjusted') || text.includes('unadjusted') || text.includes('unbereinigt') || text.includes('wif')) return 'analysis_understanding'
     return 'general_compliance'
 }
 

@@ -3,10 +3,14 @@ import AnalysisPageClient from './AnalysisPage'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getBandContext } from '@/lib/band/getBandContext'
+import { getTranslations } from 'next-intl/server'
 
-export const metadata = {
-    title: 'Analyse — CompLens',
-    description: 'EU-konforme Entgeltlückenanalyse nach EU-Richtlinie 2023/970.',
+export async function generateMetadata() {
+    const t = await getTranslations('metadata')
+    return {
+        title: t('analysisTitle'),
+        description: t('analysisDescription'),
+    }
 }
 
 export default async function AnalysisPage() {

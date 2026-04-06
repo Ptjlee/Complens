@@ -3,10 +3,14 @@ import DatasetsClient from './DatasetsClient'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
+import { getTranslations } from 'next-intl/server'
 
-export const metadata = {
-    title: 'Datensätze verwalten — CompLens',
-    description: 'Importierte Datensätze anzeigen und verwalten.',
+export async function generateMetadata() {
+    const t = await getTranslations('metadata')
+    return {
+        title: t('datasetsTitle'),
+        description: t('datasetsDescription'),
+    }
 }
 
 export default async function DatasetsPage() {

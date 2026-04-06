@@ -4,10 +4,14 @@ import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import AdminClient from './AdminClient'
 import { BetaAnalyticsDataClient } from '@google-analytics/data'
+import { getTranslations } from 'next-intl/server'
 
-export const metadata: Metadata = {
-    title: 'Admin — CompLens',
-    robots: 'noindex, nofollow',
+export async function generateMetadata(): Promise<Metadata> {
+    const t = await getTranslations('metadata')
+    return {
+        title: t('superadminTitle'),
+        robots: 'noindex, nofollow',
+    }
 }
 
 // Access is gated by proxy.ts (SUPERADMIN_EMAILS env var).

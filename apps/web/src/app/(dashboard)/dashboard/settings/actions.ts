@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
@@ -13,6 +14,7 @@ type ActionResult = { error?: string }
 // ─── Action: Update organisation name ────────────────────────
 
 export async function updateOrgName(name: string): Promise<ActionResult> {
+    const t = await getTranslations('errors')
     const trimmed = name.trim()
     if (!trimmed || trimmed.length < 2) return { error: 'Name muss mindestens 2 Zeichen lang sein.' }
     if (trimmed.length > 100)            return { error: 'Name darf maximal 100 Zeichen lang sein.' }
@@ -28,7 +30,7 @@ export async function updateOrgName(name: string): Promise<ActionResult> {
         .single()
 
     if (!member)                  return { error: 'Mitgliedschaft nicht gefunden.' }
-    if (member.role !== 'admin')  return { error: 'Nur Administratoren können den Unternehmensnamen ändern.' }
+    if (member.role !== 'admin')  return { error: t('onlyAdminsCanChangeName') }
 
     const { error } = await supabase
         .from('organisations')
@@ -51,6 +53,7 @@ export async function updateOrgLegal(fields: {
     vat_id:               string
     country:              string
 }): Promise<ActionResult> {
+    const t = await getTranslations('errors')
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { error: 'Nicht angemeldet.' }
@@ -62,7 +65,7 @@ export async function updateOrgLegal(fields: {
         .single()
 
     if (!member)                 return { error: 'Mitgliedschaft nicht gefunden.' }
-    if (member.role !== 'admin') return { error: 'Nur Administratoren können Rechtsdaten ändern.' }
+    if (member.role !== 'admin') return { error: t('onlyAdminsCanChangeLegal') }
 
     const { error } = await supabase
         .from('organisations')
@@ -268,9 +271,10 @@ export async function inviteMember(
     name?: string,
     title?: string,
 ): Promise<ActionResult & { token?: string }> {
+    const t = await getTranslations('errors')
     const trimmedEmail = email.trim().toLowerCase()
     if (!trimmedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
-        return { error: 'Bitte geben Sie eine gültige E-Mail-Adresse ein.' }
+        return { error: t('invalidEmailAddress') }
     }
 
     const ctx = await getCallerContext()
@@ -279,12 +283,12 @@ export async function inviteMember(
     const { supabase, user, orgId, maxUsers, usedSeats, plan } = ctx
 
     if (plan === 'trial' || plan === 'free') {
-        return { error: 'Team-Einladungen sind nur mit einer aktiven Lizenz verfügbar.' }
+        return { error: t('invitationsRequireLicense') }
     }
 
     if (usedSeats >= maxUsers) {
         return {
-            error: `Alle ${maxUsers} Nutzerplätze sind belegt. Bitte kontaktieren Sie den Support für einen zusätzlichen Platz (€ 990/Jahr).`,
+            error: t('allSeatsOccupied', { maxUsers }),
         }
     }
 
@@ -391,6 +395,7 @@ export async function inviteMember(
 // ─── Action: Remove a member ──────────────────────────────────
 
 export async function removeMember(memberId: string): Promise<ActionResult> {
+    const t = await getTranslations('errors')
     const ctx = await getCallerContext()
     if (!ctx) return { error: 'Nicht autorisiert.' }
 
@@ -406,7 +411,7 @@ export async function removeMember(memberId: string): Promise<ActionResult> {
     if (!target) return { error: 'Mitglied nicht gefunden.' }
 
     if (target.user_id === user.id) {
-        return { error: 'Sie können sich nicht selbst entfernen.' }
+        return { error: t('cannotRemoveSelf') }
     }
 
     if (target.role === 'admin') {
@@ -416,7 +421,7 @@ export async function removeMember(memberId: string): Promise<ActionResult> {
             .eq('org_id', orgId)
             .eq('role', 'admin')
         if ((count ?? 0) <= 1) {
-            return { error: 'Sie können den einzigen Administrator nicht entfernen.' }
+            return { error: t('cannotRemoveOnlyAdmin') }
         }
     }
 
