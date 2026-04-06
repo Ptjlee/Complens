@@ -1,5 +1,7 @@
 import { getRequestConfig } from 'next-intl/server'
 import { cookies } from 'next/headers'
+import messagesDE from '@messages/de.json'
+import messagesEN from '@messages/en.json'
 
 // CompLens reads the user's preferred language from the NEXT_LOCALE cookie.
 // The cookie is set by /api/profile/language and by the dashboard layout.
@@ -10,6 +12,6 @@ export default getRequestConfig(async () => {
     const locale = raw === 'en' ? 'en' : 'de'
     return {
         locale,
-        messages: (await import(`../../messages/${locale}.json`)).default,
+        messages: locale === 'en' ? messagesEN : messagesDE,
     }
 })

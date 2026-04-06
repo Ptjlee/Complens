@@ -7,6 +7,9 @@ import { MAX_JUSTIFIABLE_CAP } from '@/app/(dashboard)/dashboard/import/constant
 import { getBandContext } from '@/lib/band/getBandContext'
 import React from 'react'
 import { cookies } from 'next/headers'
+// Static imports — Turbopack can't resolve dynamic import() with template literals
+import messagesDE from '@messages/de.json'
+import messagesEN from '@messages/en.json'
 
 export async function GET(
     req: NextRequest,
@@ -19,8 +22,8 @@ export async function GET(
     const localeParam = sp.get('locale')
     const cookieStore = await cookies()
     const locale = localeParam || cookieStore.get('NEXT_LOCALE')?.value || 'de'
-    const messages = (await import(`../../../../../../messages/${locale}.json`)).default
-    const rt = (key: string) => messages?.report?.[key] ?? key
+    const messages = locale === 'en' ? messagesEN : messagesDE
+    const rt = (key: string) => (messages?.report as Record<string, string>)?.[key] ?? key
 
     // ── PDF options from query params ──
     const companyName   = sp.get('companyName')  ?? undefined
