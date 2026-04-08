@@ -1888,7 +1888,7 @@
     "tabSecurity": "Data protection",
     "trialBanner": "Trial: <strong>{days} day{days, plural, one {} other {s}}</strong> remaining",
     "upgradeNow": "Upgrade now",
-    "planTrialLabel": "7-day trial",
+    "planTrialLabel": "14-day trial",
     "planTrialBadge": "TRIAL",
     "planFreeLabel": "Trial",
     "planFreeBadge": "TRIAL",

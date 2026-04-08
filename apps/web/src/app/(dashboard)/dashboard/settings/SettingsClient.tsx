@@ -1165,15 +1165,12 @@ function BillingTab({
                         )}
                     />
 
-                    {/* AVV */}
+                    {/* AVV — always downloadable (GDPR Art. 28 requires both parties have a copy) */}
                     <DocRow
-                        icon={<FileDown size={14} style={{ color: isLicensed && legalComplete ? 'var(--color-pl-brand-light)' : 'var(--color-pl-text-tertiary)' }} />}
+                        icon={<FileDown size={14} style={{ color: 'var(--color-pl-brand-light)' }} />}
                         title={t('docAvvTitle')}
-                        subtitle={isLicensed
-                            ? t('docAvvSub')
-                            : t('docAvvAvailAfter')}
-                        muted={!isLicensed}
-                        action={isLicensed && legalComplete ? (
+                        subtitle={t('docAvvSub')}
+                        action={
                             <a
                                 href="/api/contracts/avv"
                                 target="_blank"
@@ -1183,13 +1180,7 @@ function BillingTab({
                             >
                                 <FileDown size={12} /> {t('downloadDoc')}
                             </a>
-                        ) : isLicensed ? (
-                            <button onClick={onGoToOrg} className="text-xs hover:underline" style={{ color: 'var(--color-pl-brand-light)' }}>{t('docLicenseFillLegal')}</button>
-                        ) : (
-                            <span className="text-xs px-2.5 py-1 rounded-lg" style={{ background: 'rgba(255,255,255,0.04)', color: 'var(--color-pl-text-tertiary)', border: '1px solid var(--color-pl-border)' }}>
-                                {t('docAfterLicensing')}
-                            </span>
-                        )}
+                        }
                     />
 
                     {/* Proforma */}
