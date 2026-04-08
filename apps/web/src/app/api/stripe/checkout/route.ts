@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { z } from 'zod'
+import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { parseBody } from '@/lib/api/parseBody'
 import { rateLimit, RATE_LIMITS } from '@/lib/api/rateLimit'
@@ -133,16 +134,11 @@ export async function POST(req: NextRequest) {
             cancel_url:  `${origin}/dashboard/settings#billing`,
             allow_promotion_codes: true,
             billing_address_collection: 'required',
-            locale: 'de',
-            // ── Apply German invoice template to all subscription invoices ──
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            locale: (await cookies()).get('NEXT_LOCALE')?.value === 'en' ? 'en' : 'de',
             subscription_data: {
-                invoice_settings: {
-                    issuer:    { type: 'self' },
-                    rendering: { template: 'inrtem_1TESkCEB4pWUyJsm80m4qk18' },
-                } as any,
+                metadata: { org_id: org.id, plan },
             },
-        } as any)
+        })
 
         return NextResponse.json({ url: session.url })
     } catch (err) {
