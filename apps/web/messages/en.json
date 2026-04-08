@@ -663,7 +663,8 @@
       "pricePerYear": "€ 5,990 / year",
       "priceVat": "excl. VAT · Upgrade now",
       "licenseQuestion": "Questions about the licence?",
-      "contactSupport": "Contact support"
+      "contactSupport": "Contact support",
+      "logout": "Sign out"
     },
     "overview": {
       "title": "Overview",

@@ -663,7 +663,8 @@
       "pricePerYear": "€ 5.990 / Jahr",
       "priceVat": "zzgl. MwSt. · Jetzt upgraden",
       "licenseQuestion": "Fragen zur Lizenz?",
-      "contactSupport": "Support kontaktieren"
+      "contactSupport": "Support kontaktieren",
+      "logout": "Abmelden"
     },
     "overview": {
       "title": "Übersicht",

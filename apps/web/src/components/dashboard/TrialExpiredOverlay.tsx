@@ -9,14 +9,23 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useTranslations, useFormatter } from 'next-intl'
-import { CalendarX2, BarChart3, FileText, ShieldCheck, Zap, Loader2 } from 'lucide-react'
+import { CalendarX2, BarChart3, FileText, ShieldCheck, Zap, Loader2, LogOut } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
 
 export default function TrialExpiredOverlay({ trialEndedAt }: { trialEndedAt: string }) {
     const t = useTranslations('dashboard.expiredOverlay')
     const format = useFormatter()
+    const router = useRouter()
     const [loading, setLoading] = useState(false)
     const [error, setError]     = useState<string | null>(null)
     const overlayRef = useRef<HTMLDivElement>(null)
+
+    async function handleLogout() {
+        const supabase = createClient()
+        await supabase.auth.signOut()
+        router.push('/login')
+    }
 
     const FEATURES = [
         { icon: BarChart3,   label: t('feature1') },
@@ -208,6 +217,19 @@ export default function TrialExpiredOverlay({ trialEndedAt }: { trialEndedAt: st
                             {t('contactSupport')}
                         </a>
                     </p>
+
+                    <button
+                        onClick={handleLogout}
+                        className="flex items-center justify-center gap-2 mt-4 mx-auto text-xs font-medium px-4 py-2 rounded-lg transition-all"
+                        style={{
+                            background: 'rgba(239,68,68,0.08)',
+                            border: '1px solid rgba(239,68,68,0.2)',
+                            color: '#f87171',
+                        }}
+                    >
+                        <LogOut size={13} />
+                        {t('logout')}
+                    </button>
                 </div>
             </div>
 
