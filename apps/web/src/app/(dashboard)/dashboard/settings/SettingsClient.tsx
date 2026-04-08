@@ -1165,12 +1165,12 @@ function BillingTab({
                         )}
                     />
 
-                    {/* AVV — always downloadable (GDPR Art. 28 requires both parties have a copy) */}
+                    {/* AVV — always available, but requires legal details for PDF generation */}
                     <DocRow
-                        icon={<FileDown size={14} style={{ color: 'var(--color-pl-brand-light)' }} />}
+                        icon={<FileDown size={14} style={{ color: legalComplete ? 'var(--color-pl-brand-light)' : 'var(--color-pl-text-tertiary)' }} />}
                         title={t('docAvvTitle')}
                         subtitle={t('docAvvSub')}
-                        action={
+                        action={legalComplete ? (
                             <a
                                 href="/api/contracts/avv"
                                 target="_blank"
@@ -1180,7 +1180,11 @@ function BillingTab({
                             >
                                 <FileDown size={12} /> {t('downloadDoc')}
                             </a>
-                        }
+                        ) : (
+                            <button onClick={onGoToOrg} className="text-xs hover:underline" style={{ color: 'var(--color-pl-brand-light)' }}>
+                                {t('docLicenseFillLegal')}
+                            </button>
+                        )}
                     />
 
                     {/* Proforma */}
