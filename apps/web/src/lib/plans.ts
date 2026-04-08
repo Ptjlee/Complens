@@ -6,7 +6,7 @@
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-export type PlanId = 'free' | 'paylens' | 'paylens_ai' | 'trial'
+export type PlanId = 'free' | 'paylens' | 'paylens_ai' | 'licensed' | 'trial'
 
 export type Feature =
     | 'pdf_export'            // Download PDF reports
@@ -41,14 +41,25 @@ export const PLAN_META: Record<PlanId, {
     },
     paylens: {
         label: 'CompLens',
-        priceYearly: 4190,
+        priceYearly: 5990,
         color: '#3b82f6',
         colorBg: 'rgba(59,130,246,0.1)',
         features: ['pdf_export', 'ppt_export', 'unlimited_employees', 'multi_user'],
     },
+    licensed: {
+        label: 'CompLens',
+        priceYearly: 5990,
+        color: '#3b82f6',
+        colorBg: 'rgba(59,130,246,0.1)',
+        features: [
+            'pdf_export', 'ppt_export',
+            'ai_import', 'ai_explanations', 'ai_narrative',
+            'unlimited_employees', 'multi_user',
+        ],
+    },
     paylens_ai: {
         label: 'CompLens AI',
-        priceYearly: 4990,
+        priceYearly: 5990,
         color: '#6366f1',
         colorBg: 'rgba(99,102,241,0.1)',
         features: [

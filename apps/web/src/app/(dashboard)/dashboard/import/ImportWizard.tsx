@@ -5,12 +5,13 @@ import { useTranslations, useFormatter } from 'next-intl'
 import {
     Upload, FileSpreadsheet, Sparkles, CheckCircle2, Clock,
     ChevronRight, ChevronUp, ChevronDown, AlertCircle, ShieldCheck, ArrowLeft,
-    Loader2, Info, UserCheck, User
+    Loader2, Info, UserCheck, User, FileText, ExternalLink
 } from 'lucide-react'
 import {
     parseUploadedFile,
     runAiColumnMapping,
     confirmMappingAndProcess,
+    acceptAvv,
 } from './actions'
 import { runDatasetAnalysis } from '../analysis/actions'
 import { trackDatasetUpload } from '@/lib/analytics'
@@ -958,13 +959,32 @@ function AiLoadingScreen() {
 // Main wizard orchestrator
 // ============================================================
 
-export default function ImportWizard() {
+export default function ImportWizard({ avvAcceptedAt, orgId }: { avvAcceptedAt: string | null; orgId: string }) {
     const t = useTranslations('importWizard')
     const [step, setStep] = useState<Step>(1)
     const [wizardState, setWizardState] = useState<WizardState | null>(null)
     const [finalMapping, setFinalMapping] = useState<ColumnMapping>({})
     const [aiLoading, setAiLoading] = useState(false)
     const [aiRetryError, setAiRetryError] = useState<string | undefined>(undefined)
+
+    // C5: AVV acceptance gate (Art. 28 DSGVO)
+    const [avvAccepted, setAvvAccepted] = useState(!!avvAcceptedAt)
+    const [avvChecked, setAvvChecked] = useState(false)
+    const [avvPending, setAvvPending] = useState(false)
+    const [avvError, setAvvError] = useState<string | null>(null)
+
+    async function handleAvvAccept() {
+        if (!avvChecked) return
+        setAvvPending(true)
+        setAvvError(null)
+        const result = await acceptAvv(orgId)
+        setAvvPending(false)
+        if (result.error) {
+            setAvvError(result.error)
+        } else {
+            setAvvAccepted(true)
+        }
+    }
 
     function reset() {
         setStep(1)
@@ -1011,6 +1031,84 @@ export default function ImportWizard() {
     function handleMappingDone(mapping: ColumnMapping) {
         setFinalMapping(mapping)
         setStep(4)
+    }
+
+    // C5: AVV gate — must accept before accessing the import wizard
+    if (!avvAccepted) {
+        return (
+            <div className="max-w-2xl mx-auto">
+                <div className="mb-6">
+                    <h1 className="text-xl font-bold" style={{ color: 'var(--color-pl-text-primary)' }}>
+                        {t('wizardTitle')}
+                    </h1>
+                    <p className="text-sm mt-0.5" style={{ color: 'var(--color-pl-text-secondary)' }}>
+                        {t('wizardSubtitle')}
+                    </p>
+                </div>
+
+                <div className="glass-card p-6 space-y-5">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+                            style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)' }}>
+                            <ShieldCheck size={20} style={{ color: 'var(--color-pl-brand-light)' }} />
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>
+                                {t('avvTitle')}
+                            </h2>
+                            <p className="text-sm" style={{ color: 'var(--color-pl-text-secondary)' }}>
+                                {t('avvSubtitle')}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="p-4 rounded-lg text-sm" style={{ background: 'rgba(59,130,246,0.04)', border: '1px solid var(--color-pl-border)', color: 'var(--color-pl-text-secondary)' }}>
+                        <p>{t('avvExplanation')}</p>
+                    </div>
+
+                    <a
+                        href="/api/contracts/avv"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors w-fit"
+                        style={{ background: 'var(--color-pl-surface-raised)', border: '1px solid var(--color-pl-border)', color: 'var(--color-pl-brand-light)' }}
+                    >
+                        <FileText size={15} /> {t('avvDownload')} <ExternalLink size={13} />
+                    </a>
+
+                    <label className="flex items-start gap-3 cursor-pointer group">
+                        <input
+                            type="checkbox"
+                            checked={avvChecked}
+                            onChange={e => setAvvChecked(e.target.checked)}
+                            className="mt-1 w-4 h-4 rounded accent-blue-600 cursor-pointer"
+                        />
+                        <span className="text-sm" style={{ color: 'var(--color-pl-text-primary)' }}>
+                            {t('avvCheckboxLabel')}
+                        </span>
+                    </label>
+
+                    {avvError && (
+                        <div className="flex items-center gap-2 text-sm p-3 rounded-lg"
+                            style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444' }}>
+                            <AlertCircle size={16} /> {avvError}
+                        </div>
+                    )}
+
+                    <button
+                        onClick={handleAvvAccept}
+                        disabled={!avvChecked || avvPending}
+                        className="btn-primary w-full"
+                        style={!avvChecked || avvPending ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+                    >
+                        {avvPending
+                            ? <><Loader2 size={16} className="animate-spin" /> {t('avvSaving')}</>
+                            : <><ShieldCheck size={16} /> {t('avvAcceptBtn')}</>
+                        }
+                    </button>
+                </div>
+            </div>
+        )
     }
 
     return (

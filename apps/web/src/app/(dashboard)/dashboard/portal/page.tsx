@@ -17,12 +17,19 @@ export default async function PortalPage() {
     const admin = createAdminClient()
     const { data: member } = await admin
         .from('organisation_members')
-        .select('role')
+        .select('role, org_id')
         .eq('user_id', user.id)
         .single()
     if (member?.role !== 'admin') {
         redirect('/dashboard')
     }
+
+    // H11: Fetch org-specific pay criteria text
+    const { data: org } = await admin
+        .from('organisations')
+        .select('pay_criteria_text')
+        .eq('id', member.org_id)
+        .single()
 
     // Fetch the most recent completed analysis and its dataset
     const { data: latestAnalysis } = await supabase
@@ -37,8 +44,8 @@ export default async function PortalPage() {
         .single()
 
     if (!latestAnalysis) {
-        return <PortalClient analysis={null} />
+        return <PortalClient analysis={null} payCriteriaText={org?.pay_criteria_text ?? null} />
     }
 
-    return <PortalClient analysis={latestAnalysis as any} />
+    return <PortalClient analysis={latestAnalysis as any} payCriteriaText={org?.pay_criteria_text ?? null} />
 }

@@ -39,7 +39,7 @@ export default async function SettingsPage() {
     // ── Step 2: Fetch the org by its known ID (bypasses RLS caching issues) ──
     const { data: org } = await adminClient
         .from('organisations')
-        .select('id, name, slug, plan, trial_ends_at, subscription_ends_at, max_users, ai_enabled, country, created_at, legal_representative, legal_address, legal_city, legal_zip, vat_id')
+        .select('id, name, slug, plan, trial_ends_at, subscription_ends_at, max_users, ai_enabled, country, created_at, legal_representative, legal_address, legal_city, legal_zip, vat_id, pay_criteria_text')
         .eq('id', member.org_id)
         .single()
 
@@ -108,6 +108,7 @@ export default async function SettingsPage() {
                 vat_id:               org?.vat_id               ?? '',
                 country:              org?.country              ?? '',
             }}
+            payCriteriaText={org?.pay_criteria_text ?? ''}
         />
     )
 }

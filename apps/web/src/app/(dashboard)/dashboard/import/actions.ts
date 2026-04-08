@@ -10,6 +10,34 @@ import { PAYLENS_FIELDS, type ColumnMapping, type MappingConfidence } from './co
 export type { ColumnMapping, MappingConfidence } from './constants'
 
 // ============================================================
+// Action: Accept AVV (Art. 28 DSGVO)
+// ============================================================
+
+export async function acceptAvv(orgId: string): Promise<{ error?: string }> {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'Nicht angemeldet.' }
+
+    const admin = createAdminClient()
+    const { data: member } = await admin
+        .from('organisation_members')
+        .select('org_id, role')
+        .eq('user_id', user.id)
+        .single()
+
+    if (!member || member.org_id !== orgId) return { error: 'Keine Berechtigung.' }
+    if (member.role !== 'admin') return { error: 'Nur Administratoren können den AVV akzeptieren.' }
+
+    const { error } = await admin
+        .from('organisations')
+        .update({ avv_accepted_at: new Date().toISOString() })
+        .eq('id', orgId)
+
+    if (error) return { error: 'AVV-Akzeptanz konnte nicht gespeichert werden: ' + error.message }
+    return {}
+}
+
+// ============================================================
 // Types
 // ============================================================
 

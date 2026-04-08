@@ -4,6 +4,8 @@ import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { getTranslations } from 'next-intl/server'
 import { rateLimit, RATE_LIMITS } from '@/lib/api/rateLimit'
+import { createClient } from '@/lib/supabase/server'
+import { sanitizeUserPrompt } from '@/lib/ai/sanitize'
 
 const serviceClient = () =>
     createServiceClient(
@@ -92,6 +94,11 @@ export async function POST(req: NextRequest) {
     const limited = rateLimit(req, RATE_LIMITS.ai)
     if (limited) return limited
 
+    // Auth check — prevent unauthenticated access to AI endpoints
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     // Locale
     const store = await cookies()
     const locale = store.get('NEXT_LOCALE')?.value === 'en' ? 'en' : 'de'
@@ -127,19 +134,21 @@ export async function POST(req: NextRequest) {
 
         const firstName  = firstNameFrom(ticket.user_email ?? '')
         const unknownLabel = en ? 'Unknown' : 'Unbekannt'
+        const sanitizedSubject = sanitizeUserPrompt(ticket.subject)
+        const sanitizedBody    = sanitizeUserPrompt(ticket.body)
         const userPrompt = en
             ? `USER FIRST NAME: ${firstName}
-SUBJECT: ${ticket.subject}
+SUBJECT: ${sanitizedSubject}
 
 DESCRIPTION:
-${ticket.body}
+${sanitizedBody}
 
 User: ${ticket.user_email ?? unknownLabel} · Organisation: ${ticket.org_name ?? unknownLabel}`
             : `VORNAME DES NUTZERS: ${firstName}
-BETREFF: ${ticket.subject}
+BETREFF: ${sanitizedSubject}
 
 BESCHREIBUNG:
-${ticket.body}
+${sanitizedBody}
 
 Nutzer: ${ticket.user_email ?? unknownLabel} · Organisation: ${ticket.org_name ?? unknownLabel}`
 

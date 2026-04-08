@@ -5,6 +5,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import { requireAiPlan } from '@/lib/api/planGuard'
 import { getKnowledgeBase } from '@/lib/chatbot/knowledgeBase'
 import { rateLimit, RATE_LIMITS } from '@/lib/api/rateLimit'
+import { sanitizeUserPrompt } from '@/lib/ai/sanitize'
 
 function buildSystemPrompt(locale: string): string {
     const kb = getKnowledgeBase(locale)
@@ -85,12 +86,18 @@ export async function POST(req: NextRequest) {
         generationConfig: { temperature: 0.2, maxOutputTokens: 1500 },
     })
 
+    // Sanitise user messages before sending to LLM
+    const sanitizedMessages = messages.map((m: { role: string; content: string }) => ({
+        ...m,
+        content: m.role !== 'model' ? sanitizeUserPrompt(m.content) : m.content,
+    }))
+
     // Convert to Gemini format (last message = current turn)
-    const history = messages.slice(0, -1).map((m: { role: string; content: string }) => ({
+    const history = sanitizedMessages.slice(0, -1).map((m: { role: string; content: string }) => ({
         role:  m.role === 'model' ? 'model' : 'user',
         parts: [{ text: m.content }],
     }))
-    const lastMsg = messages[messages.length - 1]
+    const lastMsg = sanitizedMessages[sanitizedMessages.length - 1]
 
     const chat   = model.startChat({ history })
     const result = await chat.sendMessageStream(lastMsg.content)

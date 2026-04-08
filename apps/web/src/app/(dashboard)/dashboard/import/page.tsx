@@ -20,12 +20,19 @@ export default async function ImportPage() {
     const admin = createAdminClient()
     const { data: member } = await admin
         .from('organisation_members')
-        .select('role')
+        .select('role, org_id')
         .eq('user_id', user.id)
         .single()
     if (member?.role !== 'admin') {
         redirect('/dashboard')
     }
 
-    return <ImportWizard />
+    // C5: Check if the organisation has accepted the AVV (Art. 28 DSGVO)
+    const { data: org } = await admin
+        .from('organisations')
+        .select('avv_accepted_at')
+        .eq('id', member.org_id)
+        .single()
+
+    return <ImportWizard avvAcceptedAt={org?.avv_accepted_at ?? null} orgId={member.org_id} />
 }

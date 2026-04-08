@@ -164,6 +164,25 @@ const getURL = () => {
     return url
 }
 
+export async function sendPasswordResetEmail(email: string) {
+    const t = await getTranslations('auth')
+
+    if (!email || !email.includes('@')) {
+        return { error: t('errorInvalidEmail') }
+    }
+
+    const supabase = await createClient()
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${getURL()}reset-password`,
+    })
+
+    if (error) {
+        return { error: t('errorEmailSendFailed') }
+    }
+
+    return { success: true }
+}
+
 export async function resendVerification(email: string) {
     const t = await getTranslations('auth')
 

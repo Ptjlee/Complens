@@ -109,12 +109,41 @@ function GermanVersion() {
                         <Link href="/toms" style={{ color: 'var(--color-pl-brand-light)' }}>complens.de/toms</Link>.</p>
                     </Section>
 
-                    <Section title="5. KI-Verarbeitung (optional)">
-                        <p>Die KI-gestützte Spaltenzuordnung (Google Gemini) ist optional und erfordert
-                        Ihre ausdrückliche Einwilligung (DSGVO Art. 6 Abs. 1 lit. a). Die Daten werden
-                        vor der Übertragung anonymisiert — es werden ausschließlich Spaltenüberschriften,
-                        niemals Gehaltsdaten oder Personennamen übermittelt. Die Einwilligung kann
-                        jederzeit widerrufen werden.</p>
+                    <Section title="5. KI-Verarbeitung &amp; Unterauftragsverarbeiter">
+                        <p className="mb-3">CompLens setzt Google Gemini (Google Ireland Ltd.) als KI-Modell für
+                        folgende Verarbeitungstätigkeiten ein:</p>
+                        <table className="w-full text-xs border-collapse mb-3">
+                            <thead>
+                                <tr style={{ background: 'rgba(255,255,255,0.04)' }}>
+                                    <th className="text-left p-2 border" style={{ borderColor: 'var(--color-pl-border)', color: 'var(--color-pl-text-primary)' }}>Verarbeitungstätigkeit</th>
+                                    <th className="text-left p-2 border" style={{ borderColor: 'var(--color-pl-border)', color: 'var(--color-pl-text-primary)' }}>Übermittelte Datenkategorien</th>
+                                    <th className="text-left p-2 border" style={{ borderColor: 'var(--color-pl-border)', color: 'var(--color-pl-text-primary)' }}>Rechtsgrundlage</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {[
+                                    ['Automatische Spaltenzuordnung', 'Spaltenüberschriften, max. 5 anonymisierte Beispielwerte pro Spalte', 'Art. 6 Abs. 1 lit. a DSGVO (Einwilligung)'],
+                                    ['Chatbot / Erklärungen', 'Aggregierte Analyseergebnisse, pseudonymisierte Mitarbeiter-IDs (keine Namen)', 'Art. 6 Abs. 1 lit. b DSGVO (Vertragserfüllung)'],
+                                    ['Narrative Berichte', 'Aggregierte Kennzahlen (Gap-Werte, Kohorten-Statistiken)', 'Art. 6 Abs. 1 lit. b DSGVO'],
+                                    ['Support-Triage', 'Support-Nachrichtentext (keine Gehaltsdaten)', 'Art. 6 Abs. 1 lit. f DSGVO'],
+                                    ['E-Mail-Textoptimierung', 'Vom Nutzer eingegebener E-Mail-Entwurf', 'Art. 6 Abs. 1 lit. a DSGVO (Einwilligung)'],
+                                ].map(([activity, data, basis]) => (
+                                    <tr key={activity}>
+                                        <td className="p-2 border" style={{ borderColor: 'var(--color-pl-border)' }}>{activity}</td>
+                                        <td className="p-2 border" style={{ borderColor: 'var(--color-pl-border)' }}>{data}</td>
+                                        <td className="p-2 border" style={{ borderColor: 'var(--color-pl-border)' }}>{basis}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                        <p className="mb-2"><strong style={{ color: 'var(--color-pl-text-primary)' }}>Unterauftragsverarbeiter:</strong> Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irland.
+                        Die Verarbeitung erfolgt auf Grundlage eines Auftragsverarbeitungsvertrags gem. Art. 28 DSGVO mit Google.
+                        Google speichert API-Anfragen nicht für das Training eigener Modelle (Google Cloud Data Processing Addendum).</p>
+                        <p className="mb-2"><strong style={{ color: 'var(--color-pl-text-primary)' }}>Pseudonymisierung:</strong> Mitarbeiter-IDs können an Gemini übermittelt werden; Vor- und Nachnamen werden <strong>niemals</strong> übermittelt.
+                        Die Zuordnung von IDs zu natürlichen Personen ist für Google nicht möglich.</p>
+                        <p>Einwilligungsbasierte Verarbeitungen (Spaltenzuordnung, E-Mail-Optimierung) können
+                        jederzeit widerrufen werden. Die übrigen Verarbeitungen sind für die Vertragserfüllung
+                        bzw. das berechtigte Interesse erforderlich.</p>
                     </Section>
 
                     <Section title="6. Ihre Rechte">
@@ -129,10 +158,15 @@ function GermanVersion() {
                         <p className="mt-2">Zuständige Aufsichtsbehörde: Der Hessische Beauftragte für Datenschutz und Informationsfreiheit (HBDI)</p>
                     </Section>
 
-                    <Section title="7. Cookies">
+                    <Section title="7. Cookies &amp; Geräte-Fingerprinting">
                         <p>CompLens verwendet ausschließlich technisch notwendige Cookies für die
                         Sitzungsverwaltung (Supabase Auth). Es werden keine Tracking- oder
-                        Marketing-Cookies eingesetzt. Es ist keine Cookie-Einwilligung erforderlich.</p>
+                        Marketing-Cookies eingesetzt.</p>
+                        <p className="mt-2">Nach Erteilung der Cookie-Einwilligung wird ein Geräte-Fingerprint
+                        (gehashte Kombination aus Browser-Typ, Bildschirmauflösung, Zeitzone, Sprache,
+                        Plattform, CPU-Kerne und Touch-Punkte) erstellt und als SHA-256-Hash gespeichert.
+                        Dieser dient ausschließlich der Erkennung vertrauenswürdiger Geräte (max. 3 pro Nutzer)
+                        und wird nicht an Dritte weitergegeben. Ohne Cookie-Einwilligung erfolgt kein Fingerprinting.</p>
                     </Section>
 
                     <div className="mt-10 pt-6 border-t text-xs" style={{ borderColor: 'var(--color-pl-border)', color: 'var(--color-pl-text-tertiary)' }}>
@@ -229,12 +263,41 @@ function EnglishVersion() {
                         <Link href="/toms" style={{ color: 'var(--color-pl-brand-light)' }}>complens.de/toms</Link>.</p>
                     </Section>
 
-                    <Section title="5. AI Processing (optional)">
-                        <p>The AI-assisted column mapping feature (Google Gemini) is optional and requires
-                        your explicit consent (GDPR Art. 6(1)(a)). Data is anonymised
-                        prior to transmission -- only column headers are transmitted,
-                        never salary data or personal names. Consent may
-                        be withdrawn at any time.</p>
+                    <Section title="5. AI Processing &amp; Sub-processors">
+                        <p className="mb-3">CompLens uses Google Gemini (Google Ireland Ltd.) as an AI model for
+                        the following processing activities:</p>
+                        <table className="w-full text-xs border-collapse mb-3">
+                            <thead>
+                                <tr style={{ background: 'rgba(255,255,255,0.04)' }}>
+                                    <th className="text-left p-2 border" style={{ borderColor: 'var(--color-pl-border)', color: 'var(--color-pl-text-primary)' }}>Processing activity</th>
+                                    <th className="text-left p-2 border" style={{ borderColor: 'var(--color-pl-border)', color: 'var(--color-pl-text-primary)' }}>Data categories transmitted</th>
+                                    <th className="text-left p-2 border" style={{ borderColor: 'var(--color-pl-border)', color: 'var(--color-pl-text-primary)' }}>Legal basis</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {[
+                                    ['Automatic column mapping', 'Column headers, max. 5 anonymised sample values per column', 'Art. 6(1)(a) GDPR (consent)'],
+                                    ['Chatbot / Explanations', 'Aggregated analysis results, pseudonymised employee IDs (no names)', 'Art. 6(1)(b) GDPR (contract performance)'],
+                                    ['Narrative reports', 'Aggregated metrics (gap values, cohort statistics)', 'Art. 6(1)(b) GDPR'],
+                                    ['Support triage', 'Support message text (no salary data)', 'Art. 6(1)(f) GDPR'],
+                                    ['Email text polish', 'User-entered email draft', 'Art. 6(1)(a) GDPR (consent)'],
+                                ].map(([activity, data, basis]) => (
+                                    <tr key={activity}>
+                                        <td className="p-2 border" style={{ borderColor: 'var(--color-pl-border)' }}>{activity}</td>
+                                        <td className="p-2 border" style={{ borderColor: 'var(--color-pl-border)' }}>{data}</td>
+                                        <td className="p-2 border" style={{ borderColor: 'var(--color-pl-border)' }}>{basis}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                        <p className="mb-2"><strong style={{ color: 'var(--color-pl-text-primary)' }}>Sub-processor:</strong> Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Ireland.
+                        Processing is governed by a Data Processing Agreement pursuant to Art. 28 GDPR with Google.
+                        Google does not store API requests for training its own models (Google Cloud Data Processing Addendum).</p>
+                        <p className="mb-2"><strong style={{ color: 'var(--color-pl-text-primary)' }}>Pseudonymisation:</strong> Employee IDs may be transmitted to Gemini; first and last names are <strong>never</strong> transmitted.
+                        Google cannot link IDs to natural persons.</p>
+                        <p>Consent-based processing activities (column mapping, email polish) may
+                        be withdrawn at any time. The remaining activities are necessary for
+                        contract performance or legitimate interest.</p>
                     </Section>
 
                     <Section title="6. Your Rights">
@@ -249,10 +312,14 @@ function EnglishVersion() {
                         <p className="mt-2">Competent supervisory authority: The Hessian Commissioner for Data Protection and Freedom of Information (HBDI)</p>
                     </Section>
 
-                    <Section title="7. Cookies">
+                    <Section title="7. Cookies &amp; Device Fingerprinting">
                         <p>CompLens uses only technically necessary cookies for session management
-                        (Supabase Auth). No tracking or marketing cookies are used.
-                        No cookie consent is required.</p>
+                        (Supabase Auth). No tracking or marketing cookies are used.</p>
+                        <p className="mt-2">After granting cookie consent, a device fingerprint
+                        (hashed combination of browser type, screen resolution, timezone, language,
+                        platform, CPU cores, and touch points) is generated and stored as a SHA-256 hash.
+                        This serves solely to identify trusted devices (max. 3 per user)
+                        and is not shared with third parties. No fingerprinting occurs without cookie consent.</p>
                     </Section>
 
                     <div className="mt-10 pt-6 border-t text-xs" style={{ borderColor: 'var(--color-pl-border)', color: 'var(--color-pl-text-tertiary)' }}>

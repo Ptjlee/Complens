@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Search, Info, CheckCircle2, AlertTriangle, FileText, Download, BarChart3 } from 'lucide-react'
+import { Search, Info, CheckCircle2, AlertTriangle, FileText, Download, BarChart3, Settings } from 'lucide-react'
+import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import type { AnalysisResult } from '@/lib/calculations/types'
 
-export default function PortalClient({ analysis }: { analysis: any | null }) {
+export default function PortalClient({ analysis, payCriteriaText }: { analysis: any | null; payCriteriaText: string | null }) {
     const [search, setSearch] = useState('')
     const t = useTranslations('portal')
 
@@ -99,9 +100,27 @@ export default function PortalClient({ analysis }: { analysis: any | null }) {
                             </h3>
                             <div className="bg-black/20 p-3 rounded-md text-sm" style={{ color: 'var(--color-pl-text-secondary)' }}>
                                 <p><strong style={{ color: 'var(--color-pl-text-primary)' }}>{t('cohortLabel')}</strong> {employee.job_grade ?? '—'}</p>
-                                <p className="mt-1 text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                                    {t('criteriaDesc')}
-                                </p>
+                                {payCriteriaText ? (
+                                    <p className="mt-1 text-xs whitespace-pre-wrap" style={{ color: 'var(--color-pl-text-tertiary)' }}>
+                                        {payCriteriaText}
+                                    </p>
+                                ) : (
+                                    <>
+                                        <p className="mt-1 text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
+                                            {t('criteriaDesc')}
+                                        </p>
+                                        <div className="mt-2 p-2 rounded text-xs flex items-start gap-2"
+                                            style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', color: 'var(--color-pl-amber)' }}>
+                                            <AlertTriangle size={13} className="flex-shrink-0 mt-0.5" />
+                                            <span>
+                                                {t('criteriaGenericWarning')}{' '}
+                                                <Link href="/dashboard/settings#org" style={{ color: 'var(--color-pl-brand-light)', textDecoration: 'underline' }}>
+                                                    {t('criteriaConfigLink')}
+                                                </Link>
+                                            </span>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </div>
 

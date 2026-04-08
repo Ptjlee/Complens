@@ -87,6 +87,35 @@ export async function updateOrgLegal(fields: {
 
 
 
+// ─── Action: Update pay criteria text (Art. 7) ──────────────
+
+export async function updatePayCriteriaText(text: string): Promise<ActionResult> {
+    const t = await getTranslations('errors')
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'Nicht angemeldet.' }
+
+    const { data: member } = await supabase
+        .from('organisation_members')
+        .select('org_id, role')
+        .eq('user_id', user.id)
+        .single()
+
+    if (!member)                 return { error: 'Mitgliedschaft nicht gefunden.' }
+    if (member.role !== 'admin') return { error: t('onlyAdminsCanChangeLegal') }
+
+    const { error } = await supabase
+        .from('organisations')
+        .update({ pay_criteria_text: text.trim() || null })
+        .eq('id', member.org_id)
+
+    if (error) return { error: 'Speichern fehlgeschlagen: ' + error.message }
+
+    revalidatePath('/dashboard/settings')
+    revalidatePath('/dashboard/portal')
+    return {}
+}
+
 // ─── Action: Update user profile (name + job title) ──────────
 
 export async function updateProfile(

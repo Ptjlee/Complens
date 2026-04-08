@@ -13,15 +13,21 @@ function LoginForm() {
     const urlError = searchParams.get('error')
     const t = useTranslations('auth')
 
+    const urlMessage = searchParams.get('message')
+
     const [showPassword, setShowPassword] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const [success, setSuccess] = useState<string | null>(null)
     const [loading, setLoading] = useState(false)
 
     useEffect(() => {
         if (urlError === 'auth_callback_failed') {
             setError(t('authCallbackFailed'))
         }
-    }, [urlError, t])
+        if (urlMessage === 'password_reset_success') {
+            setSuccess(t('passwordResetSuccess'))
+        }
+    }, [urlError, urlMessage, t])
 
     async function handleSubmit(formData: FormData) {
         setLoading(true)
@@ -51,6 +57,20 @@ function LoginForm() {
             </div>
 
             <form action={handleSubmit} className="space-y-4">
+                {/* Success */}
+                {success && (
+                    <div
+                        className="px-4 py-3 rounded-lg text-sm"
+                        style={{
+                            background: 'rgba(34,197,94,0.1)',
+                            border: '1px solid rgba(34,197,94,0.25)',
+                            color: 'var(--color-pl-green)',
+                        }}
+                    >
+                        {success}
+                    </div>
+                )}
+
                 {/* Error */}
                 {error && (
                     <div

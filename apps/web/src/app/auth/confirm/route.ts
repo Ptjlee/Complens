@@ -6,10 +6,16 @@ import { getTranslations } from 'next-intl/server'
 export async function GET(request: NextRequest) {
     const { searchParams, origin } = new URL(request.url)
     const code = searchParams.get('code')
+    const type = searchParams.get('type')
     const next = searchParams.get('next') ?? '/dashboard'
 
     if (!code) {
         return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`)
+    }
+
+    // Password recovery flow — redirect to the reset-password page with the code
+    if (type === 'recovery') {
+        return NextResponse.redirect(`${origin}/reset-password?code=${code}`)
     }
 
     // Exchange the email-link code for a session

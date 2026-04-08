@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
-import { ArrowRight, CheckCircle, BarChart2, Shield, Upload, FileSignature, Send, Loader2 } from 'lucide-react'
+import { ArrowRight, CheckCircle, BarChart2, Shield, Upload, FileSignature, Send, Loader2, Check, Quote, Globe, Server, ShieldCheck, MapPin } from 'lucide-react'
 import { Logo } from '@/components/ui/Logo'
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher'
 
@@ -190,6 +190,141 @@ export default function LandingClient() {
                                 </div>
                                 <h3 className="text-xl font-bold text-white mb-3">{t(F.titleKey)}</h3>
                                 <p className="text-white/50 leading-relaxed text-sm">{t(F.textKey)}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* Pricing Section */}
+            <section id="pricing" className="py-24 relative z-10">
+                <div className="max-w-7xl mx-auto px-6">
+                    <div className="text-center mb-16">
+                        <h2 className="text-3xl font-bold text-white mb-4">{t('pricingHeadline')}</h2>
+                        <p className="text-white/50 max-w-2xl mx-auto">{t('pricingSubheadline')}</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
+                        {/* Professional Plan */}
+                        <div className="relative rounded-2xl p-[1px] overflow-hidden"
+                            style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.6), rgba(124,58,237,0.6))' }}>
+                            <div className="rounded-2xl p-8 h-full flex flex-col"
+                                style={{
+                                    background: 'rgba(22, 33, 62, 0.9)',
+                                    backdropFilter: 'blur(16px)',
+                                    boxShadow: '0 0 40px rgba(99,102,241,0.15)'
+                                }}>
+                                <div className="flex items-center justify-between mb-6">
+                                    <h3 className="text-xl font-bold text-white">{t('pricingProTitle')}</h3>
+                                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                                        {t('pricingRecommended')}
+                                    </span>
+                                </div>
+                                <div className="mb-8">
+                                    <span className="text-4xl font-extrabold text-white">{t('pricingProPrice')}</span>
+                                    <span className="text-white/40 text-sm ml-1">{t('pricingProPeriod')}</span>
+                                </div>
+                                <ul className="space-y-3 mb-8 flex-1">
+                                    {([
+                                        'pricingProFeature1', 'pricingProFeature2', 'pricingProFeature3',
+                                        'pricingProFeature4', 'pricingProFeature5', 'pricingProFeature6',
+                                        'pricingProFeature7', 'pricingProFeature8', 'pricingProFeature9',
+                                        'pricingProFeature10'
+                                    ] as const).map((key) => (
+                                        <li key={key} className="flex items-start gap-3 text-sm text-white/70">
+                                            <Check size={16} className="text-green-400 mt-0.5 shrink-0" />
+                                            <span>{t(key)}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                                <p className="text-xs text-white/40 mb-6">{t('pricingProSeats')}</p>
+                                <a href="/readiness-check"
+                                    className="block w-full py-3.5 rounded-xl text-center text-sm font-bold text-white transition-all hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(99,102,241,0.4)]"
+                                    style={{ background: 'linear-gradient(135deg, var(--color-pl-brand), #6366f1)' }}>
+                                    {t('pricingProCta')}
+                                </a>
+                                <p className="text-xs text-white/30 text-center mt-3">{t('pricingProNote')}</p>
+                            </div>
+                        </div>
+
+                        {/* Enterprise Plan */}
+                        <div className="rounded-2xl p-8 h-full flex flex-col"
+                            style={{
+                                background: 'rgba(22, 33, 62, 0.5)',
+                                backdropFilter: 'blur(16px)',
+                                border: '1px solid rgba(255,255,255,0.08)'
+                            }}>
+                            <h3 className="text-xl font-bold text-white mb-6">{t('pricingEntTitle')}</h3>
+                            <div className="mb-8">
+                                <span className="text-4xl font-extrabold text-white">{t('pricingEntPrice')}</span>
+                                <span className="text-white/40 text-sm ml-2">{t('pricingEntPeriod')}</span>
+                            </div>
+                            <ul className="space-y-3 mb-8 flex-1">
+                                {([
+                                    'pricingEntFeature1', 'pricingEntFeature2', 'pricingEntFeature3',
+                                    'pricingEntFeature4', 'pricingEntFeature5', 'pricingEntFeature6',
+                                    'pricingEntFeature7', 'pricingEntFeature8'
+                                ] as const).map((key) => (
+                                    <li key={key} className="flex items-start gap-3 text-sm text-white/70">
+                                        <Check size={16} className="text-blue-400 mt-0.5 shrink-0" />
+                                        <span>{t(key)}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                            <a href="#contact"
+                                className="block w-full py-3.5 rounded-xl text-center text-sm font-bold text-white/90 transition-all hover:bg-white/10 border border-white/10 hover:border-white/20">
+                                {t('pricingEntCta')}
+                            </a>
+                        </div>
+                    </div>
+
+                    {/* Cost comparison note */}
+                    <div className="max-w-3xl mx-auto mt-12 text-center">
+                        <p className="text-sm text-white/40 leading-relaxed italic">{t('pricingComparison')}</p>
+                    </div>
+                </div>
+            </section>
+
+            {/* Social Proof / Testimonials Section */}
+            <section className="py-24 border-y border-white/5 relative z-10" style={{ background: 'rgba(0,0,0,0.2)' }}>
+                <div className="max-w-7xl mx-auto px-6">
+                    <div className="text-center mb-16">
+                        <h2 className="text-3xl font-bold text-white mb-4">{t('testimonialsHeadline')}</h2>
+                        <p className="text-white/50 max-w-2xl mx-auto">{t('testimonialsSubheadline')}</p>
+                    </div>
+
+                    {/* Testimonial Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+                        {([
+                            { quoteKey: 'testimonial1Quote', nameKey: 'testimonial1Name', titleKey: 'testimonial1Title', companyKey: 'testimonial1Company' },
+                            { quoteKey: 'testimonial2Quote', nameKey: 'testimonial2Name', titleKey: 'testimonial2Title', companyKey: 'testimonial2Company' },
+                            { quoteKey: 'testimonial3Quote', nameKey: 'testimonial3Name', titleKey: 'testimonial3Title', companyKey: 'testimonial3Company' }
+                        ] as const).map((testimonial, i) => (
+                            <div key={i} className="p-8 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] transition-colors flex flex-col">
+                                <Quote size={24} className="text-blue-400/40 mb-4" />
+                                <p className="text-sm text-white/60 leading-relaxed flex-1 mb-6">
+                                    {t(testimonial.quoteKey)}
+                                </p>
+                                <div className="border-t border-white/5 pt-5">
+                                    <p className="text-sm font-semibold text-white">{t(testimonial.nameKey)}</p>
+                                    <p className="text-xs text-white/50 mt-0.5">{t(testimonial.titleKey)}</p>
+                                    <p className="text-xs text-white/30 mt-0.5">{t(testimonial.companyKey)}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Trust Badges */}
+                    <div className="flex flex-wrap items-center justify-center gap-6">
+                        {([
+                            { key: 'trustBadgeGdpr' as const, icon: ShieldCheck },
+                            { key: 'trustBadgeEuServers' as const, icon: Server },
+                            { key: 'trustBadgeSoc2' as const, icon: Shield },
+                            { key: 'trustBadgeMadeInGermany' as const, icon: MapPin }
+                        ]).map((badge) => (
+                            <div key={badge.key} className="flex items-center gap-2.5 px-5 py-2.5 rounded-full border border-white/5 bg-white/[0.02]">
+                                <badge.icon size={16} className="text-blue-400/60" />
+                                <span className="text-xs font-medium text-white/50">{t(badge.key)}</span>
                             </div>
                         ))}
                     </div>

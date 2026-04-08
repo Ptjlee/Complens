@@ -4,9 +4,9 @@ import { useState, useTransition, useEffect } from 'react'
 import { User } from '@supabase/supabase-js'
 import {
     Building2, User as UserIcon, CreditCard, Shield, TrendingUp,
-    Check, AlertTriangle, ChevronRight, Crown, Zap, Users, FileDown, Globe,
+    Check, AlertTriangle, ChevronRight, Crown, Zap, Users, FileDown, Globe, Loader2,
 } from 'lucide-react'
-import { signOut } from '@/app/(auth)/actions'
+import { signOut, sendPasswordResetEmail } from '@/app/(auth)/actions'
 import { trackCheckoutStarted, trackPaymentComplete } from '@/lib/analytics'
 import TeamPanel from './TeamPanel'
 import SalaryBandsPanel from './SalaryBandsPanel'
@@ -307,11 +307,62 @@ type Props = {
         vat_id:               string
         country:              string
     }
+    payCriteriaText: string
+}
+
+// ─── Password reset card ─────────────────────────────────────
+
+function PasswordResetCard({ email }: { email: string }) {
+    const t = useTranslations('settings')
+    const [loading, setLoading] = useState(false)
+    const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle')
+
+    async function handleSendReset() {
+        setLoading(true)
+        setStatus('idle')
+        const result = await sendPasswordResetEmail(email)
+        if (result?.error) {
+            setStatus('error')
+        } else {
+            setStatus('success')
+        }
+        setLoading(false)
+    }
+
+    return (
+        <div className="glass-card p-5">
+            <h2 className="text-sm font-semibold mb-1" style={{ color: 'var(--color-pl-text-primary)' }}>
+                {t('changePassword')}
+            </h2>
+            <p className="text-xs mb-4" style={{ color: 'var(--color-pl-text-tertiary)' }}>
+                {t('changePasswordHint')}
+            </p>
+            <button
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5"
+                style={{ background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.25)', color: 'var(--color-pl-brand-light)', opacity: loading ? 0.7 : 1 }}
+                onClick={handleSendReset}
+                disabled={loading}
+            >
+                {loading && <Loader2 size={12} className="animate-spin" />}
+                {t('sendResetEmail')}
+            </button>
+            {status === 'success' && (
+                <p className="text-xs mt-2" style={{ color: 'var(--color-pl-green)' }}>
+                    {t('resetEmailSentSettings')}
+                </p>
+            )}
+            {status === 'error' && (
+                <p className="text-xs mt-2" style={{ color: '#ef4444' }}>
+                    {t('resetEmailFailedSettings')}
+                </p>
+            )}
+        </div>
+    )
 }
 
 // ─── Main component ───────────────────────────────────────────
 
-export default function SettingsClient({ user, org, role, memberCount, teamData, profileData, legalData }: Props) {
+export default function SettingsClient({ user, org, role, memberCount, teamData, profileData, legalData, payCriteriaText }: Props) {
     const t = useTranslations('settings')
     const [activeTab, setActiveTab] = useState<'org' | 'team' | 'profile' | 'billing' | 'security' | 'bands'>('org')
     const [openInvite, setOpenInvite] = useState(false)
@@ -391,7 +442,7 @@ export default function SettingsClient({ user, org, role, memberCount, teamData,
 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
-                    {activeTab === 'org'      && <OrgTab      org={org} role={role} memberCount={memberCount} legalData={legalData} onInvite={() => { setOpenInvite(true); setActiveTab('team') }} />}
+                    {activeTab === 'org'      && <OrgTab      org={org} role={role} memberCount={memberCount} legalData={legalData} payCriteriaText={payCriteriaText} onInvite={() => { setOpenInvite(true); setActiveTab('team') }} />}
                     {activeTab === 'team'     && <TeamPanel   teamData={teamData} openInviteOnMount={openInvite} onInviteMounted={() => setOpenInvite(false)} />}
                     {activeTab === 'profile'  && <ProfileTab  user={user} profileData={profileData} />}
                     {activeTab === 'bands'    && <SalaryBandsPanel />}
@@ -414,7 +465,7 @@ type LegalData = {
     country:              string
 }
 
-function OrgTab({ org, role, memberCount, legalData, onInvite }: { org: Org; role: string; memberCount: number; legalData: LegalData; onInvite: () => void }) {
+function OrgTab({ org, role, memberCount, legalData, payCriteriaText: initialCriteria, onInvite }: { org: Org; role: string; memberCount: number; legalData: LegalData; payCriteriaText: string; onInvite: () => void }) {
     const t = useTranslations('settings')
     const [name, setName]   = useState(org?.name ?? '')
     const [saved, setSaved] = useState(false)
@@ -445,6 +496,27 @@ function OrgTab({ org, role, memberCount, legalData, onInvite }: { org: Org; rol
     const [legalEditing, setLegalEditing] = useState(
         !legalData.legal_representative || !legalData.legal_address || !legalData.legal_city || !legalData.country
     )
+
+    // H11: Pay criteria text for Art. 7 portal
+    const [criteriaText, setCriteriaText]         = useState(initialCriteria)
+    const [criteriaEditing, setCriteriaEditing]   = useState(false)
+    const [criteriaSaved, setCriteriaSaved]        = useState(false)
+    const [criteriaError, setCriteriaError]        = useState<string | null>(null)
+    const [criteriaPending, startCriteriaTrans]    = useTransition()
+
+    async function handleCriteriaSave() {
+        setCriteriaError(null)
+        startCriteriaTrans(async () => {
+            const { updatePayCriteriaText } = await import('./actions')
+            const result = await updatePayCriteriaText(criteriaText)
+            if (result?.error) setCriteriaError(result.error)
+            else {
+                setCriteriaSaved(true)
+                setCriteriaEditing(false)
+                setTimeout(() => setCriteriaSaved(false), 2500)
+            }
+        })
+    }
 
     async function handleLegalSave() {
         setLegalError(null)
@@ -645,6 +717,95 @@ function OrgTab({ org, role, memberCount, legalData, onInvite }: { org: Org; rol
                 )}
             </div>
 
+            {/* H11: Pay criteria for Art. 7 portal */}
+            <div className="glass-card p-5">
+                <div className="flex items-start justify-between mb-4">
+                    <div>
+                        <h2 className="text-sm font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>
+                            {t('criteriaTitle')}
+                        </h2>
+                        <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>
+                            {t('criteriaSubtitle')}
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+                        {criteriaText.trim() ? (
+                            <span className="flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full"
+                                style={{ background: 'rgba(34,197,94,0.12)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.25)' }}>
+                                <Check size={11} /> {t('criteriaConfigured')}
+                            </span>
+                        ) : (
+                            <span className="flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full"
+                                style={{ background: 'rgba(245,158,11,0.1)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)' }}>
+                                <AlertTriangle size={11} /> {t('criteriaMissing')}
+                            </span>
+                        )}
+                        {isAdmin && !criteriaEditing && (
+                            <button
+                                onClick={() => setCriteriaEditing(true)}
+                                className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg"
+                                style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.25)', color: 'var(--color-pl-brand-light)' }}
+                            >
+                                {t('legalEdit')}
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {!criteriaEditing && criteriaText.trim() && (
+                    <div className="text-xs whitespace-pre-wrap" style={{ color: 'var(--color-pl-text-secondary)' }}>
+                        {criteriaText}
+                        {criteriaSaved && (
+                            <p className="flex items-center gap-1 text-xs mt-2" style={{ color: '#22c55e' }}>
+                                <Check size={12} /> {t('saved')}
+                            </p>
+                        )}
+                    </div>
+                )}
+
+                {criteriaEditing && (
+                    <div className="space-y-3">
+                        <div>
+                            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--color-pl-text-secondary)' }}>
+                                {t('criteriaLabel')}
+                            </label>
+                            <textarea
+                                value={criteriaText}
+                                onChange={e => setCriteriaText(e.target.value)}
+                                placeholder={t('criteriaPlaceholder')}
+                                rows={5}
+                                className="input-base w-full resize-y"
+                                style={{ minHeight: '100px' }}
+                            />
+                            <p className="text-xs mt-1" style={{ color: 'var(--color-pl-text-tertiary)' }}>
+                                {t('criteriaHint')}
+                            </p>
+                        </div>
+                        {criteriaError && <p className="text-xs" style={{ color: '#ef4444' }}>{criteriaError}</p>}
+                        <div className="flex items-center gap-2">
+                            <button onClick={handleCriteriaSave} disabled={criteriaPending} className="btn-primary">
+                                {criteriaPending ? t('saving') : t('saveChanges')}
+                            </button>
+                            <button
+                                onClick={() => { setCriteriaText(initialCriteria); setCriteriaEditing(false); setCriteriaError(null) }}
+                                disabled={criteriaPending}
+                                className="text-xs px-3 py-1.5 rounded-lg"
+                                style={{ background: 'var(--color-pl-surface)', border: '1px solid var(--color-pl-border)', color: 'var(--color-pl-text-secondary)' }}
+                            >
+                                {t('legalCancel')}
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {!criteriaEditing && !criteriaText.trim() && (
+                    <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>
+                        {t('criteriaEmpty')}{' '}
+                        {isAdmin && <button onClick={() => setCriteriaEditing(true)} className="underline" style={{ color: 'var(--color-pl-brand-light)' }}>{t('criteriaAddNow')}</button>}
+                    </p>
+                )}
+            </div>
+
             <div className="glass-card p-5">
                 <h2 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-pl-text-primary)' }}>
                     {t('teamTitle')}
@@ -781,21 +942,7 @@ function ProfileTab({ user, profileData }: { user: User; profileData: { fullName
                 </div>
             </div>
 
-            <div className="glass-card p-5">
-                <h2 className="text-sm font-semibold mb-1" style={{ color: 'var(--color-pl-text-primary)' }}>
-                    {t('changePassword')}
-                </h2>
-                <p className="text-xs mb-4" style={{ color: 'var(--color-pl-text-tertiary)' }}>
-                    {t('changePasswordHint')}
-                </p>
-                <button
-                    className="text-xs font-semibold px-3 py-1.5 rounded-lg"
-                    style={{ background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.25)', color: 'var(--color-pl-brand-light)' }}
-                    onClick={() => alert(t('resetEmailAlert'))}
-                >
-                    {t('sendResetEmail')}
-                </button>
-            </div>
+            <PasswordResetCard email={user.email ?? ''} />
 
             <div className="glass-card p-5">
                 <h2 className="text-sm font-semibold mb-1" style={{ color: '#ef4444' }}>

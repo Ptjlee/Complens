@@ -6,6 +6,7 @@ import { requireAiPlan } from '@/lib/api/planGuard'
 import type { AnalysisResult } from '@/lib/calculations/types'
 import { getKnowledgeBase } from '@/lib/chatbot/knowledgeBase'
 import { rateLimit, RATE_LIMITS } from '@/lib/api/rateLimit'
+import { sanitizeUserPrompt, anonymizeEmployeeIds } from '@/lib/ai/sanitize'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -351,8 +352,13 @@ export async function POST(
     const result  = analysis.results as AnalysisResult
     const year    = result.reporting_year
 
-    // ── Build enriched system prompt ──
-    const systemPrompt = buildSystemPrompt(
+    // ── Collect real employee IDs for anonymisation ──
+    const flagIds = (result.individual_flags || []).map(f => f.employee_id).filter(Boolean)
+    const explIds = (explanations ?? []).map((e: any) => e.employee_id).filter(Boolean)
+    const allRealIds = [...new Set([...flagIds, ...explIds])] as string[]
+
+    // ── Build enriched system prompt (with anonymised employee IDs) ──
+    const rawSystemPrompt = buildSystemPrompt(
         result,
         orgName,
         year,
@@ -360,19 +366,26 @@ export async function POST(
         (remediationPlans ?? []) as RemediationRow[],
         locale,
     )
+    const { anonymized: systemPrompt } = anonymizeEmployeeIds(rawSystemPrompt, allRealIds)
 
     // ── Log conversation topic (best-effort, async) ──
     const topic = classifyTopic(messages)
     void logChatSession(supabase, guard.userId, id, messages, topic)
 
+    // ── Sanitise user messages before sending to LLM ──
+    const sanitizedMessages = messages.map(m => ({
+        ...m,
+        content: m.role === 'user' ? sanitizeUserPrompt(m.content) : m.content,
+    }))
+
     // ── Gemini chat with streaming ──
-    const rawHistory = messages.slice(0, -1).map(m => ({
+    const rawHistory = sanitizedMessages.slice(0, -1).map(m => ({
         role:  m.role,
         parts: [{ text: m.content }],
     }))
     const firstUserIdx = rawHistory.findIndex(m => m.role === 'user')
     const history = firstUserIdx >= 0 ? rawHistory.slice(firstUserIdx) : []
-    const lastMsg = messages[messages.length - 1]
+    const lastMsg = sanitizedMessages[sanitizedMessages.length - 1]
 
     try {
         const genAI = new GoogleGenerativeAI(apiKey)

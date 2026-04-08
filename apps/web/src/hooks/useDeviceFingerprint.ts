@@ -56,6 +56,10 @@ async function generateFingerprint(): Promise<{ hash: string; label: string }> {
 
 export function useDeviceFingerprint() {
     useEffect(() => {
+        // H4 compliance: only collect fingerprint after cookie consent is granted
+        const consent = localStorage.getItem('complens_cookie_consent')
+        if (consent !== 'granted') return
+
         // Fire-and-forget — DevTools errors are swallowed, never blocks UI
         generateFingerprint()
             .then(({ hash, label }) => registerDevice(hash, label))
