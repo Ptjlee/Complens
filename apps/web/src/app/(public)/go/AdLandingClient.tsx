@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useTranslations } from 'next-intl'
 import { useSearchParams } from 'next/navigation'
 import {
   ArrowRight,
+  ArrowLeft,
   Shield,
   ShieldCheck,
   Server,
@@ -15,12 +16,16 @@ import {
   Upload,
   BarChart2,
   FileSignature,
+  FileText,
   Check,
   Quote,
   ChevronDown,
   Play,
   Users,
   Clock,
+  LayoutDashboard,
+  PieChart,
+  Wrench,
 } from 'lucide-react'
 import { Logo } from '@/components/ui/Logo'
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher'
@@ -74,6 +79,332 @@ function CountdownTimer({ t }: { t: (key: string) => string }) {
             </span>
           </div>
         ))}
+      </div>
+    </div>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/*  Showcase mockup components                                        */
+/* ------------------------------------------------------------------ */
+function MockupDashboard({ t }: { t: (key: string) => string }) {
+  return (
+    <div className="grid grid-cols-3 gap-2 p-3">
+      {[
+        { label: t('showcaseMockupDashboardKpi1'), value: '12.5%', color: 'bg-red-500/80', ring: 'ring-red-500/30' },
+        { label: t('showcaseMockupDashboardKpi2'), value: '7.9%', color: 'bg-amber-500/80', ring: 'ring-amber-500/30' },
+        { label: t('showcaseMockupDashboardKpi3'), value: '4.8%', color: 'bg-green-500/80', ring: 'ring-green-500/30' },
+      ].map((kpi) => (
+        <div key={kpi.label} className="flex flex-col items-center gap-1.5 p-2 rounded-lg bg-white/[0.04] border border-white/5">
+          <div className={`w-2.5 h-2.5 rounded-full ${kpi.color} ring-2 ${kpi.ring}`} />
+          <span className="text-lg font-bold text-white tabular-nums">{kpi.value}</span>
+          <span className="text-[9px] text-white/40 text-center leading-tight">{kpi.label}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function MockupImport({ t }: { t: (key: string) => string }) {
+  const rows = [
+    { source: 'Gehalt_Brutto', target: 'base_salary', conf: '98%' },
+    { source: 'Abteilung', target: 'department', conf: '95%' },
+    { source: 'Geschlecht_MA', target: 'gender', conf: '92%' },
+  ]
+  return (
+    <div className="p-3 space-y-1.5">
+      <div className="grid grid-cols-3 gap-2 text-[8px] text-white/30 uppercase tracking-wider px-1">
+        <span>{t('showcaseMockupImportSource')}</span>
+        <span>{t('showcaseMockupImportTarget')}</span>
+        <span className="text-right">{t('showcaseMockupImportConfidence')}</span>
+      </div>
+      {rows.map((r) => (
+        <div key={r.source} className="grid grid-cols-3 gap-2 items-center p-1.5 rounded bg-white/[0.03] border border-white/5">
+          <span className="text-[10px] text-white/60 font-mono truncate">{r.source}</span>
+          <div className="flex items-center gap-1">
+            <ArrowRight size={8} className="text-blue-400/60 shrink-0" />
+            <span className="text-[10px] text-blue-300/80 font-mono truncate">{r.target}</span>
+          </div>
+          <span className="text-[10px] text-green-400/80 font-semibold text-right">{r.conf}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function MockupWif({ t }: { t: (key: string) => string }) {
+  const pills = ['Job Grade', 'Department', 'Location', 'FTE']
+  const bars = [
+    { label: 'Sales', w: '75%', color: 'bg-red-400/70' },
+    { label: 'Engineering', w: '45%', color: 'bg-amber-400/70' },
+    { label: 'HR', w: '25%', color: 'bg-green-400/70' },
+  ]
+  return (
+    <div className="p-3 space-y-3">
+      <div className="flex flex-wrap gap-1.5">
+        {pills.map((p) => (
+          <span key={p} className="px-2 py-0.5 text-[9px] rounded-full bg-blue-500/20 text-blue-300/80 border border-blue-500/20">
+            {p}
+          </span>
+        ))}
+      </div>
+      <p className="text-[9px] text-white/30 uppercase tracking-wider">{t('showcaseMockupWifGap')}</p>
+      <div className="space-y-1.5">
+        {bars.map((b) => (
+          <div key={b.label} className="flex items-center gap-2">
+            <span className="text-[9px] text-white/40 w-16 text-right shrink-0">{b.label}</span>
+            <div className="flex-1 h-3 rounded-full bg-white/5 overflow-hidden">
+              <div className={`h-full rounded-full ${b.color}`} style={{ width: b.w }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function MockupQuartile({ t }: { t: (key: string) => string }) {
+  const quartiles = [
+    { label: 'Q1', m: 70, f: 30 },
+    { label: 'Q2', m: 58, f: 42 },
+    { label: 'Q3', m: 45, f: 55 },
+    { label: 'Q4', m: 35, f: 65 },
+  ]
+  return (
+    <div className="p-3 space-y-2">
+      <p className="text-[9px] text-white/30 uppercase tracking-wider">{t('showcaseMockupQuartileTitle')}</p>
+      <div className="space-y-1.5">
+        {quartiles.map((q) => (
+          <div key={q.label} className="flex items-center gap-2">
+            <span className="text-[9px] text-white/40 w-6 shrink-0">{q.label}</span>
+            <div className="flex-1 h-4 rounded-full overflow-hidden flex">
+              <div className="h-full bg-blue-500/60" style={{ width: `${q.m}%` }} />
+              <div className="h-full bg-pink-500/60" style={{ width: `${q.f}%` }} />
+            </div>
+            <span className="text-[8px] text-white/30 w-12 shrink-0 text-right">{q.m}M/{q.f}F</span>
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center gap-3 justify-center pt-1">
+        <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-sm bg-blue-500/60" /><span className="text-[8px] text-white/30">Male</span></div>
+        <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-sm bg-pink-500/60" /><span className="text-[8px] text-white/30">Female</span></div>
+      </div>
+    </div>
+  )
+}
+
+function MockupRemediation({ t }: { t: (key: string) => string }) {
+  const actions = [
+    { action: 'Salary adjustment — Sales Q1', status: 'In Progress', statusColor: 'bg-amber-500/80 text-amber-100' },
+    { action: 'Job re-grading — Engineering', status: 'Planned', statusColor: 'bg-blue-500/80 text-blue-100' },
+    { action: 'Promotion pipeline review', status: 'Done', statusColor: 'bg-green-500/80 text-green-100' },
+  ]
+  return (
+    <div className="p-3 space-y-2">
+      <p className="text-[9px] text-white/30 uppercase tracking-wider">{t('showcaseMockupRemediationTitle')}</p>
+      <div className="space-y-1.5">
+        {actions.map((a) => (
+          <div key={a.action} className="flex items-center justify-between gap-2 p-1.5 rounded bg-white/[0.03] border border-white/5">
+            <span className="text-[9px] text-white/60 truncate">{a.action}</span>
+            <span className={`text-[8px] px-1.5 py-0.5 rounded-full shrink-0 font-medium ${a.statusColor}`}>{a.status}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function MockupReport({ t }: { t: (key: string) => string }) {
+  return (
+    <div className="p-3 flex flex-col items-center justify-center gap-2 relative">
+      <div className="w-full max-w-[140px] bg-white/[0.06] border border-white/10 rounded-lg p-3 relative overflow-hidden">
+        <div className="space-y-1.5">
+          <div className="h-2 w-3/4 rounded bg-white/10" />
+          <div className="h-1.5 w-full rounded bg-white/5" />
+          <div className="h-1.5 w-full rounded bg-white/5" />
+          <div className="h-1.5 w-2/3 rounded bg-white/5" />
+          <div className="h-6 w-full rounded bg-white/[0.04] mt-2" />
+          <div className="h-1.5 w-full rounded bg-white/5" />
+          <div className="h-1.5 w-5/6 rounded bg-white/5" />
+        </div>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-lg font-extrabold text-white/[0.08] rotate-[-20deg] tracking-widest">SAMPLE</span>
+        </div>
+      </div>
+      <p className="text-[9px] text-white/30">{t('showcaseMockupReportTitle')}</p>
+    </div>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/*  HeroShowcase carousel                                             */
+/* ------------------------------------------------------------------ */
+interface ShowcaseCard {
+  icon: React.ComponentType<{ size?: number; className?: string }>
+  step: number
+  titleKey: string
+  descKey: string
+  mockup: React.ComponentType<{ t: (key: string) => string }>
+}
+
+const showcaseCards: ShowcaseCard[] = [
+  { icon: LayoutDashboard, step: 1, titleKey: 'showcase1Title', descKey: 'showcase1Desc', mockup: MockupDashboard },
+  { icon: Upload, step: 2, titleKey: 'showcase2Title', descKey: 'showcase2Desc', mockup: MockupImport },
+  { icon: BarChart2, step: 3, titleKey: 'showcase3Title', descKey: 'showcase3Desc', mockup: MockupWif },
+  { icon: PieChart, step: 4, titleKey: 'showcase4Title', descKey: 'showcase4Desc', mockup: MockupQuartile },
+  { icon: Wrench, step: 5, titleKey: 'showcase5Title', descKey: 'showcase5Desc', mockup: MockupRemediation },
+  { icon: FileText, step: 6, titleKey: 'showcase6Title', descKey: 'showcase6Desc', mockup: MockupReport },
+]
+
+function HeroShowcase({ t }: { t: (key: string) => string }) {
+  const [active, setActive] = useState(0)
+  const [paused, setPaused] = useState(false)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  // Auto-advance
+  useEffect(() => {
+    if (paused) {
+      if (intervalRef.current) clearInterval(intervalRef.current)
+      return
+    }
+    intervalRef.current = setInterval(() => {
+      setActive((prev) => (prev + 1) % showcaseCards.length)
+    }, 5000)
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current)
+    }
+  }, [paused])
+
+  const goTo = useCallback((idx: number) => {
+    setActive(idx)
+  }, [])
+
+  const goPrev = useCallback(() => {
+    setActive((prev) => (prev - 1 + showcaseCards.length) % showcaseCards.length)
+  }, [])
+
+  const goNext = useCallback(() => {
+    setActive((prev) => (prev + 1) % showcaseCards.length)
+  }, [])
+
+  // Keyboard navigation
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault()
+        goPrev()
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault()
+        goNext()
+      }
+    },
+    [goPrev, goNext]
+  )
+
+  // Scroll active card into view on mobile
+  useEffect(() => {
+    if (!containerRef.current) return
+    const cards = containerRef.current.querySelectorAll('[data-showcase-card]')
+    if (cards[active]) {
+      cards[active].scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
+    }
+  }, [active])
+
+  return (
+    <div
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onFocus={() => setPaused(true)}
+      onBlur={() => setPaused(false)}
+      role="region"
+      aria-roledescription="carousel"
+      aria-label={t('showcaseTitle')}
+      onKeyDown={handleKeyDown}
+      tabIndex={0}
+      className="outline-none"
+    >
+      {/* Cards — horizontal scroll on mobile, centered layout on desktop */}
+      <div
+        ref={containerRef}
+        className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 scrollbar-hide lg:flex-wrap lg:justify-center lg:overflow-visible lg:pb-0"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
+        {showcaseCards.map((card, idx) => {
+          const isActive = idx === active
+          const Icon = card.icon
+          const Mockup = card.mockup
+          return (
+            <button
+              key={idx}
+              data-showcase-card
+              onClick={() => goTo(idx)}
+              aria-label={`${card.step}. ${t(card.titleKey)}`}
+              aria-current={isActive ? 'true' : undefined}
+              className={`
+                snap-center shrink-0 w-[280px] sm:w-[300px] lg:w-[280px] xl:w-[300px]
+                rounded-2xl border text-left
+                transition-all duration-500 ease-out cursor-pointer
+                ${isActive
+                  ? 'border-blue-500/40 bg-white/[0.06] scale-[1.02] shadow-[0_0_40px_rgba(99,102,241,0.15)]'
+                  : 'border-white/5 bg-white/[0.02] opacity-60 hover:opacity-80 hover:bg-white/[0.03]'
+                }
+              `}
+            >
+              {/* Mockup area */}
+              <div className="h-[140px] overflow-hidden rounded-t-2xl border-b border-white/5 bg-black/20">
+                <Mockup t={t} />
+              </div>
+
+              {/* Text area */}
+              <div className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${isActive ? 'bg-blue-500/20' : 'bg-white/5'}`}>
+                    <Icon size={14} className={isActive ? 'text-blue-400' : 'text-white/40'} />
+                  </div>
+                  <span className="text-[10px] font-bold text-white/30 uppercase tracking-wider">
+                    {card.step}/6
+                  </span>
+                </div>
+                <h3 className="text-sm font-bold text-white mb-1">{t(card.titleKey)}</h3>
+                <p className="text-xs text-white/50 leading-relaxed line-clamp-3">{t(card.descKey)}</p>
+              </div>
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Navigation: arrows + dots */}
+      <div className="flex items-center justify-center gap-4 mt-6">
+        <button
+          onClick={goPrev}
+          aria-label="Previous slide"
+          className="w-9 h-9 rounded-full border border-white/10 bg-white/[0.03] flex items-center justify-center text-white/50 hover:text-white hover:bg-white/[0.06] transition-colors"
+        >
+          <ArrowLeft size={16} />
+        </button>
+
+        <div className="flex gap-2">
+          {showcaseCards.map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => goTo(idx)}
+              aria-label={`Go to slide ${idx + 1}`}
+              className={`
+                h-2 rounded-full transition-all duration-300
+                ${idx === active ? 'w-6 bg-blue-500' : 'w-2 bg-white/20 hover:bg-white/40'}
+              `}
+            />
+          ))}
+        </div>
+
+        <button
+          onClick={goNext}
+          aria-label="Next slide"
+          className="w-9 h-9 rounded-full border border-white/10 bg-white/[0.03] flex items-center justify-center text-white/50 hover:text-white hover:bg-white/[0.06] transition-colors"
+        >
+          <ArrowRight size={16} />
+        </button>
       </div>
     </div>
   )
@@ -182,7 +513,7 @@ export default function AdLandingClient() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  const readinessHref = `/readiness-check${utm}`
+  const signupHref = `/signup${utm}`
   const bookingHref = `/booking${utm}`
 
   const testimonials = [
@@ -266,7 +597,7 @@ export default function AdLandingClient() {
           <div className="flex items-center gap-4">
             <LanguageSwitcher />
             <a
-              href={readinessHref}
+              href={signupHref}
               className="text-sm font-bold text-white px-5 py-2.5 rounded-full transition-all hover:scale-105"
               style={{
                 background: 'linear-gradient(135deg, var(--color-pl-brand), #7c3aed)',
@@ -307,7 +638,7 @@ export default function AdLandingClient() {
           {/* CTA */}
           <div className="mt-10">
             <a
-              href={readinessHref}
+              href={signupHref}
               className="inline-flex items-center gap-2 px-8 py-4 rounded-full text-base font-bold text-white transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(99,102,241,0.5)]"
               style={{ background: 'linear-gradient(135deg, var(--color-pl-brand), #6366f1)' }}
             >
@@ -315,6 +646,11 @@ export default function AdLandingClient() {
               <ArrowRight size={18} />
             </a>
           </div>
+
+          {/* Risk reversal */}
+          <p className="mt-4 text-xs text-white/40 max-w-lg mx-auto">
+            {t('heroRiskReversal')}
+          </p>
 
           {/* Trust badges */}
           <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
@@ -335,7 +671,23 @@ export default function AdLandingClient() {
         </FadeSection>
       </section>
 
-      {/* ===== SECTION 2: PROBLEM AGITATION ===== */}
+      {/* ===== SECTION 2: HERO SHOWCASE CAROUSEL ===== */}
+      <section className="py-16 sm:py-20 relative z-10">
+        <div className="max-w-[1400px] mx-auto px-6">
+          <FadeSection>
+            <div className="text-center mb-10">
+              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">{t('showcaseTitle')}</h2>
+              <p className="text-white/50 max-w-xl mx-auto text-sm">{t('showcaseSubtitle')}</p>
+            </div>
+          </FadeSection>
+
+          <FadeSection>
+            <HeroShowcase t={t} />
+          </FadeSection>
+        </div>
+      </section>
+
+      {/* ===== SECTION 3: PROBLEM AGITATION (The 5% Trap) ===== */}
       <section
         className="py-20 sm:py-24 border-y border-white/5 relative z-10"
         style={{ background: 'rgba(0,0,0,0.2)' }}
@@ -369,30 +721,7 @@ export default function AdLandingClient() {
             </div>
           </FadeSection>
 
-          <FadeSection>
-            <div className="max-w-3xl mx-auto text-center p-8 rounded-2xl border border-white/5 bg-white/[0.02]">
-              <Quote size={24} className="text-blue-400/40 mx-auto mb-4" />
-              <p className="text-sm text-white/60 leading-relaxed italic">
-                {t('problemDirectiveQuote')}
-              </p>
-              <p className="mt-3 text-xs text-white/30 font-medium">
-                {t('problemDirectiveSource')}
-              </p>
-            </div>
-          </FadeSection>
-        </div>
-      </section>
-
-      {/* ===== SECTION 3: SOLUTION ===== */}
-      <section className="py-20 sm:py-24 relative z-10">
-        <div className="max-w-7xl mx-auto px-6">
-          <FadeSection>
-            <div className="text-center mb-14">
-              <h2 className="text-3xl font-bold text-white mb-4">{t('solutionHeadline')}</h2>
-              <p className="text-white/50 max-w-2xl mx-auto">{t('solutionSubheadline')}</p>
-            </div>
-          </FadeSection>
-
+          {/* 3-step process */}
           <FadeSection>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
               {[
@@ -417,25 +746,22 @@ export default function AdLandingClient() {
             </div>
           </FadeSection>
 
-          {/* Screenshot placeholder */}
           <FadeSection>
-            <div className="max-w-4xl mx-auto rounded-2xl border border-white/10 bg-white/[0.02] overflow-hidden">
-              <div className="aspect-video flex items-center justify-center">
-                <div className="text-center">
-                  <BarChart2 size={48} className="text-white/10 mx-auto mb-3" />
-                  <p className="text-sm text-white/20">{t('solutionScreenshotAlt')}</p>
-                </div>
-              </div>
+            <div className="max-w-3xl mx-auto text-center p-8 rounded-2xl border border-white/5 bg-white/[0.02]">
+              <Quote size={24} className="text-blue-400/40 mx-auto mb-4" />
+              <p className="text-sm text-white/60 leading-relaxed italic">
+                {t('problemDirectiveQuote')}
+              </p>
+              <p className="mt-3 text-xs text-white/30 font-medium">
+                {t('problemDirectiveSource')}
+              </p>
             </div>
           </FadeSection>
         </div>
       </section>
 
       {/* ===== SECTION 4: FOUNDER STORY ===== */}
-      <section
-        className="py-20 sm:py-24 border-y border-white/5 relative z-10"
-        style={{ background: 'rgba(0,0,0,0.2)' }}
-      >
+      <section className="py-20 sm:py-24 relative z-10">
         <div className="max-w-5xl mx-auto px-6">
           <FadeSection>
             <div className="text-center mb-10">
@@ -475,7 +801,10 @@ export default function AdLandingClient() {
       </section>
 
       {/* ===== SECTION 5: SOCIAL PROOF ===== */}
-      <section className="py-20 sm:py-24 relative z-10">
+      <section
+        className="py-20 sm:py-24 border-y border-white/5 relative z-10"
+        style={{ background: 'rgba(0,0,0,0.2)' }}
+      >
         <div className="max-w-7xl mx-auto px-6">
           <FadeSection>
             <div className="text-center mb-14">
@@ -528,10 +857,7 @@ export default function AdLandingClient() {
       </section>
 
       {/* ===== SECTION 6: PRICING PREVIEW ===== */}
-      <section
-        className="py-20 sm:py-24 border-y border-white/5 relative z-10"
-        style={{ background: 'rgba(0,0,0,0.2)' }}
-      >
+      <section className="py-20 sm:py-24 relative z-10">
         <div className="max-w-3xl mx-auto px-6">
           <FadeSection>
             <div className="text-center mb-10">
@@ -549,19 +875,25 @@ export default function AdLandingClient() {
                 ))}
               </ul>
               <a
-                href={readinessHref}
+                href={signupHref}
                 className="block w-full py-3.5 rounded-xl text-center text-sm font-bold text-white transition-all hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(99,102,241,0.4)]"
                 style={{ background: 'linear-gradient(135deg, var(--color-pl-brand), #6366f1)' }}
               >
                 {t('pricingCta')}
               </a>
+              <p className="mt-4 text-xs text-white/30 text-center">
+                {t('pricingTrialNote')}
+              </p>
             </div>
           </FadeSection>
         </div>
       </section>
 
       {/* ===== SECTION 7: FAQ ===== */}
-      <section className="py-20 sm:py-24 relative z-10">
+      <section
+        className="py-20 sm:py-24 border-y border-white/5 relative z-10"
+        style={{ background: 'rgba(0,0,0,0.2)' }}
+      >
         <div className="max-w-3xl mx-auto px-6">
           <FadeSection>
             <div className="text-center mb-10">
@@ -580,10 +912,7 @@ export default function AdLandingClient() {
       </section>
 
       {/* ===== SECTION 8: FINAL CTA ===== */}
-      <section
-        className="py-20 sm:py-24 border-t border-white/5 relative z-10"
-        style={{ background: 'rgba(0,0,0,0.2)' }}
-      >
+      <section className="py-20 sm:py-24 relative z-10">
         <div className="max-w-3xl mx-auto px-6 text-center">
           <FadeSection>
             <Clock size={32} className="text-blue-400/40 mx-auto mb-6" />
@@ -592,7 +921,7 @@ export default function AdLandingClient() {
             </h2>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <a
-                href={readinessHref}
+                href={signupHref}
                 className="inline-flex items-center gap-2 px-8 py-4 rounded-full text-base font-bold text-white transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(99,102,241,0.5)]"
                 style={{ background: 'linear-gradient(135deg, var(--color-pl-brand), #6366f1)' }}
               >

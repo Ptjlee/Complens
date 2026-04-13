@@ -13,11 +13,6 @@ export async function GET(request: NextRequest) {
         return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`)
     }
 
-    // Password recovery flow — redirect to the reset-password page with the code
-    if (type === 'recovery') {
-        return NextResponse.redirect(`${origin}/reset-password?code=${code}`)
-    }
-
     // Exchange the email-link code for a session
     const supabase = await createClient()
     const { data: sessionData, error: sessionError } = await supabase.auth.exchangeCodeForSession(code)

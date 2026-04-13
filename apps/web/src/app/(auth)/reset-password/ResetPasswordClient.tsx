@@ -14,6 +14,7 @@ function ResetPasswordForm() {
     const t = useTranslations('auth')
 
     const code = searchParams.get('code')
+    const urlError = searchParams.get('error')
 
     const [showPassword, setShowPassword] = useState(false)
     const [password, setPassword] = useState('')
@@ -21,35 +22,51 @@ function ResetPasswordForm() {
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [sessionReady, setSessionReady] = useState(false)
-    const [exchanging, setExchanging] = useState(true)
-    const [exchangeError, setExchangeError] = useState(false)
+    const [exchanging, setExchanging] = useState(!urlError)
+    const [exchangeError, setExchangeError] = useState(!!urlError)
 
     const passwordRules = [
         { label: t('passwordRule8Chars'), test: (p: string) => p.length >= 8 },
         { label: t('passwordRuleNumber'), test: (p: string) => /\d/.test(p) },
     ]
 
-    // Exchange the code for a session on mount
+    // Check for an active session (set by /auth/confirm server-side exchange)
     useEffect(() => {
-        async function exchange() {
-            if (!code) {
+        async function checkSession() {
+            if (urlError) {
                 setExchanging(false)
                 setExchangeError(true)
                 return
             }
 
             const supabase = createClient()
-            const { error: err } = await supabase.auth.exchangeCodeForSession(code)
 
-            if (err) {
-                setExchangeError(true)
-            } else {
-                setSessionReady(true)
+            // If we have a code param, exchange it client-side
+            if (code) {
+                const { error: err } = await supabase.auth.exchangeCodeForSession(code)
+                if (err) {
+                    setExchangeError(true)
+                } else {
+                    setSessionReady(true)
+                }
+                setExchanging(false)
+                return
             }
+
+            // No code — the session was already created by /auth/confirm
+            const { data: { session } } = await supabase.auth.getSession()
+            if (session) {
+                setSessionReady(true)
+                setExchanging(false)
+                return
+            }
+
+            // No session found — link may be expired
+            setExchangeError(true)
             setExchanging(false)
         }
-        exchange()
-    }, [code])
+        checkSession()
+    }, [code, urlError])
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
