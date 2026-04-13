@@ -102,7 +102,17 @@ function GermanVersion() {
                         Leistungserbringung verarbeitet und nicht mit Dritten geteilt.</p>
                     </Section>
 
-                    <Section title="§ 6 Haftungsbeschränkung">
+                    <Section title="§ 6 Ausschluss des Widerrufsrechts (B2B)">
+                        <p>CompLens richtet sich ausschließlich an Unternehmer im Sinne von § 14 BGB
+                        (Geschäftskunden / B2B). Ein Widerrufsrecht nach §§ 312g, 355 BGB besteht
+                        bei Verträgen zwischen Unternehmern nicht.</p>
+                        <p className="mt-2">Mit Annahme dieser AGB bestätigt der Kunde, dass er in seiner
+                        Eigenschaft als Unternehmer handelt und nicht als Verbraucher im Sinne von
+                        § 13 BGB. Sollte sich nachträglich herausstellen, dass der Kunde Verbraucher ist,
+                        behält sich der Anbieter das Recht vor, den Vertrag fristlos zu kündigen.</p>
+                    </Section>
+
+                    <Section title="§ 7 Haftungsbeschränkung">
                         <p>Die Berichte und Analysen von CompLens dienen als Entscheidungsunterstützung
                         und ersetzen keine Rechtsberatung. Der Anbieter haftet nicht für die rechtliche
                         Korrektheit der generierten Berichte im konkreten Einzelfall. Der Kunde trägt
@@ -112,7 +122,26 @@ function GermanVersion() {
                         oder Gesundheit beschränkt.</p>
                     </Section>
 
-                    <Section title="§ 7 Vertragslaufzeit und Kündigung">
+                    <Section title="§ 8 KI-gestützte Funktionen und Haftungsausschluss">
+                        <p>CompLens setzt künstliche Intelligenz (Google Gemini) für folgende Funktionen ein:
+                        automatische Spaltenzuordnung beim Datenimport, Generierung von Berichtstexten
+                        (Narrativen) sowie den integrierten Chatbot-Assistenten.</p>
+                        <p className="mt-2">KI-generierte Inhalte dienen ausschließlich als Empfehlung
+                        und stellen keine Rechtsberatung dar. Der Kunde ist verpflichtet, alle
+                        KI-generierten Begründungen und Texte vor der Einreichung bei Behörden oder
+                        Arbeitnehmervertretungen eigenverantwortlich zu prüfen und freizugeben.</p>
+                        <p className="mt-2">CompLens trifft keine automatisierten Entscheidungen über
+                        Beschäftigte. Alle KI-Ergebnisse werden dem Kunden zur manuellen Prüfung
+                        vorgelegt (Human-in-the-Loop-Prinzip).</p>
+                        <p className="mt-2">Gemäß den Transparenzanforderungen der EU-Verordnung über
+                        künstliche Intelligenz (EU AI Act, Verordnung (EU) 2024/1689) weist der
+                        Anbieter darauf hin, dass die genannten Funktionen KI-generierte Ausgaben
+                        erzeugen. Der Anbieter übernimmt keine Haftung für die inhaltliche
+                        Richtigkeit, Vollständigkeit oder rechtliche Verbindlichkeit der
+                        KI-generierten Inhalte.</p>
+                    </Section>
+
+                    <Section title="§ 9 Vertragslaufzeit und Kündigung">
                         <p>Der Vertrag wird für eine Laufzeit von einem (1) Jahr geschlossen und verlängert sich
                         automatisch um ein weiteres Jahr, sofern er nicht rechtzeitig gekündigt wird.</p>
                         <p className="mt-2">Die Kündigung ist mit einer Frist von drei (3) Monaten zum Ende des
@@ -123,7 +152,7 @@ function GermanVersion() {
                         gesetzlichen Aufbewahrungsfrist unwiderruflich gelöscht.</p>
                     </Section>
 
-                    <Section title="§ 8 Anwendbares Recht und Gerichtsstand">
+                    <Section title="§ 10 Anwendbares Recht und Gerichtsstand">
                         <p>Es gilt das Recht der Bundesrepublik Deutschland unter Ausschluss des
                         UN-Kaufrechts. Gerichtsstand für alle Streitigkeiten ist, soweit gesetzlich
                         zulässig, der Sitz des Anbieters.</p>
@@ -217,7 +246,18 @@ function EnglishVersion() {
                         service provision and is not shared with third parties.</p>
                     </Section>
 
-                    <Section title="§ 6 Limitation of Liability (Haftungsbeschränkung)">
+                    <Section title="§ 6 Exclusion of Right of Withdrawal (B2B) (Ausschluss des Widerrufsrechts)">
+                        <p>CompLens is intended exclusively for entrepreneurs within the meaning of
+                        § 14 BGB (business customers / B2B). The right of withdrawal pursuant to
+                        §§ 312g, 355 BGB does not apply to contracts between businesses.</p>
+                        <p className="mt-2">By accepting these Terms & Conditions, the Customer confirms
+                        that they are acting in their capacity as a business and not as a consumer
+                        within the meaning of § 13 BGB. Should it subsequently transpire that the
+                        Customer is a consumer, the Provider reserves the right to terminate the
+                        contract without notice.</p>
+                    </Section>
+
+                    <Section title="§ 7 Limitation of Liability (Haftungsbeschränkung)">
                         <p>The reports and analyses provided by CompLens serve as decision-support tools
                         and do not constitute legal advice. The Provider shall not be liable for the legal
                         accuracy of the generated reports in any individual case. The Customer bears
@@ -227,7 +267,25 @@ function EnglishVersion() {
                         or health.</p>
                     </Section>
 
-                    <Section title="§ 7 Contract Term and Termination (Vertragslaufzeit und Kündigung)">
+                    <Section title="§ 8 AI-Powered Features and Disclaimer (KI-gestützte Funktionen)">
+                        <p>CompLens uses artificial intelligence (Google Gemini) for the following
+                        features: automatic column mapping during data import, generation of report
+                        narratives, and the integrated chatbot assistant.</p>
+                        <p className="mt-2">AI-generated content is advisory only and does not constitute
+                        legal advice. The Customer is responsible for reviewing and approving all
+                        AI-generated justifications and texts before submission to authorities or
+                        employee representatives.</p>
+                        <p className="mt-2">CompLens does not make automated decisions about employees.
+                        All AI outputs are presented to the Customer for manual review
+                        (human-in-the-loop principle).</p>
+                        <p className="mt-2">In accordance with the transparency requirements of the
+                        EU Artificial Intelligence Act (EU AI Act, Regulation (EU) 2024/1689), the
+                        Provider hereby discloses that the aforementioned features produce
+                        AI-generated outputs. The Provider assumes no liability for the substantive
+                        accuracy, completeness, or legal validity of AI-generated content.</p>
+                    </Section>
+
+                    <Section title="§ 9 Contract Term and Termination (Vertragslaufzeit und Kündigung)">
                         <p>The contract is concluded for a term of one (1) year and shall be automatically
                         renewed for a further year unless terminated in due time.</p>
                         <p className="mt-2">Termination must be declared in writing (by email to hallo@complens.de)
@@ -238,7 +296,7 @@ function EnglishVersion() {
                         after the expiry of the statutory retention period.</p>
                     </Section>
 
-                    <Section title="§ 8 Applicable Law and Jurisdiction (Anwendbares Recht und Gerichtsstand)">
+                    <Section title="§ 10 Applicable Law and Jurisdiction (Anwendbares Recht und Gerichtsstand)">
                         <p>The laws of the Federal Republic of Germany shall apply, excluding the
                         UN Convention on Contracts for the International Sale of Goods (CISG).
                         The place of jurisdiction for all disputes shall be, to the extent

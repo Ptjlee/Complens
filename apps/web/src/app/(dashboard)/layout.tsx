@@ -78,7 +78,7 @@ export default async function DashboardLayout({
             <DeviceFingerprintRegistrar />
             <AnalysisChatbot />
             {trialExpired && org?.trial_ends_at && (
-                <TrialExpiredOverlay trialEndedAt={org.trial_ends_at} />
+                <TrialExpiredOverlay trialEndedAt={org.trial_ends_at} isReadOnlyMode />
             )}
         </div>
     )

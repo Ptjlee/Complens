@@ -3,22 +3,34 @@
 /**
  * TrialExpiredOverlay
  * Shown when an org's trial period has ended.
- * Renders as a fixed full-screen layer over the entire dashboard,
- * blocking all interaction. CTA redirects to Stripe Checkout.
+ *
+ * Two modes:
+ * - isReadOnlyMode=true (default): renders as a top banner that allows
+ *   read-only access to existing analyses and reports underneath.
+ *   Users can dismiss the banner to navigate, but cannot create new data
+ *   or export (gated by canUse/planGuard on the backend).
+ * - isReadOnlyMode=false: legacy full-screen blocking overlay.
  */
 
 import { useEffect, useRef, useState } from 'react'
 import { useTranslations, useFormatter } from 'next-intl'
-import { CalendarX2, BarChart3, FileText, ShieldCheck, Zap, Loader2, LogOut } from 'lucide-react'
+import { CalendarX2, BarChart3, FileText, ShieldCheck, Zap, Loader2, LogOut, X, Eye } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
-export default function TrialExpiredOverlay({ trialEndedAt }: { trialEndedAt: string }) {
+interface TrialExpiredOverlayProps {
+    trialEndedAt: string
+    /** When true, shows a dismissible banner instead of a full-screen blocker */
+    isReadOnlyMode?: boolean
+}
+
+export default function TrialExpiredOverlay({ trialEndedAt, isReadOnlyMode = false }: TrialExpiredOverlayProps) {
     const t = useTranslations('dashboard.expiredOverlay')
     const format = useFormatter()
     const router = useRouter()
     const [loading, setLoading] = useState(false)
     const [error, setError]     = useState<string | null>(null)
+    const [dismissed, setDismissed] = useState(false)
     const overlayRef = useRef<HTMLDivElement>(null)
 
     async function handleLogout() {
@@ -34,11 +46,13 @@ export default function TrialExpiredOverlay({ trialEndedAt }: { trialEndedAt: st
         { icon: ShieldCheck, label: t('feature4') },
     ]
 
-    // Lock body scroll while overlay is mounted
+    // Lock body scroll only in full-screen mode
     useEffect(() => {
-        document.body.style.overflow = 'hidden'
-        return () => { document.body.style.overflow = '' }
-    }, [])
+        if (!isReadOnlyMode) {
+            document.body.style.overflow = 'hidden'
+            return () => { document.body.style.overflow = '' }
+        }
+    }, [isReadOnlyMode])
 
     const endDate = format.dateTime(new Date(trialEndedAt), {
         day: '2-digit', month: 'long', year: 'numeric',
@@ -62,6 +76,116 @@ export default function TrialExpiredOverlay({ trialEndedAt }: { trialEndedAt: st
         }
     }
 
+    // ── Read-only banner mode ──────────────────────────────────────────
+    if (isReadOnlyMode) {
+        if (dismissed) return null
+
+        return (
+            <div
+                style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    zIndex: 9999,
+                    background: 'linear-gradient(135deg, #1a0a0a 0%, #0d1117 50%, #0a0d14 100%)',
+                    borderBottom: '1px solid rgba(220,38,38,0.3)',
+                    boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
+                    padding: '14px 24px',
+                }}
+            >
+                <div style={{
+                    maxWidth: 1200,
+                    margin: '0 auto',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 16,
+                    flexWrap: 'wrap',
+                }}>
+                    {/* Icon + text */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 280 }}>
+                        <CalendarX2 size={18} color="#ef4444" style={{ flexShrink: 0 }} />
+                        <div>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: '#ef4444' }}>
+                                {t('badge')}
+                            </span>
+                            <span style={{ fontSize: 13, color: '#8b949e', marginLeft: 8 }}>
+                                {t('expiredOn', { date: endDate })}
+                            </span>
+                            <span style={{ fontSize: 12, color: '#6e7681', marginLeft: 12 }}>
+                                {t('readOnlyNotice')}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Read-only indicator */}
+                    <div style={{
+                        display: 'flex', alignItems: 'center', gap: 6,
+                        padding: '5px 12px', borderRadius: 8,
+                        background: 'rgba(245,158,11,0.10)',
+                        border: '1px solid rgba(245,158,11,0.25)',
+                        fontSize: 11.5, fontWeight: 600, color: '#f59e0b',
+                        flexShrink: 0,
+                    }}>
+                        <Eye size={13} />
+                        {t('readOnlyBadge')}
+                    </div>
+
+                    {/* Upgrade button */}
+                    <button
+                        onClick={handleUpgrade}
+                        disabled={loading}
+                        style={{
+                            padding: '8px 20px',
+                            borderRadius: 8,
+                            border: '1px solid rgba(59,130,246,0.5)',
+                            background: 'linear-gradient(130deg, rgba(59,130,246,0.25), rgba(29,78,216,0.15))',
+                            fontSize: 13, fontWeight: 600, color: '#93c5fd',
+                            cursor: loading ? 'not-allowed' : 'pointer',
+                            opacity: loading ? 0.7 : 1,
+                            transition: 'opacity .15s',
+                            flexShrink: 0,
+                        }}
+                    >
+                        {loading ? (
+                            <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
+                        ) : (
+                            t('upgradeCta')
+                        )}
+                    </button>
+
+                    {/* Dismiss */}
+                    <button
+                        onClick={() => setDismissed(true)}
+                        style={{
+                            padding: 6, borderRadius: 6,
+                            background: 'transparent', border: 'none',
+                            color: '#4d5562', cursor: 'pointer',
+                            flexShrink: 0,
+                        }}
+                        aria-label="Dismiss"
+                    >
+                        <X size={16} />
+                    </button>
+                </div>
+
+                {error && (
+                    <div style={{
+                        maxWidth: 1200, margin: '8px auto 0',
+                        padding: '8px 12px', borderRadius: 6,
+                        background: 'rgba(220,38,38,0.1)', border: '1px solid rgba(220,38,38,0.3)',
+                        fontSize: 12, color: '#fca5a5',
+                    }}>
+                        {error}
+                    </div>
+                )}
+
+                <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+            </div>
+        )
+    }
+
+    // ── Full-screen blocking mode (legacy) ─────────────────────────────
     return (
         <div
             ref={overlayRef}

@@ -120,6 +120,18 @@ export const EXPLANATION_CATEGORIES = [
     },
 ] as const
 
+/**
+ * Disclaimer: the max_justifiable_pct values above are CompLens interpretive
+ * guidelines derived from case law and academic literature. They are NOT
+ * regulatory limits defined by the EU Pay Transparency Directive (2023/970)
+ * or the German EntgTranspG. Organisations must not rely on these percentages
+ * as legal safe harbours. Always seek qualified legal counsel for compliance.
+ */
+export const EXPLANATION_DISCLAIMER = {
+    de: 'Die angezeigten Obergrenzen je Kategorie sind analytische Richtwerte von CompLens, die auf Rechtsprechung und Fachliteratur basieren. Sie stellen keine gesetzlichen Grenzwerte der EU-Entgelttransparenzrichtlinie (2023/970) oder des EntgTranspG dar. Lassen Sie Begründungen von einem Fachanwalt für Arbeitsrecht prüfen.',
+    en: 'The per-category ceilings shown are CompLens analytical guidelines based on case law and academic literature. They are not regulatory limits defined by the EU Pay Transparency Directive (2023/970) or the German EntgTranspG. Have justifications reviewed by a qualified employment lawyer.',
+} as const
+
 /** Returns the localised label for an explanation category. */
 export function getCategoryLabel(cat: typeof EXPLANATION_CATEGORIES[number], locale: string): string {
     return locale === 'en' ? cat.labelEn : cat.label

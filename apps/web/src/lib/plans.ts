@@ -140,6 +140,16 @@ export function canUse(org: OrgPlanFields, feature: Feature): boolean {
 }
 
 /**
+ * Returns true if the org's trial has expired (plan is 'trial' but past end date).
+ * Used to allow read-only access to existing data while blocking new actions.
+ */
+export function isTrialExpired(org: OrgPlanFields): boolean {
+    if (org.plan !== 'trial') return false
+    if (!org.trial_ends_at) return false
+    return new Date(org.trial_ends_at) <= new Date()
+}
+
+/**
  * Which paid plan is the minimum that unlocks this feature?
  * Used to show targeted upgrade messaging.
  */

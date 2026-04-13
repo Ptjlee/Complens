@@ -6,6 +6,19 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_dummy', {
     apiVersion: '2026-02-25.clover',
 })
 
+// ── Idempotency: prevent duplicate processing on Stripe retries ───────────
+// In-memory set of recently processed event IDs. Entries expire after 24h.
+// For multi-instance deployments, replace with a DB table or Redis.
+const processedEvents = new Map<string, number>()
+const IDEMPOTENCY_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
+
+function pruneProcessedEvents() {
+    const cutoff = Date.now() - IDEMPOTENCY_TTL_MS
+    for (const [id, ts] of processedEvents) {
+        if (ts < cutoff) processedEvents.delete(id)
+    }
+}
+
 /**
  * POST /api/stripe/webhook
  * Handles Stripe webhook events to keep org plan in sync.
@@ -14,6 +27,10 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_dummy', {
  *   checkout.session.completed        → activate subscribed plan
  *   customer.subscription.updated     → update plan (upgrades / renewals)
  *   customer.subscription.deleted     → downgrade to 'free'
+ *
+ * Idempotency: each event.id is tracked; duplicate deliveries are acknowledged
+ * without re-processing. All DB writes use upsert-style .update().eq() which
+ * is inherently idempotent (same payload → same result).
  */
 export async function POST(req: NextRequest) {
     const body      = await req.text()
@@ -34,6 +51,14 @@ export async function POST(req: NextRequest) {
         console.error('[stripe/webhook] Signature verification failed:', err)
         return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
     }
+
+    // ── Idempotency check ─────────────────────────────────────────────────
+    pruneProcessedEvents()
+    if (processedEvents.has(event.id)) {
+        console.log(`[stripe/webhook] Duplicate event ${event.id} — skipping`)
+        return NextResponse.json({ received: true, duplicate: true })
+    }
+    processedEvents.set(event.id, Date.now())
 
     const supabase = createAdminClient()
 

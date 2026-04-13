@@ -53,11 +53,13 @@ export async function generateMetadata(): Promise<Metadata> {
       siteName: 'CompLens',
       title: t('ogTitle'),
       description: t('ogDescription'),
+      // NOTE: og-image.jpg is currently 640x630. For optimal social sharing,
+      // replace it with a 1200x630 image and update width/height below.
       images: [
         {
           url: '/og-image.jpg',
-          width: 1200,
-          height: 630,
+          width: 640,
+          height: 640,
           alt: 'CompLens Dashboard Preview',
         },
       ],

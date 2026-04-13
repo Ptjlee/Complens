@@ -2,14 +2,14 @@
 
 import { useState, useMemo, useRef } from 'react'
 import React from 'react'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 import {
     ChevronRight, Search, CheckCircle2,
     Clock, XCircle, AlertTriangle, Info, X, Save,
     Eye, EyeOff,
 } from 'lucide-react'
 import type { IndividualFlag } from '@/lib/calculations/types'
-import { EXPLANATION_CATEGORIES, MAX_JUSTIFIABLE_CAP } from '@/app/(dashboard)/dashboard/import/constants'
+import { EXPLANATION_CATEGORIES, MAX_JUSTIFIABLE_CAP, EXPLANATION_DISCLAIMER } from '@/app/(dashboard)/dashboard/import/constants'
 import { saveExplanation } from './explanations/actions'
 
 // ────────────────────────────────────────────────────────────
@@ -162,6 +162,7 @@ function ExplanationDrawer({
 }) {
     const t = useTranslations('employees')
     const te = useTranslations('explanations')
+    const locale = useLocale()
     const initCats: Array<{ key: string; comment: string; claimed_pct?: number }> = existing
         ? ((existing as Explanation & { categories_json?: Array<{ key: string; comment: string; claimed_pct?: number }> }).categories_json ?? [])
         : []
@@ -457,6 +458,12 @@ function ExplanationDrawer({
                                 )
                             })}
                         </div>
+
+                        {/* Disclaimer: caps are guidelines, not regulatory limits */}
+                        <p className="text-xs mt-3 leading-relaxed"
+                            style={{ color: 'var(--color-pl-text-tertiary)', fontStyle: 'italic' }}>
+                            {locale === 'en' ? EXPLANATION_DISCLAIMER.en : EXPLANATION_DISCLAIMER.de}
+                        </p>
                     </div>
 
                     {/* ── Gap calculator ── */}
