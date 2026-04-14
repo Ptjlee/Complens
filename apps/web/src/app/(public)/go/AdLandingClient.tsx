@@ -262,17 +262,29 @@ function HeroShowcase({ t }: { t: (key: string) => string }) {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  // Auto-advance
+  // Auto-advance only when carousel is visible in viewport
   useEffect(() => {
     if (paused) {
       if (intervalRef.current) clearInterval(intervalRef.current)
       return
     }
+    const el = containerRef.current
+    if (!el) return
+
+    let visible = false
+    const observer = new IntersectionObserver(
+      ([entry]) => { visible = entry.isIntersecting },
+      { threshold: 0.3 }
+    )
+    observer.observe(el)
+
     intervalRef.current = setInterval(() => {
-      setActive((prev) => (prev + 1) % showcaseCards.length)
+      if (visible) setActive((prev) => (prev + 1) % showcaseCards.length)
     }, 5000)
+
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
+      observer.disconnect()
     }
   }, [paused])
 
@@ -302,12 +314,15 @@ function HeroShowcase({ t }: { t: (key: string) => string }) {
     [goPrev, goNext]
   )
 
-  // Scroll active card into view on mobile
+  // Scroll active card into view within the container only (no page scroll)
   useEffect(() => {
     if (!containerRef.current) return
-    const cards = containerRef.current.querySelectorAll('[data-showcase-card]')
-    if (cards[active]) {
-      cards[active].scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
+    const card = containerRef.current.querySelector(`[data-showcase-card="${active}"]`) as HTMLElement
+    if (card) {
+      containerRef.current.scrollTo({
+        left: card.offsetLeft - containerRef.current.offsetLeft - 16,
+        behavior: 'smooth',
+      })
     }
   }, [active])
 
@@ -337,7 +352,7 @@ function HeroShowcase({ t }: { t: (key: string) => string }) {
           return (
             <button
               key={idx}
-              data-showcase-card
+              data-showcase-card={idx}
               onClick={() => goTo(idx)}
               aria-label={`${card.step}. ${t(card.titleKey)}`}
               aria-current={isActive ? 'true' : undefined}
