@@ -4,14 +4,14 @@ Allow: /
 Disallow: /dashboard
 Disallow: /auth
 Disallow: /api
-Disallow: /setup
+Disallow: /superadmin
 
 # Googlebot
 User-agent: Googlebot
 Allow: /
 
 # Host
-Host: http://localhost:3001
+Host: https://complens.de
 
 # Sitemaps
-Sitemap: http://localhost:3001/sitemap.xml
+Sitemap: https://complens.de/sitemap.xml
