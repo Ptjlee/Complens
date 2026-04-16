@@ -867,14 +867,14 @@ export default function LandingClient() {
                 </div>
             </section>
 
-            <footer className="py-8 border-t border-white/5 bg-black/20 text-center relative z-10 px-4">
+            <footer className="py-10 border-t border-white/10 bg-black/20 text-center relative z-10 px-4">
                 <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 mb-4">
-                    <a href="/impressum" className="text-xs text-white/40 hover:text-white transition-colors">{t('footerImpressum')}</a>
-                    <a href="/compliance" className="text-xs text-white/40 hover:text-white transition-colors">{t('footerCompliance')}</a>
-                    <a href="/datenschutz" className="text-xs text-white/40 hover:text-white transition-colors">{t('footerDatenschutz')}</a>
-                    <a href="/agb" className="text-xs text-white/40 hover:text-white transition-colors">{t('footerAgb')}</a>
+                    <a href="/impressum" className="text-sm text-white/70 hover:text-white transition-colors">{t('footerImpressum')}</a>
+                    <a href="/compliance" className="text-sm text-white/70 hover:text-white transition-colors">{t('footerCompliance')}</a>
+                    <a href="/datenschutz" className="text-sm text-white/70 hover:text-white transition-colors">{t('footerDatenschutz')}</a>
+                    <a href="/agb" className="text-sm text-white/70 hover:text-white transition-colors">{t('footerAgb')}</a>
                 </div>
-                <p className="text-xs text-white/30">
+                <p className="text-sm text-white/60">
                     {t('footerCopyright', { year: new Date().getFullYear() })}
                 </p>
             </footer>
