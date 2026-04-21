@@ -246,9 +246,9 @@ export default function AnalysisChatbot({ analysisId }: { analysisId?: string })
                     className="fixed top-0 right-0 bottom-0 z-50 flex flex-col shadow-2xl transition-all duration-300"
                     style={{
                         width:      panelWidth,
-                        background: 'var(--color-pl-surface-elevated, #16213e)',
+                        background: 'var(--color-pl-surface)',
                         borderLeft: '1px solid var(--color-pl-border)',
-                        boxShadow:  '-12px 0 60px rgba(0,0,0,0.6)',
+                        boxShadow:  '-12px 0 60px rgba(0,0,0,0.15)',
                     }}
                 >
                     {/* Header */}

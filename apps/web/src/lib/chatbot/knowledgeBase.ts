@@ -282,6 +282,75 @@ FAQ:
 - Gruppen < 5 Personen werden anonymisiert.
 - Compa-Ratio < 87%: typisches Warnsignal für Unterbezahlung im C&B-Management.
 
+── MODUL: STELLENARCHITEKTUR (Zusatzmodul €3.900/Jahr) ──
+
+Die Stellenarchitektur ist ein optionales Modul für die strukturierte
+Verwaltung von Jobfamilien, Stellen, Kompetenzen und Einstufungen.
+
+Leveling-Struktur einrichten:
+Unter Stellenarchitektur → Einstufungen kann die Organisation ihre eigene
+Einstufungsstruktur erstellen. Drei Optionen:
+(1) CompLens-Standardvorlage (L1-L10) übernehmen
+(2) Vom CompLens Assistenten generieren lassen (Branche, Größe, bestehende Strukturen angeben)
+(3) Manuell erstellen
+Mehrere Strukturen möglich, eine wird als Standard markiert.
+
+Jobfamilien & Stellen:
+Unter Stellenarchitektur → Familien & Stellen. Jobfamilien gruppieren verwandte Stellen
+(z.B. Engineering, Finanzen, HR). Jede Stelle hat Titel, Einstufung, Stellenbeschreibung
+und verknüpfte Kompetenzen. Stellenbeschreibungen können vom CompLens Assistenten generiert werden.
+8 Standardfamilien können per Klick initialisiert werden.
+
+Kompetenzen:
+Unter Stellenarchitektur → Kompetenzen. Bibliothek mit 5-Stufen-Skala.
+Kategorien: Kern, Führung, Fachlich, Funktional.
+Beschreibungen und Verhaltensanker vom Assistenten generierbar.
+14 Standardkompetenzen können per Klick initialisiert werden.
+
+Einstufungszuordnung:
+Unter Stellenarchitektur → Zuordnung. Verknüpft die Einstufungen mit den
+Entgeltstufen aus dem Entgeltstufen-Modul. Zeigt Gehaltskorridore pro Stufe.
+
+JD-Upload:
+Unter Stellenarchitektur → JD-Upload. PDF oder Word-Datei hochladen.
+Der CompLens Assistent analysiert die Stellenbeschreibung und schlägt
+die passende Einstufung mit Konfidenzwert und Begründung vor.
+
+Stellenbesetzung (Headcount):
+Unter Stellenarchitektur → Stellenbesetzung. Ordnet Mitarbeitende aus importierten
+Datensätzen den definierten Stellen zu. Drei Methoden:
+
+(1) Zuordnungen übernehmen (Carryover):
+Übernimmt bestätigte Zuordnungen aus einem vorherigen Datensatz. Mitarbeitende werden
+anhand der Mitarbeiter-ID (employee_ref) über Datensätze hinweg abgeglichen.
+~85-90% der Belegschaft behalten dieselbe Stelle — diese werden automatisch übernommen.
+Geänderte Titel/Abteilungen/Stufen werden zur Überprüfung markiert.
+Neue Mitarbeitende erhalten eine Stellenvorschlag basierend auf Titelabgleich.
+
+(2) Automatische Zuordnung (Auto-Mapping):
+Gleicht Mitarbeitende anhand von Entgeltgruppe + Stellenbezeichnung mit definierten
+Stellen ab. 4-Stufen-Konfidenz: Stufe+Titel (95%), Stufe allein (80%),
+Stufe+mehrere Stellen (50-70%), nur Titel (30-55%).
+Ergebnisse werden in einer Übersichtstabelle zur Bestätigung/Ablehnung/Änderung angezeigt.
+
+(3) Manuelle Zuordnung:
+Über die Stellendetails → Mitarbeitende zuordnen. Suchfunktion nach Name, ID oder Abteilung.
+
+Vergütungsstufenzuordnung verbindet Stellenarchitektur mit Entgeltbändern.
+Ohne diese Zuordnung kann die automatische Zuordnung nur Titelabgleich verwenden.
+
+Zugriff: Nur Admin/Analyst-Rollen. Im Testzeitraum voll verfügbar.
+Nach Testende als separates Modul buchbar (€3.900/Jahr).
+
+FAQ:
+- Stellenarchitektur ist NICHT Voraussetzung für die Entgeltanalyse
+- Die Zuordnung zu Entgeltstufen synchronisiert sich mit dem Entgeltstufen-Modul
+- Eigene Einstufungsstrukturen können jederzeit angepasst werden
+- Der CompLens Assistent generiert nur Vorschläge, die manuell überprüft und angepasst werden können
+- Zuordnungen übernehmen benötigt mindestens 2 Datensätze (aktuell + Vorjahr)
+- Neue Stellen können direkt aus der Zuordnungsübersicht erstellt werden
+- Bereits bestätigte Zuordnungen können jederzeit geändert oder rückgängig gemacht werden
+
 ══ NAVIGATIONSÜBERSICHT ══
 - Dashboard: Übersicht der letzten Analysen und Schnellzugriff
 - Import: CSV-Datensätze hochladen und verwalten
@@ -290,6 +359,7 @@ FAQ:
 - Maßnahmen: Entgeltlücken mit strukturierten Plänen schließen
 - Trendanalyse: Jahresüberschreitende Entwicklung der Lücken (Datensätze müssen manuell ausgewählt werden)
 - Entgeltbänder: Interne Gehaltsbänder + EU Art. 9 Intra-Gruppen-Compliance
+- Stellenarchitektur: Einstufungen, Jobfamilien, Stellen, Kompetenzen, Stellenbesetzung
 - Berichte: PDF/PPT-Exporte generieren
 - Auskunftsrecht: Mitarbeiterauskunft Art. 7 EU-RL 2023/970
 - DSGVO & Compliance: Datenschutz und Rechtsnachweise
@@ -577,6 +647,75 @@ FAQ:
 - Groups with fewer than 5 people are anonymised.
 - Compa-Ratio < 87%: typical warning sign for underpayment in C&B management.
 
+── MODULE: JOB ARCHITECTURE (Add-on €3,900/year) ──
+
+Job Architecture is an optional module for structured management of
+job families, positions, competencies, and leveling.
+
+Setting up a leveling structure:
+Under Job Architecture → Leveling, the organisation can create its own
+leveling structure. Three options:
+(1) Use the CompLens Standard template (L1-L10)
+(2) Generate with the CompLens Assistant (provide industry, size, existing structures)
+(3) Create manually
+Multiple structures supported, one marked as default.
+
+Job families & positions:
+Under Job Architecture → Families & Jobs. Job families group related positions
+(e.g. Engineering, Finance, HR). Each job has a title, level, job description,
+and linked competencies. Job descriptions can be generated by the CompLens Assistant.
+8 default families can be initialised with one click.
+
+Competencies:
+Under Job Architecture → Competencies. Library with 5-level proficiency scale.
+Categories: Core, Leadership, Technical, Functional.
+Descriptions and behavioural indicators can be generated by the Assistant.
+14 default competencies can be initialised with one click.
+
+Grade mapping:
+Under Job Architecture → Grade Mapping. Links levels to pay band grades
+from the Pay Bands module. Shows salary corridors per level.
+
+JD Upload:
+Under Job Architecture → JD Upload. Upload a PDF or Word file.
+The CompLens Assistant analyses the job description and suggests
+the appropriate level with confidence score and reasoning.
+
+Headcount (Employee Mapping):
+Under Job Architecture → Headcount. Maps employees from imported datasets
+to defined positions. Three methods:
+
+(1) Carry Forward Assignments:
+Carries over confirmed assignments from a previous dataset. Employees are matched
+across datasets via employee ID (employee_ref).
+~85-90% of the workforce keep the same position — these are auto-confirmed.
+Changed titles/departments/grades are flagged for review.
+New hires receive a suggested position based on title matching.
+
+(2) Auto-Mapping:
+Matches employees by pay grade + job title against defined positions.
+4-tier confidence: grade+title (95%), grade only (80%),
+grade+multiple jobs (50-70%), title only (30-55%).
+Results are shown in a review table for confirmation/rejection/override.
+
+(3) Manual Assignment:
+Via position details → Assign employees. Search by name, ID, or department.
+
+Grade mapping connects Job Architecture with Pay Bands.
+Without grade mapping, auto-mapping can only use title matching.
+
+Access: Admin/Analyst roles only. Full access during trial period.
+After trial, available as a separate bookable module (€3,900/year).
+
+FAQ:
+- Job Architecture is NOT required for pay gap analysis
+- Grade mappings synchronise with the Pay Bands module
+- Custom leveling structures can be modified at any time
+- The CompLens Assistant generates suggestions that can be reviewed and adjusted manually
+- Carry Forward requires at least 2 datasets (current + previous year)
+- New positions can be created directly from the mapping review
+- Confirmed assignments can be changed or reverted at any time
+
 ══ NAVIGATION OVERVIEW ══
 - Dashboard: overview of recent analyses and quick access
 - Import: upload and manage CSV datasets
@@ -585,6 +724,7 @@ FAQ:
 - Remediation: close pay gaps with structured plans
 - Trend Analysis: multi-year development of gaps (datasets must be selected manually)
 - Pay Bands: internal salary bands + EU Art. 9 intra-group compliance
+- Job Architecture: leveling, job families, positions, competencies, headcount mapping
 - Reports: generate PDF/PPT exports
 - Right to Information: employee information per Art. 7 EU Directive 2023/970
 - GDPR & Compliance: data protection and legal documentation

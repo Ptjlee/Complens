@@ -9,18 +9,23 @@
 export type PlanId = 'free' | 'paylens' | 'paylens_ai' | 'licensed' | 'trial'
 
 export type Feature =
-    | 'pdf_export'            // Download PDF reports
-    | 'ppt_export'            // Download PPT presentations
-    | 'ai_import'             // AI-powered column mapping in import
-    | 'ai_explanations'       // Per-employee AI pay explanations
-    | 'ai_narrative'          // AI narrative report generator
-    | 'unlimited_employees'   // > 10 employees per dataset
-    | 'multi_user'            // Multiple team members
+    | 'pdf_export'               // Download PDF reports
+    | 'ppt_export'               // Download PPT presentations
+    | 'ai_import'                // AI-powered column mapping in import
+    | 'ai_explanations'          // Per-employee AI pay explanations
+    | 'ai_narrative'             // AI narrative report generator
+    | 'unlimited_employees'      // > 10 employees per dataset
+    | 'multi_user'               // Multiple team members
+    | 'job_architecture'         // Job Architecture module (add-on)
+    | 'assistant_jd_generation'  // CompLens Assistant JD generation
+    | 'assistant_jd_level_mapping' // CompLens Assistant JD upload → level mapping
+    | 'assistant_leveling'       // CompLens Assistant leveling structure generation
 
 export type OrgPlanFields = {
     plan: PlanId
     trial_ends_at: string | null
     ai_enabled: boolean
+    job_architecture_enabled?: boolean
 }
 
 // ── Plan metadata ─────────────────────────────────────────────────────────────
@@ -83,23 +88,31 @@ export const PLAN_META: Record<PlanId, {
 }
 
 const FEATURE_LABELS_DE: Record<Feature, string> = {
-    pdf_export:           'PDF-Export',
-    ppt_export:           'PowerPoint-Export',
-    ai_import:            'Automatische Spaltenerkennung',
-    ai_explanations:      'Individuelle Entgeltanalyse',
-    ai_narrative:         'Berichtsgenerator',
-    unlimited_employees:  'Unbegrenzte Mitarbeitende',
-    multi_user:           'Mehrere Nutzer',
+    pdf_export:                'PDF-Export',
+    ppt_export:                'PowerPoint-Export',
+    ai_import:                 'Automatische Spaltenerkennung',
+    ai_explanations:           'Individuelle Entgeltanalyse',
+    ai_narrative:              'Berichtsgenerator',
+    unlimited_employees:       'Unbegrenzte Mitarbeitende',
+    multi_user:                'Mehrere Nutzer',
+    job_architecture:          'Stellenarchitektur',
+    assistant_jd_generation:   'Stellenbeschreibung generieren',
+    assistant_jd_level_mapping: 'JD-Upload & Einstufung',
+    assistant_leveling:        'Einstufungsstruktur erstellen',
 }
 
 const FEATURE_LABELS_EN: Record<Feature, string> = {
-    pdf_export:           'PDF Export',
-    ppt_export:           'PowerPoint Export',
-    ai_import:            'Automatic Column Detection',
-    ai_explanations:      'Individual Pay Analysis',
-    ai_narrative:         'Report Generator',
-    unlimited_employees:  'Unlimited Employees',
-    multi_user:           'Multiple Users',
+    pdf_export:                'PDF Export',
+    ppt_export:                'PowerPoint Export',
+    ai_import:                 'Automatic Column Detection',
+    ai_explanations:           'Individual Pay Analysis',
+    ai_narrative:              'Report Generator',
+    unlimited_employees:       'Unlimited Employees',
+    multi_user:                'Multiple Users',
+    job_architecture:          'Job Architecture',
+    assistant_jd_generation:   'Job Description Generation',
+    assistant_jd_level_mapping: 'JD Upload & Level Mapping',
+    assistant_leveling:        'Leveling Structure Generation',
 }
 
 /** Returns feature labels for the given locale. Falls back to German. */
@@ -153,7 +166,21 @@ export function isTrialExpired(org: OrgPlanFields): boolean {
  * Which paid plan is the minimum that unlocks this feature?
  * Used to show targeted upgrade messaging.
  */
-export function requiredPlanFor(feature: Feature): 'paylens' | 'paylens_ai' {
+export function requiredPlanFor(feature: Feature): 'paylens' | 'paylens_ai' | 'job_architecture' {
     const aiOnly: Feature[] = ['ai_import', 'ai_explanations', 'ai_narrative']
+    const jobArchFeatures: Feature[] = [
+        'job_architecture', 'assistant_jd_generation',
+        'assistant_jd_level_mapping', 'assistant_leveling',
+    ]
+    if (jobArchFeatures.includes(feature)) return 'job_architecture'
     return aiOnly.includes(feature) ? 'paylens_ai' : 'paylens'
+}
+
+/**
+ * Returns true if the org has access to the Job Architecture module.
+ * Trial users always have access; paid users need the add-on enabled.
+ */
+export function canUseJobArchitecture(org: OrgPlanFields): boolean {
+    if (isTrialActive(org)) return true
+    return org.job_architecture_enabled === true
 }

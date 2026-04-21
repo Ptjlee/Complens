@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
 
     const genAI = new GoogleGenerativeAI(apiKey)
     const model = genAI.getGenerativeModel({
-        model: 'gemini-2.0-flash',
+        model: 'gemini-2.5-flash',
         systemInstruction: buildSystemPrompt(locale),
         generationConfig: { temperature: 0.2, maxOutputTokens: 1500 },
     })
@@ -99,8 +99,14 @@ export async function POST(req: NextRequest) {
     }))
     const lastMsg = sanitizedMessages[sanitizedMessages.length - 1]
 
-    const chat   = model.startChat({ history })
-    const result = await chat.sendMessageStream(lastMsg.content)
+    let result
+    try {
+        const chat = model.startChat({ history })
+        result = await chat.sendMessageStream(lastMsg.content)
+    } catch (err) {
+        console.error('[chat] Gemini error:', err)
+        return NextResponse.json({ error: err instanceof Error ? err.message : 'AI generation failed' }, { status: 500 })
+    }
 
     // Stream SSE
     const encoder = new TextEncoder()

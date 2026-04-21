@@ -6,6 +6,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import * as XLSX from 'xlsx'
 import { createHash } from 'crypto'
 import { PAYLENS_FIELDS, type ColumnMapping, type MappingConfidence } from './constants'
+import { linkEmployeeIdentities } from '@/app/(dashboard)/dashboard/job-architecture/carryoverAction'
 
 export type { ColumnMapping, MappingConfidence } from './constants'
 
@@ -479,6 +480,9 @@ export async function confirmMappingAndProcess(
             return { error: `Fehler beim Speichern der Mitarbeiterdaten: ${insertErr.message}` }
         }
     }
+
+    // Link employee identities for cross-dataset matching (carryover)
+    await linkEmployeeIdentities(datasetId).catch(() => {})
 
     // Track hours data coverage
     const hoursDataCount = employeeRows.filter(e => e.weekly_hours !== null || e.monthly_hours !== null).length

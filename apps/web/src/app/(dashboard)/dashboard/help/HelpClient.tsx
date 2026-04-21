@@ -5,7 +5,7 @@ import {
     PlayCircle, Upload, BarChart3, FileText, MessageSquare, Users,
     ShieldCheck, Settings, TrendingUp, ChevronDown, ChevronRight,
     AlertTriangle, CheckCircle2, Info, Mail, Download, Search,
-    BookOpen, Lightbulb, Zap, Globe, Layers, ExternalLink,
+    BookOpen, Lightbulb, Zap, Globe, Layers, ExternalLink, Network,
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
@@ -322,6 +322,28 @@ function buildModules(t: (key: string) => string): Module[] {
                 { q: t('settings.faq1Q'), a: t('settings.faq1A') },
                 { q: t('settings.faq2Q'), a: t('settings.faq2A') },
                 { q: t('settings.faq3Q'), a: t('settings.faq3A') },
+            ],
+        },
+        {
+            id: 'jobArchitecture',
+            icon: <Network size={20} />,
+            color: 'linear-gradient(135deg,#7c3aed,#a78bfa)',
+            title: t('jobArchitecture.title'),
+            subtitle: t('jobArchitecture.subtitle'),
+            steps: [
+                { step: 1, title: t('jobArchitecture.step1Title'), body: t('jobArchitecture.step1Body'), tip: t('jobArchitecture.step1Tip') },
+                { step: 2, title: t('jobArchitecture.step2Title'), body: t('jobArchitecture.step2Body') },
+                { step: 3, title: t('jobArchitecture.step3Title'), body: t('jobArchitecture.step3Body'), tip: t('jobArchitecture.step3Tip') },
+                { step: 4, title: t('jobArchitecture.step4Title'), body: t('jobArchitecture.step4Body') },
+                { step: 5, title: t('jobArchitecture.step5Title'), body: t('jobArchitecture.step5Body') },
+                { step: 6, title: t('jobArchitecture.step6Title'), body: t('jobArchitecture.step6Body'), tip: t('jobArchitecture.step6Tip') },
+            ],
+            faqs: [
+                { q: t('jobArchitecture.faq1Q'), a: t('jobArchitecture.faq1A') },
+                { q: t('jobArchitecture.faq2Q'), a: t('jobArchitecture.faq2A') },
+                { q: t('jobArchitecture.faq3Q'), a: t('jobArchitecture.faq3A') },
+                { q: t('jobArchitecture.faq4Q'), a: t('jobArchitecture.faq4A') },
+                { q: t('jobArchitecture.faq5Q'), a: t('jobArchitecture.faq5A') },
             ],
         },
     ]

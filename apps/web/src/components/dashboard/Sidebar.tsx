@@ -17,6 +17,7 @@ import {
     Database,
     TrendingUp,
     Landmark,
+    Network,
 } from 'lucide-react'
 
 const navItems = [
@@ -28,6 +29,7 @@ const navItems = [
     { href: '/dashboard/reports',       labelKey: 'reports',       icon: FileText,        adminOnly: false },
     { href: '/dashboard/remediation',   labelKey: 'remediation',   icon: Wrench,          adminOnly: true  },
     { href: '/dashboard/salary-bands',  labelKey: 'salaryBands',   icon: Landmark,        adminOnly: true  },
+    { href: '/dashboard/job-architecture', labelKey: 'jobArchitecture', icon: Network,    adminOnly: true  },
     { href: '/dashboard/portal',        labelKey: 'portal',        icon: Users,           adminOnly: true  },
 ]
 

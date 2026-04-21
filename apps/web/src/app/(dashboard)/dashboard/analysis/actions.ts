@@ -88,6 +88,28 @@ export async function runDatasetAnalysis(
             `)
             .eq('dataset_id', datasetId)
 
+        // Fetch confirmed job assignments → job family name for each employee
+        const { data: jobAssignments } = await admin
+            .from('employee_job_assignments')
+            .select('employee_id, job_id, jobs(id, title, family_id, job_family:job_families(name))')
+            .eq('dataset_id', datasetId)
+            .eq('status', 'confirmed')
+
+        // Build lookup: employee_id → { job_family, job_id, job_title }
+        const jobFamilyMap = new Map<string, { job_family: string; job_id: string; job_title: string }>()
+        for (const row of jobAssignments ?? []) {
+            const r = row as unknown as { employee_id: string; job_id: string; jobs: { id: string; title: string; job_family: { name: string }[] | null } | { id: string; title: string; job_family: { name: string }[] | null }[] | null }
+            const job = Array.isArray(r.jobs) ? r.jobs[0] : r.jobs
+            if (job) {
+                const family = Array.isArray(job.job_family) ? job.job_family[0] : job.job_family
+                jobFamilyMap.set(r.employee_id, {
+                    job_family:  family?.name ?? '',
+                    job_id:      job.id,
+                    job_title:   job.title,
+                })
+            }
+        }
+
         if (fetchErr || !rawEmployees?.length) {
             await admin.from('analyses').update({
                 status: 'error',
@@ -110,6 +132,7 @@ export async function runDatasetAnalysis(
         const defaultPeriod = (datasetMeta?.default_salary_period ?? 'annual') as 'annual' | 'monthly' | 'hourly'
         const employees: EmployeeRecord[] = rawEmployees.map(e => {
             const ov = overrideMap.get(e.id)
+            const jobInfo = jobFamilyMap.get(e.id)
 
             // Resolve variable pay from override
             let salary_variable  = Number(e.salary_variable ?? 0)
@@ -146,6 +169,9 @@ export async function runDatasetAnalysis(
                 employment_type:  e.employment_type ?? 'full_time',
                 seniority_years:  e.seniority_years ? Number(e.seniority_years) : null,
                 location:         e.location,
+                job_family:       jobInfo?.job_family ?? null,
+                assigned_job_id:  jobInfo?.job_id ?? null,
+                assigned_job_title: jobInfo?.job_title ?? null,
             }
         })
 
@@ -411,16 +437,38 @@ export async function getRecommendedWifFactors(
 
     if (!rawEmployees?.length) return fallback
 
+    // ── 2b. Fetch job family assignments for diversity check ──
+    const { data: recJobAssignments } = await admin
+        .from('employee_job_assignments')
+        .select('employee_id, jobs(job_family:job_families(name))')
+        .eq('dataset_id', datasetId)
+        .eq('status', 'confirmed')
+
+    const recFamilyMap = new Map<string, string>()
+    for (const row of recJobAssignments ?? []) {
+        const r = row as unknown as { employee_id: string; jobs: { job_family: { name: string }[] | null } | { job_family: { name: string }[] | null }[] | null }
+        const job = Array.isArray(r.jobs) ? r.jobs[0] : r.jobs
+        const family = job ? (Array.isArray(job.job_family) ? job.job_family[0] : job.job_family) : null
+        if (family?.name) recFamilyMap.set(r.employee_id, family.name)
+    }
+
+    // Determine which optional factors are available (include job_family only if assignments exist)
+    const optionalFactors: string[] = ['employment_type', 'department', 'location']
+    if (recFamilyMap.size > 0) optionalFactors.push('job_family')
+
     // ── 3. Diversity filter ───────────────────────────────────
     const DOMINANCE = 0.85   // ≥85% same value = degenerate
     const total     = rawEmployees.length
     const stats: WifRecommendation['stats'] = {}
     const qualified: string[] = []   // optional factors that pass the filter
 
-    for (const key of ALL_OPTIONAL) {
+    for (const key of optionalFactors) {
         const freq = new Map<string, number>()
         for (const row of rawEmployees) {
-            const val = String((row as Record<string, unknown>)[key] ?? '').trim()
+            // For job_family, look up from the assignment map instead of the employee row
+            const val = key === 'job_family'
+                ? (recFamilyMap.get((row as { id: string }).id) ?? '')
+                : String((row as Record<string, unknown>)[key] ?? '').trim()
             if (val) freq.set(val, (freq.get(val) ?? 0) + 1)
         }
         const distinctValues = freq.size
@@ -466,6 +514,7 @@ export async function getRecommendedWifFactors(
         employment_type:  e.employment_type ?? 'full_time',
         seniority_years:  e.seniority_years ? Number(e.seniority_years) : null,
         location:         e.location,
+        job_family:       recFamilyMap.get(e.id) ?? null,
     }))
 
     const engineCfg = {

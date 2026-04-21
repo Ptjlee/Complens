@@ -8,7 +8,7 @@
 
 import type {
     EmployeeRecord, NormalisedEmployee, GapResult,
-    QuartileResult, DepartmentResult, GradeResult,
+    QuartileResult, DepartmentResult, GradeResult, JobFamilyResult,
     IndividualFlag, AnalysisResult,
     DispersionPoint, GenderDistRow,
 } from './types'
@@ -233,6 +233,7 @@ const WIF_FIELD_MAP: Record<string, (e: NormalisedEmployee) => string> = {
     employment_type: e => e.employment_type ?? '_',
     department:      e => e.department      ?? '_',
     location:        e => e.location        ?? '_',
+    job_family:      e => e.job_family      ?? '_',
 }
 
 const DEFAULT_WIF_FACTORS = ['job_grade', 'employment_type', 'department', 'location']
@@ -328,6 +329,32 @@ function computeByGrade(
         const suppressed = members.length < MIN_DISPLAY_SIZE
         return { grade, gap: suppressed ? blankGap(members.length) : computeGap(members, wifCellsFn), employee_count: members.length, suppressed }
     }).sort((a, b) => a.grade.localeCompare(b.grade))
+}
+
+function computeByJobFamily(
+    employees: NormalisedEmployee[],
+    wifCellsFn: WifCellsFn = groupByWifCell,
+): JobFamilyResult[] {
+    const map = new Map<string, NormalisedEmployee[]>()
+    for (const e of employees) {
+        const k = e.job_family ?? null
+        if (k === null) continue  // skip employees without a job family assignment
+        if (!map.has(k)) map.set(k, [])
+        map.get(k)!.push(e)
+    }
+    return [...map.entries()].map(([family, members]) => {
+        const suppressed = members.length < MIN_DISPLAY_SIZE
+        const female = members.filter(e => e.gender === 'female').length
+        const male   = members.filter(e => e.gender === 'male').length
+        return {
+            job_family:     family,
+            gap:            suppressed ? blankGap(members.length) : computeGap(members, wifCellsFn),
+            employee_count: members.length,
+            female_count:   female,
+            male_count:     male,
+            suppressed,
+        }
+    }).sort((a, b) => a.job_family.localeCompare(b.job_family))
 }
 
 // ============================================================
@@ -553,6 +580,7 @@ export function runAnalysis(
     const quartiles       = computeQuartiles(normalised)
     const byDepartment    = computeByDepartment(normalised, wifCells)
     const byGrade         = computeByGrade(normalised, wifCells)
+    const byJobFamily     = computeByJobFamily(normalised, wifCells)
     const variablePay     = computeVariablePayGap(normalised)
     const THRESHOLD       = 0.10
     const individualFlags = computeIndividualFlags(normalised, THRESHOLD, wifFactors)
@@ -578,6 +606,7 @@ export function runAnalysis(
         quartiles,
         by_department:         byDepartment,
         by_grade:              byGrade,
+        by_job_family:         byJobFamily.length > 0 ? byJobFamily : undefined,
         total_employees:       normalised.length,
         departments_exceeding_5pct: byDepartment.filter(d => !d.suppressed && d.gap.exceeds_5pct).map(d => d.department),
         wif_factors_used:      wifFactors,

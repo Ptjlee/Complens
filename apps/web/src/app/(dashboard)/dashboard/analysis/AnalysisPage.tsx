@@ -186,12 +186,14 @@ function DatasetPicker({
 // WIF factor config (module-level to avoid re-allocation per render)
 // ============================================================
 
-const ALL_WIF = ['job_grade', 'employment_type', 'department', 'location'] as const
+const BASE_WIF = ['job_grade', 'employment_type', 'department', 'location'] as const
+const ALL_WIF_WITH_JOB_FAMILY = ['job_grade', 'employment_type', 'department', 'location', 'job_family'] as const
 const WIF_LABEL_KEYS: Record<string, string> = {
     job_grade:       'wifGrade',
     employment_type: 'wifEmploymentType',
     department:      'wifDepartment',
     location:        'wifLocation',
+    job_family:      'wifJobFamily',
 }
 
 // ============================================================
@@ -202,11 +204,14 @@ export default function AnalysisPageClient({
     datasets,
     isAdmin,
     bandContext,
+    hasJobAssignments = false,
 }: {
     datasets:    Dataset[]
     isAdmin:     boolean
     bandContext?: BandContext
+    hasJobAssignments?: boolean
 }) {
+    const ALL_WIF = hasJobAssignments ? ALL_WIF_WITH_JOB_FAMILY : BASE_WIF
     const t = useTranslations('analysis')
     const [selectedId, setSelectedId]             = useState(datasets[0]?.id ?? '')
     const [analysis, setAnalysis]                 = useState<AnalysisData | null>(null)

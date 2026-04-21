@@ -20,6 +20,7 @@ export const translations = {
     'nav.remediation':  { de: 'Maßnahmen',          en: 'Remediation' },
     'nav.trends':       { de: 'Trendanalyse',       en: 'Trend Analysis' },
     'nav.reports':      { de: 'Berichte',           en: 'Reports' },
+    'nav.jobArchitecture': { de: 'Stellenarchitektur', en: 'Job Architecture' },
     'nav.portal':       { de: 'Auskunftsrecht',     en: 'Employee Portal' },
     'nav.compliance':   { de: 'DSGVO & Compliance', en: 'GDPR & Compliance' },
     'nav.settings':     { de: 'Einstellungen',      en: 'Settings' },

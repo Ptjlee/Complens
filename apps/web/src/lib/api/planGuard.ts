@@ -29,13 +29,14 @@ export async function requireAiPlan(): Promise<
         }
     }
 
-    // Allow: paylens_ai plan, OR active trial (trial_ends_at in the future)
+    // Allow: licensed plans, ai_enabled flag, OR active trial
+    const isLicensed = ['licensed', 'paylens', 'paylens_ai'].includes(org.plan ?? '')
     const onTrial =
         org.plan === 'trial' &&
         org.trial_ends_at != null &&
         new Date(org.trial_ends_at) > new Date()
 
-    if (!org.ai_enabled && !onTrial) {
+    if (!isLicensed && !org.ai_enabled && !onTrial) {
         return {
             error: NextResponse.json(
                 { error: 'AI features require the PayLens AI plan. Upgrade to access this feature.' },

@@ -77,6 +77,15 @@ export async function getBandContext(datasetId?: string): Promise<BandContext> {
     const empty = { has_bands: false, detected_grades: [], naming_scheme: null, total_non_compliant: 0, total_grades: 0, grades: [], datasets: [], active_dataset_id: datasetId ?? null }
     if (!user) return empty
 
+    // Resolve org_id for secure filtering
+    const { data: member } = await supabase
+        .from('organisation_members')
+        .select('org_id')
+        .eq('user_id', user.id)
+        .single()
+    if (!member?.org_id) return empty
+    const orgId = member.org_id
+
     // Load available datasets for this org (for the picker)
     const { data: dsRows } = await supabase
         .from('datasets')
@@ -104,6 +113,7 @@ export async function getBandContext(datasetId?: string): Promise<BandContext> {
     const { data: rows } = await supabase
         .from('salary_band_summary')
         .select('*')
+        .eq('org_id', orgId)
         .order('job_grade')
 
     if (!rows || rows.length === 0) {
@@ -240,11 +250,22 @@ export async function computeInternalBands(
 
     const { data: member } = await supabase
         .from('organisation_members')
-        .select('role')
+        .select('role, org_id')
         .eq('user_id', user.id)
         .single()
     if (!member || !['admin', 'analyst'].includes(member.role)) {
         return { success: false, error: 'Keine Berechtigung.', grades_updated: 0 }
+    }
+
+    // Verify band belongs to this user's org
+    const { data: band } = await supabase
+        .from('salary_bands')
+        .select('id')
+        .eq('id', bandId)
+        .eq('org_id', member.org_id)
+        .single()
+    if (!band) {
+        return { success: false, error: 'Band nicht gefunden.', grades_updated: 0 }
     }
 
     // Resolve dataset: if not given, use the latest dataset that has job_grade data
@@ -432,6 +453,14 @@ export async function upsertMarketBenchmark(
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { success: false, error: 'Nicht autorisiert.' }
+
+    // Verify grade belongs to a band in the user's org
+    const { data: grade } = await supabase
+        .from('salary_band_grades')
+        .select('id, band:salary_bands!inner(org_id)')
+        .eq('id', gradeId)
+        .single()
+    if (!grade) return { success: false, error: 'Grade nicht gefunden.' }
 
     const { error } = await supabase
         .from('salary_band_market_data')

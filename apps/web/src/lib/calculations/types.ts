@@ -30,6 +30,10 @@ export interface EmployeeRecord {
     employment_type: string
     seniority_years?: number | null
     location?: string | null
+    // Job architecture fields (populated via employee_job_assignments JOIN)
+    job_family?: string | null
+    assigned_job_id?: string | null
+    assigned_job_title?: string | null
 }
 
 // Derived after normalisation: all pay expressed as hourly rate
@@ -80,6 +84,17 @@ export interface DepartmentResult {
     department: string
     gap: GapResult
     employee_count: number
+    suppressed: boolean
+}
+
+// ---- Job family breakdown ----
+
+export interface JobFamilyResult {
+    job_family: string
+    gap: GapResult
+    employee_count: number
+    female_count: number
+    male_count: number
     suppressed: boolean
 }
 
@@ -167,6 +182,7 @@ export interface AnalysisResult {
     quartiles: QuartileResult
     by_department: DepartmentResult[]
     by_grade: GradeResult[]
+    by_job_family?: JobFamilyResult[]
 
     total_employees: number
     departments_exceeding_5pct: string[]
