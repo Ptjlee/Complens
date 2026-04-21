@@ -7,7 +7,8 @@ import {
     Calendar, Database, BarChart2, Zap, XCircle,
     ChevronDown, ChevronUp, Mail, ArrowUpRight, Send, X,
     Sparkles, Trash2, ChevronRight, UserMinus, MailCheck,
-    CheckSquare, Square, MessageSquare, LineChart, Globe,
+    CheckSquare, Square, MessageSquare, LineChart, Globe, Layers,
+    RotateCcw,
 } from 'lucide-react'
 import type { AdminUser, AdminStats, AdminLead, GAStats } from './page'
 import dynamic from 'next/dynamic'
@@ -605,10 +606,53 @@ function UserActions({
                 >
                     <ActionBtn icon={Zap}          label="Trial verlängern (+7d)" color="#f59e0b" href={`/superadmin/actions/extend-trial?userId=${user.id}&key=${adminKey}`} />
                     <ActionBtn icon={CheckCircle2} label="Lizenz aktivieren"       color="#10b981" href={`/superadmin/actions/activate-license?userId=${user.id}&key=${adminKey}`} />
+                    <ActionBtn
+                        icon={Layers}
+                        label={`Stellenarchitektur ${user.job_architecture_enabled ? '✓' : '✗'}`}
+                        color={user.job_architecture_enabled ? '#10b981' : 'var(--color-pl-text-tertiary, #94a3b8)'}
+                        onClick={async () => {
+                            setExpanded(false)
+                            if (!user.org_id) return
+                            const res = await fetch(`/superadmin/actions/toggle-job-architecture?key=${adminKey ?? ''}`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ orgId: user.org_id, enable: !user.job_architecture_enabled }),
+                            })
+                            if (res.ok) window.location.reload()
+                        }}
+                    />
                     <ActionBtn icon={Mail}         label="E-Mail senden"           color="#5b61ff" onClick={() => { setExpanded(false); onEmail(user.email) }} />
                     <div style={{ height: 1, background: '#2a2a3a', margin: '4px 0' }} />
                     <ActionBtn icon={XCircle}      label="Konto sperren"           color="#ef4444" href={`/superadmin/actions/suspend?userId=${user.id}&key=${adminKey}`} danger />
                     <ActionBtn icon={Trash2}       label="Nutzer löschen"          color="#ef4444" onClick={() => { setExpanded(false); onDelete(user) }} danger />
+                    <ActionBtn
+                        icon={RotateCcw}
+                        label="Account zurücksetzen"
+                        color="#ef4444"
+                        danger
+                        onClick={async () => {
+                            setExpanded(false)
+                            if (!user.org_id) return
+                            if (!confirm('ACHTUNG: Alle Daten dieses Accounts werden unwiderruflich gelöscht. Nur Login-Daten bleiben erhalten.\n\nFortfahren?')) return
+                            if (!confirm(`Letzte Warnung: "${user.email}" wird komplett zurückgesetzt. Dieser Vorgang kann NICHT rückgängig gemacht werden.\n\nEndgültig zurücksetzen?`)) return
+                            try {
+                                const res = await fetch(`/superadmin/actions/reset-account`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ orgId: user.org_id }),
+                                })
+                                const data = await res.json()
+                                if (res.ok && data.success) {
+                                    alert(`Account "${user.email}" wurde zurückgesetzt.`)
+                                    window.location.reload()
+                                } else {
+                                    alert(`Fehler: ${data.error ?? 'Unbekannter Fehler'}`)
+                                }
+                            } catch {
+                                alert('Netzwerkfehler beim Zurücksetzen.')
+                            }
+                        }}
+                    />
                 </div>
             )}
         </div>
@@ -898,6 +942,11 @@ export default function AdminClient({
                                 <div className="space-y-1">
                                     <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: badge.bg, color: badge.color }}>{badge.label}</span>
                                     {tstat && <p className="text-[10px]" style={{ color: tstat.color }}>{tstat.label}</p>}
+                                    {user.job_architecture_enabled && (
+                                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded block w-fit" style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981' }}>
+                                            + Stellen
+                                        </span>
+                                    )}
                                 </div>
                                 <div className="flex items-center gap-1.5 text-white">
                                     <Database size={12} style={{ color: '#cbd5e1' }} />

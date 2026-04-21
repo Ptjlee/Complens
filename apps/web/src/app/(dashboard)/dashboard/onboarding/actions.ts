@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 
 export type OnboardingProgress = {
@@ -77,6 +78,27 @@ export async function completeOnboarding(): Promise<void> {
             last_seen_at: new Date().toISOString(),
         })
         .eq('user_id', user.id)
+
+    revalidatePath('/', 'layout')
+}
+
+// ── Reset onboarding (restart tour) ────────────────────────────────────────
+
+export async function resetOnboarding(): Promise<void> {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const { data: member } = await supabase
+        .from('organisation_members').select('org_id').eq('user_id', user.id).single()
+    if (!member?.org_id) return
+
+    const admin = createAdminClient()
+    await admin
+        .from('onboarding_progress')
+        .update({ current_step: 1, completed_at: null })
+        .eq('user_id', user.id)
+        .eq('org_id', member.org_id)
 
     revalidatePath('/', 'layout')
 }

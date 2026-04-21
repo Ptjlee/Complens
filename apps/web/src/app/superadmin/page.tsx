@@ -33,6 +33,7 @@ export type AdminUser = {
     analysis_count:  number
     last_active:     string | null
     member_role:     string | null
+    job_architecture_enabled: boolean
 }
 
 export type AdminStats = {
@@ -73,7 +74,7 @@ async function loadAdminData(): Promise<{ users: AdminUser[]; stats: AdminStats;
     // Fetch all orgs
     const { data: orgs } = await admin
         .from('organisations')
-        .select('id, name, plan, trial_ends_at, max_users, created_at')
+        .select('id, name, plan, trial_ends_at, max_users, created_at, job_architecture_enabled')
 
     // Fetch all org members
     const { data: members } = await admin
@@ -133,6 +134,7 @@ async function loadAdminData(): Promise<{ users: AdminUser[]; stats: AdminStats;
             analysis_count:  org ? (analysisCountByOrg[org.id] ?? 0) : 0,
             last_active:     org ? (lastDatasetByOrg[org.id] ?? u.last_sign_in_at ?? null) : (u.last_sign_in_at ?? null),
             member_role:     member?.role ?? null,
+            job_architecture_enabled: org?.job_architecture_enabled ?? false,
         }
     })
 

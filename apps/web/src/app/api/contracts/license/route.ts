@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
         // Fetch org — including all legal fields
         const { data: org } = await supabase
             .from('organisations')
-            .select('id, name, plan, country, created_at, legal_representative, legal_address, legal_city, legal_zip, vat_id')
+            .select('id, name, plan, country, created_at, legal_representative, legal_address, legal_city, legal_zip, vat_id, job_architecture_enabled')
             .single()
 
         if (!org) return new NextResponse('Organisation not found', { status: 404 })
@@ -70,6 +70,7 @@ export async function GET(req: NextRequest) {
             plan,
             issuedDate,
             contractId,
+            jobArchitectureEnabled: org.job_architecture_enabled === true,
         })
 
         const pdfBuffer = await renderToBuffer(

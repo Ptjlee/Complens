@@ -33,8 +33,8 @@ export function LanguageSwitcher() {
                         className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer"
                         style={{
                             background: active ? 'var(--color-pl-brand)' : 'transparent',
-                            border: `1px solid ${active ? 'var(--color-pl-brand)' : 'var(--color-pl-border)'}`,
-                            color: active ? '#fff' : 'var(--color-pl-text-secondary)',
+                            border: active ? '1px solid var(--color-pl-brand)' : '1px solid transparent',
+                            color: '#fff',
                         }}
                     >
                         <span>{l.flag}</span>

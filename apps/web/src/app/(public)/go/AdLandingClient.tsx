@@ -1,11 +1,10 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useTranslations } from 'next-intl'
 import { useSearchParams } from 'next/navigation'
 import {
   ArrowRight,
-  ArrowLeft,
   Shield,
   ShieldCheck,
   Server,
@@ -24,7 +23,7 @@ import {
   Users,
   Clock,
   LayoutDashboard,
-  PieChart,
+  Layers,
   Wrench,
 } from 'lucide-react'
 import { Logo } from '@/components/ui/Logo'
@@ -163,31 +162,34 @@ function MockupWif({ t }: { t: (key: string) => string }) {
   )
 }
 
-function MockupQuartile({ t }: { t: (key: string) => string }) {
-  const quartiles = [
-    { label: 'Q1', m: 70, f: 30 },
-    { label: 'Q2', m: 58, f: 42 },
-    { label: 'Q3', m: 45, f: 55 },
-    { label: 'Q4', m: 35, f: 65 },
+function MockupJobArch({ t }: { t: (key: string) => string }) {
+  const levels = [
+    { label: 'L8–L10', bar: '90%', color: 'bg-purple-500/70', tag: 'Senior Leadership' },
+    { label: 'L5–L7', bar: '65%', color: 'bg-blue-500/70', tag: 'Management' },
+    { label: 'L3–L4', bar: '45%', color: 'bg-cyan-500/70', tag: 'Professional' },
+    { label: 'L1–L2', bar: '25%', color: 'bg-green-500/70', tag: 'Entry' },
   ]
+  const dims = ['Know-how', 'Complexity', 'Responsibility', 'Impact', 'Communication', 'Innovation']
   return (
     <div className="p-3 space-y-2">
-      <p className="text-[9px] text-white/80 uppercase tracking-wider">{t('showcaseMockupQuartileTitle')}</p>
+      <p className="text-[9px] text-white/80 uppercase tracking-wider">{t('showcaseMockupJobArchTitle')}</p>
       <div className="space-y-1.5">
-        {quartiles.map((q) => (
-          <div key={q.label} className="flex items-center gap-2">
-            <span className="text-[9px] text-white/80 w-6 shrink-0">{q.label}</span>
-            <div className="flex-1 h-4 rounded-full overflow-hidden flex">
-              <div className="h-full bg-blue-500/60" style={{ width: `${q.m}%` }} />
-              <div className="h-full bg-pink-500/60" style={{ width: `${q.f}%` }} />
+        {levels.map((l) => (
+          <div key={l.label} className="flex items-center gap-2">
+            <span className="text-[9px] text-white/80 w-12 shrink-0 text-right">{l.label}</span>
+            <div className="flex-1 h-3.5 rounded-full bg-white/5 overflow-hidden">
+              <div className={`h-full rounded-full ${l.color}`} style={{ width: l.bar }} />
             </div>
-            <span className="text-[8px] text-white/80 w-12 shrink-0 text-right">{q.m}M/{q.f}F</span>
+            <span className="text-[8px] text-white/60 w-16 shrink-0 truncate">{l.tag}</span>
           </div>
         ))}
       </div>
-      <div className="flex items-center gap-3 justify-center pt-1">
-        <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-sm bg-blue-500/60" /><span className="text-[8px] text-white/80">Male</span></div>
-        <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-sm bg-pink-500/60" /><span className="text-[8px] text-white/80">Female</span></div>
+      <div className="flex flex-wrap gap-1 pt-1">
+        {dims.map((d) => (
+          <span key={d} className="px-1.5 py-0.5 text-[7px] rounded-full bg-purple-500/15 text-purple-300/80 border border-purple-500/20">
+            {d}
+          </span>
+        ))}
       </div>
     </div>
   )
@@ -272,120 +274,26 @@ const showcaseCards: ShowcaseCard[] = [
   { icon: LayoutDashboard, step: 1, titleKey: 'showcase1Title', descKey: 'showcase1Desc', mockup: MockupDashboard },
   { icon: Upload, step: 2, titleKey: 'showcase2Title', descKey: 'showcase2Desc', mockup: MockupImport },
   { icon: BarChart2, step: 3, titleKey: 'showcase3Title', descKey: 'showcase3Desc', mockup: MockupWif },
-  { icon: PieChart, step: 4, titleKey: 'showcase4Title', descKey: 'showcase4Desc', mockup: MockupQuartile },
+  { icon: Layers, step: 4, titleKey: 'showcase4Title', descKey: 'showcase4Desc', mockup: MockupJobArch },
   { icon: Wrench, step: 5, titleKey: 'showcase5Title', descKey: 'showcase5Desc', mockup: MockupRemediation },
   { icon: FileText, step: 6, titleKey: 'showcase6Title', descKey: 'showcase6Desc', mockup: MockupReport },
 ]
 
 function HeroShowcase({ t }: { t: (key: string) => string }) {
-  const [active, setActive] = useState(0)
-  const [paused, setPaused] = useState(false)
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
-
-  // Auto-advance only when carousel is visible in viewport
-  useEffect(() => {
-    if (paused) {
-      if (intervalRef.current) clearInterval(intervalRef.current)
-      return
-    }
-    const el = containerRef.current
-    if (!el) return
-
-    let visible = false
-    const observer = new IntersectionObserver(
-      ([entry]) => { visible = entry.isIntersecting },
-      { threshold: 0.3 }
-    )
-    observer.observe(el)
-
-    intervalRef.current = setInterval(() => {
-      if (visible) setActive((prev) => (prev + 1) % showcaseCards.length)
-    }, 5000)
-
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current)
-      observer.disconnect()
-    }
-  }, [paused])
-
-  const goTo = useCallback((idx: number) => {
-    setActive(idx)
-  }, [])
-
-  const goPrev = useCallback(() => {
-    setActive((prev) => (prev - 1 + showcaseCards.length) % showcaseCards.length)
-  }, [])
-
-  const goNext = useCallback(() => {
-    setActive((prev) => (prev + 1) % showcaseCards.length)
-  }, [])
-
-  // Keyboard navigation
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === 'ArrowLeft') {
-        e.preventDefault()
-        goPrev()
-      } else if (e.key === 'ArrowRight') {
-        e.preventDefault()
-        goNext()
-      }
-    },
-    [goPrev, goNext]
-  )
-
-  // Scroll active card into view within the container only (no page scroll)
-  useEffect(() => {
-    if (!containerRef.current) return
-    const card = containerRef.current.querySelector(`[data-showcase-card="${active}"]`) as HTMLElement
-    if (card) {
-      containerRef.current.scrollTo({
-        left: card.offsetLeft - containerRef.current.offsetLeft - 16,
-        behavior: 'smooth',
-      })
-    }
-  }, [active])
-
   return (
-    <div
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-      onFocus={() => setPaused(true)}
-      onBlur={() => setPaused(false)}
-      role="region"
-      aria-roledescription="carousel"
-      aria-label={t('showcaseTitle')}
-      onKeyDown={handleKeyDown}
-      tabIndex={0}
-      className="outline-none"
-    >
+    <div role="region" aria-label={t('showcaseTitle')}>
       {/* Cards — horizontal scroll on mobile, 3-col grid on desktop */}
       <div
-        ref={containerRef}
         className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 lg:grid lg:grid-cols-3 lg:overflow-visible lg:pb-0"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {showcaseCards.map((card, idx) => {
-          const isActive = idx === active
           const Icon = card.icon
           const Mockup = card.mockup
           return (
-            <button
+            <div
               key={idx}
-              data-showcase-card={idx}
-              onClick={() => goTo(idx)}
-              aria-label={`${card.step}. ${t(card.titleKey)}`}
-              aria-current={isActive ? 'true' : undefined}
-              className={`
-                snap-center shrink-0 w-[280px] sm:w-[300px] lg:w-auto
-                rounded-2xl border text-left
-                transition-all duration-300 ease-out cursor-pointer
-                ${isActive
-                  ? 'border-blue-500/40 bg-white/[0.06] shadow-[0_0_30px_rgba(99,102,241,0.12)]'
-                  : 'border-white/5 bg-white/[0.02] opacity-60 hover:opacity-80 hover:bg-white/[0.03]'
-                }
-              `}
+              className="snap-center shrink-0 w-[280px] sm:w-[300px] lg:w-auto rounded-2xl border border-white/10 bg-white/[0.05] text-left hover:bg-white/[0.08] transition-colors"
             >
               {/* Mockup area */}
               <div className="h-[140px] overflow-hidden rounded-t-2xl border-b border-white/5 bg-black/20">
@@ -395,8 +303,8 @@ function HeroShowcase({ t }: { t: (key: string) => string }) {
               {/* Text area */}
               <div className="p-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${isActive ? 'bg-blue-500/20' : 'bg-white/5'}`}>
-                    <Icon size={14} className={isActive ? 'text-blue-400' : 'text-white/80'} />
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 bg-blue-500/20">
+                    <Icon size={14} className="text-blue-400" />
                   </div>
                   <span className="text-[10px] font-bold text-white/80 uppercase tracking-wider">
                     {card.step}/6
@@ -405,42 +313,9 @@ function HeroShowcase({ t }: { t: (key: string) => string }) {
                 <h3 className="text-sm font-bold text-white mb-1">{t(card.titleKey)}</h3>
                 <p className="text-xs text-white/80 leading-relaxed line-clamp-3">{t(card.descKey)}</p>
               </div>
-            </button>
+            </div>
           )
         })}
-      </div>
-
-      {/* Navigation: arrows + dots */}
-      <div className="flex items-center justify-center gap-4 mt-6">
-        <button
-          onClick={goPrev}
-          aria-label="Previous slide"
-          className="w-9 h-9 rounded-full border border-white/10 bg-white/[0.03] flex items-center justify-center text-white/80 hover:text-white hover:bg-white/[0.06] transition-colors"
-        >
-          <ArrowLeft size={16} />
-        </button>
-
-        <div className="flex gap-2">
-          {showcaseCards.map((_, idx) => (
-            <button
-              key={idx}
-              onClick={() => goTo(idx)}
-              aria-label={`Go to slide ${idx + 1}`}
-              className={`
-                h-2 rounded-full transition-all duration-300
-                ${idx === active ? 'w-6 bg-blue-500' : 'w-2 bg-white/20 hover:bg-white/40'}
-              `}
-            />
-          ))}
-        </div>
-
-        <button
-          onClick={goNext}
-          aria-label="Next slide"
-          className="w-9 h-9 rounded-full border border-white/10 bg-white/[0.03] flex items-center justify-center text-white/80 hover:text-white hover:bg-white/[0.06] transition-colors"
-        >
-          <ArrowRight size={16} />
-        </button>
       </div>
     </div>
   )
@@ -863,6 +738,48 @@ export default function AdLandingClient() {
                 {t('pricingCta')}
               </a>
               {/* Trial watermark note removed — not relevant for conversion */}
+            </div>
+          </FadeSection>
+
+          {/* Job Architecture Add-on */}
+          <FadeSection>
+            <div className="max-w-3xl mx-auto mt-8 rounded-2xl p-[1px] overflow-hidden"
+              style={{ background: 'linear-gradient(135deg, rgba(168,85,247,0.4), rgba(99,102,241,0.4))' }}>
+              <div className="rounded-2xl p-8"
+                style={{
+                  background: 'rgba(22, 33, 62, 0.85)',
+                  backdropFilter: 'blur(16px)',
+                }}>
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                  <div className="flex-1">
+                    <div className="mb-3">
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-lg font-bold text-white">{t('pricingAddonTitle')}</h3>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                          Add-on
+                        </span>
+                      </div>
+                      <p className="text-sm text-white/50 mt-1">{t('pricingAddonSubtitle')}</p>
+                    </div>
+                    <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
+                      {([
+                        'pricingAddonFeature1', 'pricingAddonFeature2', 'pricingAddonFeature3',
+                        'pricingAddonFeature4', 'pricingAddonFeature5', 'pricingAddonFeature6',
+                      ] as const).map((key) => (
+                        <li key={key} className="flex items-start gap-2 text-sm text-white/70">
+                          <Check size={14} className="text-purple-400 mt-0.5 shrink-0" />
+                          <span>{t(key)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="text-center lg:text-right shrink-0">
+                    <div className="text-3xl font-extrabold text-white">{t('pricingAddonPrice')}</div>
+                    <div className="text-sm text-white/40">{t('pricingAddonPeriod')}</div>
+                    <p className="text-xs text-white/30 mt-3">{t('pricingAddonTrialHint')}</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </FadeSection>
         </div>

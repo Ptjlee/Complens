@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Sidebar from '@/components/dashboard/Sidebar'
 import Header from '@/components/dashboard/Header'
-import OnboardingModal from '@/components/dashboard/OnboardingModal'
+import GuidedTour from '@/components/dashboard/onboarding/GuidedTour'
 import TrialBanner from '@/components/dashboard/TrialBanner'
 import TrialExpiredOverlay from '@/components/dashboard/TrialExpiredOverlay'
 import DeviceFingerprintRegistrar from '@/components/dashboard/DeviceFingerprintRegistrar'
@@ -73,7 +73,7 @@ export default async function DashboardLayout({
                 </main>
             </div>
             {showOnboarding && (
-                <OnboardingModal initialStep={onboarding.current_step} />
+                <GuidedTour initialStep={onboarding.current_step} />
             )}
             <DeviceFingerprintRegistrar />
             <AnalysisChatbot />

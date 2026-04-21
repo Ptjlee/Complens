@@ -30,11 +30,8 @@ export async function canUseJobArchitecture(): Promise<boolean> {
 
     if (!org) return false
 
-    // Access: explicit feature flag, licensed plan, OR active trial
+    // Access: explicit feature flag OR active trial (licensed users must purchase add-on)
     if (org.job_architecture_enabled) return true
-
-    const isLicensed = ['licensed', 'paylens', 'paylens_ai'].includes(org.plan ?? '')
-    if (isLicensed) return true
 
     const onTrial =
         org.plan === 'trial' &&

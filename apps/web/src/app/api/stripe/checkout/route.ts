@@ -13,10 +13,11 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_dummy', {
 const PRICE_IDS: Record<string, string | undefined> = {
     license:            process.env.STRIPE_PRICE_LICENSE,
     additional_access:  process.env.STRIPE_PRICE_ADDITIONAL_ACCESS,
+    job_architecture:   process.env.STRIPE_PRICE_JOB_ARCHITECTURE,
 }
 
 const CheckoutSchema = z.object({
-    plan:            z.enum(['license', 'additional_access']),
+    plan:            z.enum(['license', 'additional_access', 'job_architecture']),
     additionalUsers: z.number().int().min(0).max(100).optional().default(0),
 })
 

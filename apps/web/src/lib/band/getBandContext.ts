@@ -90,12 +90,14 @@ export async function getBandContext(datasetId?: string): Promise<BandContext> {
     const { data: dsRows } = await supabase
         .from('datasets')
         .select('id, name, reporting_year')
+        .eq('org_id', orgId)
         .order('reporting_year', { ascending: false })
 
     // Count employees per dataset
     const { data: empCounts } = await supabase
         .from('employees')
         .select('dataset_id')
+        .eq('org_id', orgId)
         .not('job_grade', 'is', null)
 
     const countMap = new Map<string, number>()
@@ -223,7 +225,11 @@ export async function getDetectedGrades(datasetId?: string): Promise<{ grades: s
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { grades: [], scheme: null }
 
-    let q = supabase.from('employees').select('job_grade').not('job_grade', 'is', null)
+    const { data: member } = await supabase
+        .from('organisation_members').select('org_id').eq('user_id', user.id).single()
+    if (!member?.org_id) return { grades: [], scheme: null }
+
+    let q = supabase.from('employees').select('job_grade').eq('org_id', member.org_id).not('job_grade', 'is', null)
     if (datasetId) q = q.eq('dataset_id', datasetId)
 
     const { data } = await q

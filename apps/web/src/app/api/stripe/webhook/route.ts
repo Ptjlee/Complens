@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
                 if (session.mode !== 'subscription') break
 
                 const orgId = session.metadata?.org_id
-                const plan  = session.metadata?.plan as 'license' | 'additional_access' | undefined
+                const plan  = session.metadata?.plan as 'license' | 'additional_access' | 'job_architecture' | undefined
                 if (!orgId || !plan) break
 
                 // If this is just an add-on purchase, don't overwrite the core subscription endDate 
@@ -99,6 +99,13 @@ export async function POST(req: NextRequest) {
                         subscription_ends_at:   new Date((sub as any).current_period_end * 1000).toISOString(),
                         ai_enabled:             true,
                         trial_ends_at:          null,   // Clear trial once paid
+                    }).eq('id', orgId)
+                }
+
+                if (plan === 'job_architecture') {
+                    await supabase.from('organisations').update({
+                        job_architecture_enabled: true,
+                        stripe_customer_id:       session.customer as string,
                     }).eq('id', orgId)
                 }
 
@@ -145,6 +152,7 @@ export async function POST(req: NextRequest) {
                     stripe_subscription_id: null,
                     subscription_ends_at:   null,
                     ai_enabled:             false,
+                    job_architecture_enabled: false,
                 }).eq('id', org.id)
 
                 console.log(`[stripe/webhook] sub cancelled → org ${org.id} downgraded to free`)

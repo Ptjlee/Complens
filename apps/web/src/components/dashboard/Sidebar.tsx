@@ -20,6 +20,16 @@ import {
     Network,
 } from 'lucide-react'
 
+const TOUR_ATTRS: Record<string, string> = {
+    '/dashboard/import': 'nav-import',
+    '/dashboard/analysis': 'nav-analysis',
+    '/dashboard/salary-bands': 'nav-salary-bands',
+    '/dashboard/job-architecture': 'nav-job-architecture',
+    '/dashboard/reports': 'nav-reports',
+    '/dashboard/settings': 'nav-settings',
+    '/dashboard/help': 'nav-help',
+}
+
 const navItems = [
     { href: '/dashboard',               labelKey: 'dashboard',     icon: LayoutDashboard, adminOnly: false },
     { href: '/dashboard/import',        labelKey: 'import',        icon: Upload,          adminOnly: true  },
@@ -87,6 +97,7 @@ export default function Sidebar({ role }: { role?: 'admin' | 'viewer' }) {
                         key={href}
                         href={href}
                         className={`nav-link ${pathname === href || (href !== '/dashboard' && pathname.startsWith(href)) ? 'active' : ''}`}
+                        {...(TOUR_ATTRS[href] ? { 'data-tour': TOUR_ATTRS[href] } : {})}
                     >
                         <Icon size={16} strokeWidth={1.8} />
                         <span>{t(labelKey)}</span>
@@ -101,6 +112,7 @@ export default function Sidebar({ role }: { role?: 'admin' | 'viewer' }) {
                         key={href}
                         href={href}
                         className={`nav-link ${pathname.startsWith(href) ? 'active' : ''}`}
+                        {...(TOUR_ATTRS[href] ? { 'data-tour': TOUR_ATTRS[href] } : {})}
                     >
                         <Icon size={16} strokeWidth={1.8} />
                         <span>{t(labelKey)}</span>

@@ -1,14 +1,17 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import {
     PlayCircle, Upload, BarChart3, FileText, MessageSquare, Users,
     ShieldCheck, Settings, TrendingUp, ChevronDown, ChevronRight,
     AlertTriangle, CheckCircle2, Info, Mail, Download, Search,
     BookOpen, Lightbulb, Zap, Globe, Layers, ExternalLink, Network,
+    RotateCcw,
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
+import { resetOnboarding } from '@/app/(dashboard)/dashboard/onboarding/actions'
 
 const SupportTicketModal = dynamic(() => import('@/components/support/SupportTicketModal'), { ssr: false })
 
@@ -36,7 +39,7 @@ function FaqAccordion({ items }: { items: FaqItem[] }) {
                         onClick={() => setOpen(open === i ? null : i)}
                         className="w-full text-left px-4 py-3 flex items-center justify-between text-sm font-medium transition-colors"
                         style={{
-                            background: open === i ? 'rgba(59,130,246,0.06)' : 'transparent',
+                            background: open === i ? 'var(--color-pl-surface-raised)' : 'transparent',
                             color: 'var(--color-pl-text-primary)',
                         }}
                     >
@@ -69,9 +72,9 @@ function StepCard({ step, color }: { step: GuideStep; color: string }) {
                 <p className="text-sm font-semibold mb-1" style={{ color: 'var(--color-pl-text-primary)' }}>{step.title}</p>
                 <p className="text-xs leading-relaxed" style={{ color: 'var(--color-pl-text-secondary)' }}>{step.body}</p>
                 {step.tip && (
-                    <div className="mt-2 flex items-start gap-1.5 px-2.5 py-1.5 rounded-md" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)' }}>
-                        <Lightbulb size={12} style={{ color: '#818cf8', flexShrink: 0, marginTop: 1 }} />
-                        <p className="text-xs" style={{ color: '#a5b4fc' }}>{step.tip}</p>
+                    <div className="mt-2 flex items-start gap-1.5 px-2.5 py-1.5 rounded-md" style={{ background: 'var(--color-pl-surface-raised)', border: '1px solid var(--color-pl-border)' }}>
+                        <Lightbulb size={12} style={{ color: 'var(--color-pl-brand-light)', flexShrink: 0, marginTop: 1 }} />
+                        <p className="text-xs" style={{ color: 'var(--color-pl-text-secondary)' }}>{step.tip}</p>
                     </div>
                 )}
             </div>
@@ -349,6 +352,13 @@ function buildModules(t: (key: string) => string): Module[] {
     ]
 }
 
+function buildWorkflow(t: (key: string) => string) {
+    return Array.from({ length: 16 }, (_, i) => {
+        const n = i + 1
+        return { step: n, action: t(`wf${n}`), time: t(`wf${n}Time`), prereq: t(`wf${n}Pre`) }
+    })
+}
+
 function buildLegalRef(t: (key: string) => string) {
     return [
         { art: 'Art. 3', title: t('legal.art3Title'), desc: t('legal.art3Desc') },
@@ -362,11 +372,14 @@ function buildLegalRef(t: (key: string) => string) {
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function HelpClient() {
     const t = useTranslations('help')
+    const tTour = useTranslations('guidedTour')
+    const router = useRouter()
     const [activeModule,  setActiveModule]  = useState<string | null>(null)
     const [search,        setSearch]        = useState('')
     const [showSupport,   setShowSupport]   = useState(false)
 
     const MODULES = buildModules(t)
+    const WORKFLOW = buildWorkflow(t)
     const LEGAL_REF = buildLegalRef(t)
 
     const filtered = search.trim().length > 1
@@ -392,6 +405,21 @@ export default function HelpClient() {
                     <p className="text-sm mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>
                         {t('subtitle')}
                     </p>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                    <button
+                        onClick={async () => { await resetOnboarding(); router.push('/dashboard') }}
+                        className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-all hover:opacity-80"
+                        style={{
+                            background: 'var(--color-pl-surface)',
+                            border: '1px solid var(--color-pl-border)',
+                            color: 'var(--color-pl-text-tertiary)',
+                            cursor: 'pointer',
+                        }}
+                    >
+                        <RotateCcw size={13} />
+                        {tTour('restartTour')}
+                    </button>
                 </div>
             </div>
 
@@ -440,8 +468,8 @@ export default function HelpClient() {
                     value={search}
                     onChange={e => setSearch(e.target.value)}
                     placeholder={t('searchPlaceholder')}
-                    className="w-full pl-9 pr-4 py-2 rounded-lg text-sm bg-black/20 border focus:outline-none focus:border-blue-500 transition-colors"
-                    style={{ borderColor: 'var(--color-pl-border)', color: 'var(--color-pl-text-primary)' }}
+                    className="w-full pl-9 pr-4 py-2 rounded-lg text-sm border focus:outline-none transition-colors"
+                    style={{ background: 'var(--color-pl-surface-raised)', borderColor: 'var(--color-pl-border)', color: 'var(--color-pl-text-primary)' }}
                 />
             </div>
 
@@ -457,7 +485,7 @@ export default function HelpClient() {
                             }}
                             className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full transition-all"
                             style={{
-                                background: activeModule === m.id ? 'var(--color-pl-brand)' : 'rgba(255,255,255,0.05)',
+                                background: activeModule === m.id ? 'var(--color-pl-brand)' : 'var(--color-pl-surface)',
                                 border: `1px solid ${activeModule === m.id ? 'var(--color-pl-brand)' : 'var(--color-pl-border)'}`,
                                 color: activeModule === m.id ? '#fff' : 'var(--color-pl-text-tertiary)',
                             }}
@@ -483,6 +511,37 @@ export default function HelpClient() {
                     </div>
                 )}
             </div>
+
+            {/* ── Workflow: Zero to Compliance ── */}
+            {!search && (
+                <div className="glass-card p-5" id="module-workflow">
+                    <h2 className="text-sm font-bold mb-1 flex items-center gap-2" style={{ color: 'var(--color-pl-text-primary)' }}>
+                        <CheckCircle2 size={16} style={{ color: 'var(--color-pl-brand)' }} />
+                        {t('workflowTitle')}
+                    </h2>
+                    <p className="text-xs mb-4" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('workflowDesc')}</p>
+                    <div className="space-y-2">
+                        {WORKFLOW.map(w => (
+                            <div key={w.step} className="flex gap-3 items-start p-3 rounded-xl" style={{ background: 'var(--color-pl-surface)', border: '1px solid var(--color-pl-border)' }}>
+                                <div className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-white text-[11px] font-bold"
+                                    style={{ background: 'linear-gradient(135deg,#1A3E66,#3b82f6)' }}>
+                                    {w.step}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>{w.action}</p>
+                                    <p className="text-[11px] mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>
+                                        {t('workflowTime')}: {w.time} · {t('workflowPrereq')}: {w.prereq}
+                                    </p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="mt-4 space-y-1.5">
+                        <p className="text-xs font-semibold" style={{ color: 'var(--color-pl-text-secondary)' }}>{t('workflowTotal')}</p>
+                        <p className="text-xs" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('workflowSubsequent')}</p>
+                    </div>
+                </div>
+            )}
 
             {/* ── Legal quick reference ── */}
             <div className="glass-card p-5">
@@ -515,7 +574,7 @@ export default function HelpClient() {
             {/* ── Support banner ── */}
             <div className="glass-card p-6 flex flex-col sm:flex-row items-center gap-6">
                 <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
-                    style={{ background: 'linear-gradient(135deg,var(--color-pl-brand),#6366f1)', boxShadow: '0 8px 20px rgba(99,102,241,0.25)' }}>
+                    style={{ background: 'var(--color-pl-brand)' }}>
                     <MessageSquare size={22} className="text-white" />
                 </div>
                 <div className="flex-1 text-center sm:text-left">
@@ -527,11 +586,12 @@ export default function HelpClient() {
                 <button
                     onClick={() => setShowSupport(true)}
                     className="flex-shrink-0 flex items-center gap-2 font-bold text-white px-5 py-2.5 rounded-lg transition-transform hover:-translate-y-0.5 text-sm"
-                    style={{ background: 'linear-gradient(135deg,var(--color-pl-brand),#6366f1)', boxShadow: '0 8px 20px rgba(99,102,241,0.25)' }}
+                    style={{ background: 'var(--color-pl-brand)' }}
                 >
                     <MessageSquare size={15} /> {t('supportButton')}
                 </button>
             </div>
+
         </div>
     )
 }

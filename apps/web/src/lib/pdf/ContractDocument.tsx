@@ -267,6 +267,7 @@ export type ContractDocumentProps = {
     plan:                'paylens' | 'paylens_ai' | 'additional_user' | string
     issuedDate:          string
     contractId:          string
+    jobArchitectureEnabled?: boolean
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -317,6 +318,7 @@ function Footer({ contractId }: { contractId: string }) {
 export const ContractDocument = ({
     orgName, orgAddress, legalRepresentative, vatId,
     contactEmail, contactName, contactTitle, plan, issuedDate, contractId,
+    jobArchitectureEnabled,
 }: ContractDocumentProps) => {
     const isAddon = plan === 'additional_user'
     const docTitle = isAddon
@@ -418,11 +420,31 @@ export const ContractDocument = ({
                                 <Text style={s.tableColL}>Vergütung</Text>
                                 <Text style={s.tableColR}>{planPrice(plan)}</Text>
                             </View>
-                            <View style={s.tableRowLast}>
+                            <View style={jobArchitectureEnabled ? s.tableRow : s.tableRowLast}>
                                 <Text style={s.tableColL}>Abrechnung</Text>
                                 <Text style={s.tableColR}>Jährlich im Voraus · Kreditkarte oder SEPA-Lastschrift (Stripe)</Text>
                             </View>
+                            {jobArchitectureEnabled && (
+                                <View style={s.tableRowLast}>
+                                    <Text style={s.tableColL}>Zusatzmodul</Text>
+                                    <Text style={s.tableColR}>
+                                        Stellenarchitektur · € 3.900,00 zzgl. MwSt. pro Jahr
+                                    </Text>
+                                </View>
+                            )}
                         </View>
+
+                        {jobArchitectureEnabled && (
+                            <View style={s.infoBox}>
+                                <Text style={[s.infoText, { fontFamily: 'Helvetica-Bold', marginBottom: 3 }]}>
+                                    Zusatzmodul: Stellenarchitektur
+                                </Text>
+                                <Text style={s.infoText}>
+                                    Einstufungsrahmen, Stellenfamilien, Kompetenzen, Stellenbesetzung.{'\n'}
+                                    Jährliche Vergütung: € 3.900,00 zzgl. MwSt.
+                                </Text>
+                            </View>
+                        )}
                     </Section>
 
                     {/* ── §2 Lizenzgewährung ── */}
@@ -461,7 +483,10 @@ export const ContractDocument = ({
                     <Section title="§ 5  Vergütung und Zahlung">
                         <Text style={s.para}>
                             Die Vergütung beträgt {planPrice(plan)}, fällig jährlich im Voraus.
-                            Die Abrechnung erfolgt automatisiert über den Zahlungsdienstleister Stripe.
+                            {jobArchitectureEnabled
+                                ? ' Hinzu kommt das Zusatzmodul Stellenarchitektur in Höhe von € 3.900,00 zzgl. MwSt. pro Jahr.'
+                                : ''}
+                            {' '}Die Abrechnung erfolgt automatisiert über den Zahlungsdienstleister Stripe.
                             Der Kunde erhält eine umsatzsteuerrechtskonforme Rechnung gem. § 14 UStG
                             per E-Mail. Alle Preise verstehen sich zuzüglich der gesetzlich gültigen
                             Umsatzsteuer.

@@ -9,7 +9,7 @@ import {
 import { signOut, sendPasswordResetEmail } from '@/app/(auth)/actions'
 import { trackCheckoutStarted, trackPaymentComplete } from '@/lib/analytics'
 import TeamPanel from './TeamPanel'
-import SalaryBandsPanel from './SalaryBandsPanel'
+// SalaryBandsPanel removed — accessed via /dashboard/salary-bands
 import { useTranslations, useFormatter, useLocale } from 'next-intl'
 
 // ─── Upgrade to license button ────────────────────────────────
@@ -117,6 +117,51 @@ function AddOnButton() {
                 method:  'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body:    JSON.stringify({ plan: 'additional_access' }),
+            })
+            const data = await res.json()
+            if (!res.ok || !data.url) throw new Error(data.error ?? t('stripeError'))
+            window.location.href = data.url
+        } catch (e: unknown) {
+            setErr(e instanceof Error ? e.message : t('errorGeneric'))
+            setLoading(false)
+        }
+    }
+
+    return (
+        <div>
+            <button
+                onClick={handleClick}
+                disabled={loading}
+                className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition-all"
+                style={{
+                    background: 'rgba(99,102,241,0.1)',
+                    border:     '1px solid rgba(99,102,241,0.3)',
+                    color:      'var(--color-pl-brand-light)',
+                    opacity:    loading ? 0.65 : 1,
+                    cursor:     loading ? 'not-allowed' : 'pointer',
+                }}
+            >
+                <Crown size={11} />
+                {loading ? t('loadingShort') : t('bookNow')}
+            </button>
+            {err && <p className="text-[10px] mt-1 text-red-400">{err}</p>}
+        </div>
+    )
+}
+
+function JobArchitectureButton() {
+    const t = useTranslations('settings')
+    const [loading, setLoading] = useState(false)
+    const [err, setErr]         = useState<string | null>(null)
+
+    async function handleClick() {
+        setLoading(true)
+        setErr(null)
+        try {
+            const res  = await fetch('/api/stripe/checkout', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify({ plan: 'job_architecture' }),
             })
             const data = await res.json()
             if (!res.ok || !data.url) throw new Error(data.error ?? t('stripeError'))
@@ -274,6 +319,7 @@ type Org = {
     subscription_ends_at: string | null
     max_users: number | null
     ai_enabled: boolean | null
+    job_architecture_enabled: boolean | null
     country: string | null
     created_at: string
     legal_representative: string | null
@@ -364,12 +410,12 @@ function PasswordResetCard({ email }: { email: string }) {
 
 export default function SettingsClient({ user, org, role, memberCount, teamData, profileData, legalData, payCriteriaText }: Props) {
     const t = useTranslations('settings')
-    const [activeTab, setActiveTab] = useState<'org' | 'team' | 'profile' | 'billing' | 'security' | 'bands'>('org')
+    const [activeTab, setActiveTab] = useState<'org' | 'team' | 'profile' | 'billing' | 'security'>('org')
     const [openInvite, setOpenInvite] = useState(false)
 
     useEffect(() => {
-        const hash = window.location.hash.replace('#', '') as 'org' | 'team' | 'profile' | 'billing' | 'security' | 'bands'
-        const valid = ['org', 'team', 'profile', 'billing', 'security', 'bands']
+        const hash = window.location.hash.replace('#', '') as 'org' | 'team' | 'profile' | 'billing' | 'security'
+        const valid = ['org', 'team', 'profile', 'billing', 'security']
         if (valid.includes(hash)) setActiveTab(hash)
         if (hash === 'billing' && ['licensed', 'paylens', 'paylens_ai'].includes(org?.plan ?? '')) trackPaymentComplete()
     }, [])
@@ -386,7 +432,6 @@ export default function SettingsClient({ user, org, role, memberCount, teamData,
         { id: 'org',      label: t('tabOrg'),      icon: Building2,  adminOnly: false },
         { id: 'team',     label: t('tabTeam'),      icon: Users,       adminOnly: false },
         { id: 'profile',  label: t('tabProfile'),   icon: UserIcon,    adminOnly: false },
-        { id: 'bands',    label: t('tabBands'),     icon: TrendingUp,  adminOnly: true  },
         { id: 'billing',  label: t('tabBilling'),   icon: CreditCard,  adminOnly: false },
         { id: 'security', label: t('tabSecurity'),  icon: Shield,      adminOnly: false },
     ] as const
@@ -445,7 +490,7 @@ export default function SettingsClient({ user, org, role, memberCount, teamData,
                     {activeTab === 'org'      && <OrgTab      org={org} role={role} memberCount={memberCount} legalData={legalData} payCriteriaText={payCriteriaText} onInvite={() => { setOpenInvite(true); setActiveTab('team') }} />}
                     {activeTab === 'team'     && <TeamPanel   teamData={teamData} openInviteOnMount={openInvite} onInviteMounted={() => setOpenInvite(false)} />}
                     {activeTab === 'profile'  && <ProfileTab  user={user} profileData={profileData} />}
-                    {activeTab === 'bands'    && <SalaryBandsPanel />}
+                    {/* SalaryBandsPanel removed — accessed via /dashboard/salary-bands */}
                     {activeTab === 'billing'  && <BillingTab  org={org} subEnd={subEnd} isLicensed={isLicensed} legalComplete={!!(legalData.legal_representative && legalData.legal_address && legalData.legal_city)} onGoToOrg={() => setActiveTab('org')} />}
                     {activeTab === 'security' && <SecurityTab />}
                 </div>
@@ -1097,6 +1142,36 @@ function BillingTab({
                 </div>
             )}
 
+            {/* ── 2a2. Trial → Show add-on modules (info only) ──── */}
+            {!isLicensed && (
+                <div className="glass-card p-5" style={{ opacity: 0.6 }}>
+                    <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: 'var(--color-pl-text-tertiary)' }}>
+                        {t('addOnModules')}
+                    </p>
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>{t('additionalSeat')}</p>
+                                <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('additionalSeatDesc')}</p>
+                            </div>
+                            <span className="text-[10px] font-medium px-2 py-1 rounded" style={{ color: 'var(--color-pl-text-tertiary)', background: 'var(--color-pl-surface-raised)', border: '1px solid var(--color-pl-border)' }}>
+                                {t('afterLicense')}
+                            </span>
+                        </div>
+                        <div style={{ borderTop: '1px solid var(--color-pl-border)' }} />
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>{t('jobArchitectureAddon')}</p>
+                                <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>{t('jobArchitectureAddonDesc')}</p>
+                            </div>
+                            <span className="text-[10px] font-medium px-2 py-1 rounded" style={{ color: 'var(--color-pl-text-tertiary)', background: 'var(--color-pl-surface-raised)', border: '1px solid var(--color-pl-border)' }}>
+                                {t('afterLicense')}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* ── 2b. Licensed → Add-on seats ───────────────────── */}
             {isLicensed && (
                 <div className="glass-card p-5">
@@ -1111,6 +1186,40 @@ function BillingTab({
                             </p>
                         </div>
                         <AddOnButton />
+                    </div>
+                </div>
+            )}
+
+            {/* ── 2b2. Licensed → Job Architecture Add-on ────────── */}
+            {isLicensed && !org?.job_architecture_enabled && (
+                <div className="glass-card p-5">
+                    <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: 'var(--color-pl-text-tertiary)' }}>
+                        {t('addOnModules')}
+                    </p>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>{t('jobArchitectureAddon')}</p>
+                            <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-text-tertiary)' }}>
+                                {t('jobArchitectureAddonDesc')}
+                            </p>
+                        </div>
+                        <JobArchitectureButton />
+                    </div>
+                </div>
+            )}
+
+            {isLicensed && org?.job_architecture_enabled && (
+                <div className="glass-card p-5">
+                    <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: 'var(--color-pl-text-tertiary)' }}>
+                        {t('addOnModules')}
+                    </p>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm font-semibold" style={{ color: 'var(--color-pl-text-primary)' }}>{t('jobArchitectureAddon')}</p>
+                            <p className="text-xs mt-0.5" style={{ color: 'var(--color-pl-success, #22c55e)' }}>
+                                ✓ {t('activeLabel')}
+                            </p>
+                        </div>
                     </div>
                 </div>
             )}
